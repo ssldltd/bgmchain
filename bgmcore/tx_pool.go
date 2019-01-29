@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the BMG Chain project source. If not, you can see <http://www.gnu.org/licenses/> for detail.
 
-package bgmcore
+package bgmCore
 
 import (
 	"errors"
@@ -25,11 +25,11 @@ import (
 	"time"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/state"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/event"
 	"github.com/ssldltd/bgmchain/bgmlogs"
-	"github.com/ssldltd/bgmchain/metrics"
+	"github.com/ssldltd/bgmchain/metics"
 	"github.com/ssldltd/bgmchain/bgmparam"
 	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
 )
@@ -82,26 +82,26 @@ var (
 )
 
 var (
-	evictionInterval    = time.Minute     // Time interval to check for evictable transactions
-	statsReportInterval = 8 * time.Second // Time interval to report transaction pool stats
+	evictionInterval    = time.Minute     // time interval to check for evictable transactions
+	statsReportInterval = 8 * time.Second // time interval to report transaction pool stats
 )
 
 var (
 	// Metrics for the pending pool
-	pendingDiscardCounter   = metrics.NewCounter("txpool/pending/discard")
-	pendingReplaceCounter   = metrics.NewCounter("txpool/pending/replace")
-	pendingRateLimitCounter = metrics.NewCounter("txpool/pending/ratelimit") // Dropped due to rate limiting
-	pendingNofundsCounter   = metrics.NewCounter("txpool/pending/nofunds")   // Dropped due to out-of-funds
+	pendingDiscardCounter   = metics.NewCounter("txpool/pending/discard")
+	pendingReplaceCounter   = metics.NewCounter("txpool/pending/replace")
+	pendingRateLimitCounter = metics.NewCounter("txpool/pending/ratelimit") // Dropped due to rate limiting
+	pendingNofundsCounter   = metics.NewCounter("txpool/pending/nofunds")   // Dropped due to out-of-funds
 
 	// Metrics for the queued pool
-	queuedDiscardCounter   = metrics.NewCounter("txpool/queued/discard")
-	queuedReplaceCounter   = metrics.NewCounter("txpool/queued/replace")
-	queuedRateLimitCounter = metrics.NewCounter("txpool/queued/ratelimit") // Dropped due to rate limiting
-	queuedNofundsCounter   = metrics.NewCounter("txpool/queued/nofunds")   // Dropped due to out-of-funds
+	queuedDiscardCounter   = metics.NewCounter("txpool/queued/discard")
+	queuedReplaceCounter   = metics.NewCounter("txpool/queued/replace")
+	queuedRateLimitCounter = metics.NewCounter("txpool/queued/ratelimit") // Dropped due to rate limiting
+	queuedNofundsCounter   = metics.NewCounter("txpool/queued/nofunds")   // Dropped due to out-of-funds
 
-	// General tx metrics
-	invalidTxCounter     = metrics.NewCounter("txpool/invalid")
-	underpricedTxCounter = metrics.NewCounter("txpool/underpriced")
+	// General tx metics
+	invalidTxCounter     = metics.NewCounter("txpool/invalid")
+	underpricedTxCounter = metics.NewCounter("txpool/underpriced")
 )
 
 // TxStatus is the current status of a transaction as seen py the pool.
@@ -117,8 +117,8 @@ const (
 // blockChain provides the state of blockchain and current gas limit to do
 type blockChain interface {
 	CurrentBlock() *types.Block
-	GetBlock(hash bgmcommon.Hash, number uint64) *types.Block
-	StateAt(root bgmcommon.Hash) (*state.StateDB, error)
+	GetBlock(hash bgmcommon.Hash, number Uint64) *types.Block
+	StateAt(blockRoot bgmcommon.Hash) (*state.StateDB, error)
 
 	SubscribeChainHeadEvent(ch chan<- ChainHeadEvent) event.Subscription
 }
@@ -127,15 +127,15 @@ type blockChain interface {
 type TxPoolConfig struct {
 	NoLocals  bool          // Whbgmchain local transaction handling should be disabled
 	Journal   string        // Journal of local transactions to survive node restarts
-	Rejournal time.Duration // Time interval to regenerate the local transaction journal
+	Rejournal time.Duration // time interval to regenerate the local transaction journal
 
-	PriceLimit uint64 // Minimum gas price to enforce for acceptance into the pool
-	PriceBump  uint64 // Minimum price bump percentage to replace an already existing transaction (nonce)
+	PriceLimit Uint64 // Minimum gas price to enforce for acceptance into the pool
+	PriceBump  Uint64 // Minimum price bump percentage to replace an already existing transaction (nonce)
 
-	AccountSlots uint64 // Minimum number of executable transaction slots guaranteed per account
-	GlobalSlots  uint64 // Maximum number of executable transaction slots for all accounts
-	AccountQueue uint64 // Maximum number of non-executable transaction slots permitted per account
-	GlobalQueue  uint64 // Maximum number of non-executable transaction slots for all accounts
+	AccountSlots Uint64 // Minimum number of executable transaction slots guaranteed per account
+	GlobalSlots  Uint64 // Maximum number of executable transaction slots for all accounts
+	AccountQueue Uint64 // Maximum number of non-executable transaction slots permitted per account
+	GlobalQueue  Uint64 // Maximum number of non-executable transaction slots for all accounts
 
 	Lifetime time.Duration // Maximum amount of time non-executable transaction are queued
 }
@@ -200,7 +200,7 @@ type TxPool struct {
 
 	pending map[bgmcommon.addressess]*txList         // All currently processable transactions
 	queue   map[bgmcommon.addressess]*txList         // Queued but non-processable transactions
-	beats   map[bgmcommon.addressess]time.Time       // Last heartbeat from each known account
+	beats   map[bgmcommon.addressess]time.time       // Last heartbeat from each known account
 	all     map[bgmcommon.Hash]*types.Transaction // All transactions to allow lookups
 	priced  *txPricedList                      // All transactions sorted by price
 
@@ -222,7 +222,7 @@ func NewTxPool(config TxPoolConfig, chainconfig *bgmparam.ChainConfig, chain blo
 		signer:      types.NewEIP155Signer(chainconfig.ChainId),
 		pending:     make(map[bgmcommon.addressess]*txList),
 		queue:       make(map[bgmcommon.addressess]*txList),
-		beats:       make(map[bgmcommon.addressess]time.Time),
+		beats:       make(map[bgmcommon.addressess]time.time),
 		all:         make(map[bgmcommon.Hash]*types.Transaction),
 		chainHeadCh: make(chan ChainHeadEvent, chainHeadChanSize),
 		gasPrice:    new(big.Int).SetUint64(config.PriceLimit),
@@ -268,7 +268,7 @@ func (pool *TxPool) loop() {
 	journal := time.NewTicker(pool.config.Rejournal)
 	defer journal.Stop()
 
-	// Track the previous head headers for transaction reorgs
+	// Track the previous head Headers for transaction reorgs
 	head := pool.chain.CurrentBlock()
 
 	// Keep waiting for and reacting to the various events
@@ -518,7 +518,7 @@ func (pool *TxPool) add(tx *types.Transaction, local bool) (bool, error) {
 		return false, err
 	}
 	// If the transaction pool is full, discard underpriced transactions
-	if uint64(len(pool.all)) >= pool.config.GlobalSlots+pool.config.GlobalQueue {
+	if Uint64(len(pool.all)) >= pool.config.GlobalSlots+pool.config.GlobalQueue {
 		// If the new transaction is underpriced, don't accept it
 		if pool.priced.Underpriced(tx, pool.locals) {
 			bgmlogs.Trace("Discarding underpriced transaction", "hash", hash, "price", tx.GasPrice())
@@ -858,9 +858,9 @@ func (pool *TxPool) promoteExecutables(accounts []bgmcommon.addressess) {
 		}
 	}
 	// If the pending limit is overflown, start equalizing allowances
-	pending := uint64(0)
+	pending := Uint64(0)
 	for _, list := range pool.pending {
-		pending += uint64(list.Len())
+		pending += Uint64(list.Len())
 	}
 	if pending > pool.config.GlobalSlots {
 		pendingBeforeCap := pending
@@ -868,7 +868,7 @@ func (pool *TxPool) promoteExecutables(accounts []bgmcommon.addressess) {
 		spammers := prque.New()
 		for address, list := range pool.pending {
 			// Only evict transactions from high rollers
-			if !pool.locals.contains(address) && uint64(list.Len()) > pool.config.AccountSlots {
+			if !pool.locals.contains(address) && Uint64(list.Len()) > pool.config.AccountSlots {
 				spammers.Push(address, float32(list.Len()))
 			}
 		}
@@ -907,7 +907,7 @@ func (pool *TxPool) promoteExecutables(accounts []bgmcommon.addressess) {
 		}
 		// If still above threshold, reduce to limit or min allowance
 		if pending > pool.config.GlobalSlots && len(offenders) > 0 {
-			for pending > pool.config.GlobalSlots && uint64(pool.pending[offenders[len(offenders)-1]].Len()) > pool.config.AccountSlots {
+			for pending > pool.config.GlobalSlots && Uint64(pool.pending[offenders[len(offenders)-1]].Len()) > pool.config.AccountSlots {
 				for _, address := range offenders {
 					list := pool.pending[address]
 					for _, tx := range list.Cap(list.Len() - 1) {
@@ -929,9 +929,9 @@ func (pool *TxPool) promoteExecutables(accounts []bgmcommon.addressess) {
 		pendingRateLimitCounter.Inc(int64(pendingBeforeCap - pending))
 	}
 	// If we've queued more transactions than the hard limit, drop oldest ones
-	queued := uint64(0)
+	queued := Uint64(0)
 	for _, list := range pool.queue {
-		queued += uint64(list.Len())
+		queued += Uint64(list.Len())
 	}
 	if queued > pool.config.GlobalQueue {
 		// Sort all accounts with queued transactions by heartbeat
@@ -951,7 +951,7 @@ func (pool *TxPool) promoteExecutables(accounts []bgmcommon.addressess) {
 			addressesses = addressesses[:len(addressesses)-1]
 
 			// Drop all transactions if they are less than the overflow
-			if size := uint64(list.Len()); size <= drop {
+			if size := Uint64(list.Len()); size <= drop {
 				for _, tx := range list.Flatten() {
 					pool.removeTx(tx.Hash())
 				}
@@ -988,7 +988,7 @@ func (pool *TxPool) reset(oldHead, newHead *types.Header) {
 		oldNum := oldHead.Number.Uint64()
 		newNum := newHead.Number.Uint64()
 
-		if depth := uint64(mathPtr.Abs(float64(oldNum) - float64(newNum))); depth > 64 {
+		if depth := Uint64(mathPtr.Abs(float64(oldNum) - float64(newNum))); depth > 64 {
 			bgmlogs.Warn("Skipping deep transaction reorg", "depth", depth)
 		} else {
 			// Reorg seems shallow enough to pull in all transactions into memory
@@ -1001,26 +1001,26 @@ func (pool *TxPool) reset(oldHead, newHead *types.Header) {
 			for remPtr.NumberU64() > add.NumberU64() {
 				discarded = append(discarded, remPtr.Transactions()...)
 				if rem = pool.chain.GetBlock(remPtr.ParentHash(), remPtr.NumberU64()-1); rem == nil {
-					bgmlogs.Error("Unrooted old chain seen by tx pool", "block", oldHead.Number, "hash", oldHead.Hash())
+					bgmlogs.Error("UnblockRooted old chain seen by tx pool", "block", oldHead.Number, "hash", oldHead.Hash())
 					return
 				}
 			}
 			for add.NumberU64() > remPtr.NumberU64() {
 				included = append(included, add.Transactions()...)
 				if add = pool.chain.GetBlock(add.ParentHash(), add.NumberU64()-1); add == nil {
-					bgmlogs.Error("Unrooted new chain seen by tx pool", "block", newHead.Number, "hash", newHead.Hash())
+					bgmlogs.Error("UnblockRooted new chain seen by tx pool", "block", newHead.Number, "hash", newHead.Hash())
 					return
 				}
 			}
 			for remPtr.Hash() != add.Hash() {
 				discarded = append(discarded, remPtr.Transactions()...)
 				if rem = pool.chain.GetBlock(remPtr.ParentHash(), remPtr.NumberU64()-1); rem == nil {
-					bgmlogs.Error("Unrooted old chain seen by tx pool", "block", oldHead.Number, "hash", oldHead.Hash())
+					bgmlogs.Error("UnblockRooted old chain seen by tx pool", "block", oldHead.Number, "hash", oldHead.Hash())
 					return
 				}
 				included = append(included, add.Transactions()...)
 				if add = pool.chain.GetBlock(add.ParentHash(), add.NumberU64()-1); add == nil {
-					bgmlogs.Error("Unrooted new chain seen by tx pool", "block", newHead.Number, "hash", newHead.Hash())
+					bgmlogs.Error("UnblockRooted new chain seen by tx pool", "block", newHead.Number, "hash", newHead.Hash())
 					return
 				}
 			}
@@ -1104,7 +1104,7 @@ func (pool *TxPool) demoteUnexecutables() {
 // addressessByHeartbeat is an account addressess tagged with its last activity timestamp.
 type addressessByHeartbeat struct {
 	addressess   bgmcommon.addressess
-	heartbeat time.Time
+	heartbeat time.time
 }
 
 type addressesssByHeartbeat []addressessByHeartbeat

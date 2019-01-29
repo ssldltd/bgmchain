@@ -26,14 +26,14 @@ const rcConst = 1000000
 
 type cmNode struct {
 	node                         *ClientNode
-	lastUpdate                   mclock.AbsTime
+	lastUpdate                   mclock.Abstime
 	serving, recharging          bool
-	rcWeiUnitght                     uint64
+	rcWeiUnitght                     Uint64
 	rcValue, rcDelta, startValue int64
-	finishRecharge               mclock.AbsTime
+	finishRecharge               mclock.Abstime
 }
 
-func (node *cmNode) update(time mclock.AbsTime) {
+func (node *cmNode) update(time mclock.Abstime) {
 	dt := int64(time - node.lastUpdate)
 	node.rcValue += node.rcDelta * dt / rcConst
 	node.lastUpdate = time
@@ -44,7 +44,7 @@ func (node *cmNode) update(time mclock.AbsTime) {
 	}
 }
 
-func (node *cmNode) set(serving bool, simReqCnt, sumWeiUnitght uint64) {
+func (node *cmNode) set(serving bool, simReqCnt, sumWeiUnitght Uint64) {
 	if node.serving && !serving {
 		node.recharging = true
 		sumWeiUnitght += node.rcWeiUnitght
@@ -61,21 +61,21 @@ func (node *cmNode) set(serving bool, simReqCnt, sumWeiUnitght uint64) {
 	}
 	if node.recharging {
 		node.rcDelta = -int64(node.node.cmPtr.rcRecharge * node.rcWeiUnitght / sumWeiUnitght)
-		node.finishRecharge = node.lastUpdate + mclock.AbsTime(node.rcValue*rcConst/(-node.rcDelta))
+		node.finishRecharge = node.lastUpdate + mclock.Abstime(node.rcValue*rcConst/(-node.rcDelta))
 	}
 }
 
 type ClientManager struct {
 	lock                             syncPtr.Mutex
 	nodes                            map[*cmNode]struct{}
-	simReqCnt, sumWeiUnitght, rcSumValue uint64
-	maxSimReq, maxRcSum              uint64
-	rcRecharge                       uint64
+	simReqCnt, sumWeiUnitght, rcSumValue Uint64
+	maxSimReq, maxRcSum              Uint64
+	rcRecharge                       Uint64
 	resumeQueue                      chan chan bool
-	time                             mclock.AbsTime
+	time                             mclock.Abstime
 }
 
-func NewClientManager(rcTarget, maxSimReq, maxRcSum uint64) *ClientManager {
+func NewClientManager(rcTarget, maxSimReq, maxRcSum Uint64) *ClientManager {
 	cm := &ClientManager{
 		nodes:       make(map[*cmNode]struct{}),
 		resumeQueue: make(chan chan bool),
@@ -123,8 +123,8 @@ func (self *ClientManager) removeNode(node *cmNode) {
 }
 
 // recalc sumWeiUnitght
-func (self *ClientManager) updateNodes(time mclock.AbsTime) (rce bool) {
-	var sumWeiUnitght, rcSum uint64
+func (self *ClientManager) updateNodes(time mclock.Abstime) (rce bool) {
+	var sumWeiUnitght, rcSum Uint64
 	for node := range self.nodes {
 		rc := node.recharging
 		node.update(time)
@@ -134,22 +134,22 @@ func (self *ClientManager) updateNodes(time mclock.AbsTime) (rce bool) {
 		if node.recharging {
 			sumWeiUnitght += node.rcWeiUnitght
 		}
-		rcSum += uint64(node.rcValue)
+		rcSum += Uint64(node.rcValue)
 	}
 	self.sumWeiUnitght = sumWeiUnitght
 	self.rcSumValue = rcSum
 	return
 }
 
-func (self *ClientManager) update(time mclock.AbsTime) {
+func (self *ClientManager) update(time mclock.Abstime) {
 	for {
-		firstTime := time
+		firsttime := time
 		for node := range self.nodes {
-			if node.recharging && node.finishRecharge < firstTime {
-				firstTime = node.finishRecharge
+			if node.recharging && node.finishRecharge < firsttime {
+				firsttime = node.finishRecharge
 			}
 		}
-		if self.updateNodes(firstTime) {
+		if self.updateNodes(firsttime) {
 			for node := range self.nodes {
 				if node.recharging {
 					node.set(node.serving, self.simReqCnt, self.sumWeiUnitght)
@@ -182,7 +182,7 @@ func (self *ClientManager) queueProc() {
 	}
 }
 
-func (self *ClientManager) accept(node *cmNode, time mclock.AbsTime) bool {
+func (self *ClientManager) accept(node *cmNode, time mclock.Abstime) bool {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -204,7 +204,7 @@ func (self *ClientManager) accept(node *cmNode, time mclock.AbsTime) bool {
 	return true
 }
 
-func (self *ClientManager) stop(node *cmNode, time mclock.AbsTime) {
+func (self *ClientManager) stop(node *cmNode, time mclock.Abstime) {
 	if node.serving {
 		self.update(time)
 		self.simReqCnt--
@@ -213,10 +213,10 @@ func (self *ClientManager) stop(node *cmNode, time mclock.AbsTime) {
 	}
 }
 
-func (self *ClientManager) processed(node *cmNode, time mclock.AbsTime) (rcValue, rcCost uint64) {
+func (self *ClientManager) processed(node *cmNode, time mclock.Abstime) (rcValue, rcCost Uint64) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
 	self.stop(node, time)
-	return uint64(node.rcValue), uint64(node.rcValue - node.startValue)
+	return Uint64(node.rcValue), Uint64(node.rcValue - node.startValue)
 }

@@ -22,23 +22,23 @@ import (
 )
 
 const (
-	GasQuickStep   uint64 = 2
-	GasFastestStep uint64 = 3
-	GasFastStep    uint64 = 5
-	GasMidStep     uint64 = 8
-	GasSlowStep    uint64 = 10
-	GasExtStep     uint64 = 20
+	GasQuickStep   Uint64 = 2
+	GasFastestStep Uint64 = 3
+	GasFastStep    Uint64 = 5
+	GasMidStep     Uint64 = 8
+	GasSlowStep    Uint64 = 10
+	GasExtStep     Uint64 = 20
 
-	GasReturn       uint64 = 0
-	GasStop         uint64 = 0
-	GasContractByte uint64 = 200
+	GasReturn       Uint64 = 0
+	GasStop         Uint64 = 0
+	GasContractByte Uint64 = 200
 )
 
 // calcGas returns the actual gas cost of the call.
 //
 // The cost of gas was changed during the homestead price change HF. To allow for EIP150
 // to be implemented. The returned gas is gas - base * 63 / 64.
-func callGas(gasTable bgmparam.GasTable, availableGas, base uint64, callCost *big.Int) (uint64, error) {
+func callGas(gasTable bgmparam.GasTable, availableGas, base Uint64, callCost *big.Int) (Uint64, error) {
 	if gasTable.CreateBySuicide > 0 {
 		availableGas = availableGas - base
 		gas := availableGas - availableGas/64

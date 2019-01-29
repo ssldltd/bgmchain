@@ -37,7 +37,7 @@ type NodeIterator struct {
 	code        []byte      // Source code associated with a contract
 
 	Hash   bgmcommon.Hash // Hash of the current entry being iterated (nil if not standalone)
-	Parent bgmcommon.Hash // Hash of the first full ancestor node (nil if current is the root)
+	Parent bgmcommon.Hash // Hash of the first full ancestor node (nil if current is the blockRoot)
 
 	Error error // Failure set in case of an internal error in the iterator
 }

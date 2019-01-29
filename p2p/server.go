@@ -46,7 +46,7 @@ type conn struct {
 	name  string          // valid after the Protocols handshake
 }
 const (
-	defaultDialTimeout      = 15 * time.Second
+	defaultDialtimeout      = 15 * time.Second
 	refreshPeersInterval    = 30 * time.Second
 	staticPeerCheckInterval = 15 * time.Second
 
@@ -58,10 +58,10 @@ const (
 
 	// Maximum time allowed for reading a complete message.
 	// This is effectively the amount of time a connection can be idle.
-	frameReadTimeout = 30 * time.Second
+	frameReadtimeout = 30 * time.Second
 
 	// Maximum amount of time allowed for writing a complete message.
-	frameWriteTimeout = 20 * time.Second
+	frameWritetimeout = 20 * time.Second
 )
 type transport interface {
 	// The two handshakes.
@@ -321,7 +321,7 @@ func (srv *Server) Start() (err error) {
 		srv.newTransport = newRLPX
 	}
 	if srv.Dialer == nil {
-		srv.Dialer = TCPDialer{&net.Dialer{Timeout: defaultDialTimeout}}
+		srv.Dialer = TCPDialer{&net.Dialer{timeout: defaultDialtimeout}}
 	}
 	srv.quit = make(chan struct{})
 	srv.addpeer = make(chan *conn)
@@ -405,8 +405,8 @@ func (srv *Server) startListening() error {
 }
 
 type dialer interface {
-	newTasks(running int, peers map[discover.NodeID]*Peer, now time.Time) []task
-	taskDone(task, time.Time)
+	newTasks(running int, peers map[discover.NodeID]*Peer, now time.time) []task
+	taskDone(task, time.time)
 	addStatic(*discover.Node)
 	removeStatic(*discover.Node)
 }
@@ -689,7 +689,7 @@ type Server struct {
 	ntab         discoverTable
 	listener     net.Listener
 	ourHandshake *protoHandshake
-	lastLookup   time.Time
+	lastLookup   time.time
 	DiscV5       *discv5.Network
 
 	// These are for Peers, PeerCount (and nothing else).

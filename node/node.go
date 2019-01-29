@@ -206,17 +206,17 @@ func (ptr *Node) Start() error {
 	services := make(map[reflect.Type]Service)
 	for _, constructor := range ptr.serviceFuncs {
 		// Create a new context for the particular service
-		ctx := &ServiceContext{
+		CTX := &ServiceContext{
 			config:         ptr.config,
 			services:       make(map[reflect.Type]Service),
 			EventMux:       ptr.eventmux,
 			AccountManager: ptr.accman,
 		}
 		for kind, s := range services { // copy needed for threaded access
-			ctx.services[kind] = s
+			CTX.services[kind] = s
 		}
 		// Construct and save the service
-		service, err := constructor(ctx)
+		service, err := constructor(CTX)
 		if err != nil {
 			return err
 		}

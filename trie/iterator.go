@@ -86,7 +86,7 @@ func NewIterator(it NodeIterator) *Iterator {
 type nodeIteratorState struct {
 	hash    bgmcommon.Hash // Hash of the node being iterated (nil if not standalone)
 	node    node        // Trie node being iterated
-	parent  bgmcommon.Hash // Hash of the first full ancestor node (nil if current is the root)
+	parent  bgmcommon.Hash // Hash of the first full ancestor node (nil if current is the blockRoot)
 	index   int         // Child to be processed next
 	pathlen int         // Length of the path to this node
 }
@@ -253,10 +253,10 @@ func (it *nodeIterator) nextChild(parent *nodeIteratorState, ancestor bgmcommon.
 func (it *nodeIterator) peek(descend bool) (*nodeIteratorState, *int, []byte, error) {
 	if len(it.stack) == 0 {
 		// Initialize the iterator if we've just started.
-		root := it.trie.Hash()
-		state := &nodeIteratorState{node: it.trie.root, index: -1}
-		if root != emptyRoot {
-			state.hash = root
+		blockRoot := it.trie.Hash()
+		state := &nodeIteratorState{node: it.trie.blockRoot, index: -1}
+		if blockRoot != emptyRoot {
+			state.hash = blockRoot
 		}
 		err := state.resolve(it.trie, nil)
 		return state, nil, nil, err

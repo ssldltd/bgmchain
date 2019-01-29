@@ -22,14 +22,14 @@ import (
 	"math/big"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/event"
 	"github.com/ssldltd/bgmchain/rlp"
 )
 
 // Number of implemented message corresponding to different protocol versions.
-var ProtocolLengths = []uint64{17, 8}
+var ProtocolLengths = []Uint64{17, 8}
 
 const ProtocolMaxMsgSize = 10 * 1024 * 1024 // Maximum cap on the size of a protocol message
 
@@ -37,7 +37,7 @@ const ProtocolMaxMsgSize = 10 * 1024 * 1024 // Maximum cap on the size of a prot
 const (
 	// Protocol messages belonging to bgm/62
 	StatusMsg          = 0x00
-	NewBlockHashesMsg  = 0x01
+	NewhashesMsg  = 0x01
 	TxMsg              = 0x02
 	GetBlockHeadersMsg = 0x03
 	BlockHeadersMsg    = 0x04
@@ -93,36 +93,36 @@ type txPool interface {
 
 	// SubscribeTxPreEvent should return an event subscription of
 	// TxPreEvent and send events to the given channel.
-	SubscribeTxPreEvent(chan<- bgmcore.TxPreEvent) event.Subscription
+	SubscribeTxPreEvent(chan<- bgmCore.TxPreEvent) event.Subscription
 }
 
 // statusData is the network packet for the status message.
 type statusData struct {
 	ProtocolVersion uint32
-	NetworkId       uint64
+	NetworkId       Uint64
 	TD              *big.Int
 	CurrentBlock    bgmcommon.Hash
 	GenesisBlock    bgmcommon.Hash
 }
 
-// newBlockHashesData is the network packet for the block announcements.
-type newBlockHashesData []struct {
+// newhashesData is the network packet for the block announcements.
+type newhashesData []struct {
 	Hash   bgmcommon.Hash // Hash of one particular block being announced
-	Number uint64      // Number of one particular block being announced
+	Number Uint64      // Number of one particular block being announced
 }
 
-// getBlockHeadersData represents a block header query.
+// getBlockHeadersData represents a block Header query.
 type getBlockHeadersData struct {
-	Origin  hashOrNumber // Block from which to retrieve headers
-	Amount  uint64       // Maximum number of headers to retrieve
-	Skip    uint64       // Blocks to skip between consecutive headers
+	Origin  hashOrNumber // Block from which to retrieve Headers
+	Amount  Uint64       // Maximum number of Headers to retrieve
+	Skip    Uint64       // Blocks to skip between consecutive Headers
 	Reverse bool         // Query direction (false = rising towards latest, true = falling towards genesis)
 }
 
 // hashOrNumber is a combined field for specifying an origin block.
 type hashOrNumber struct {
-	Hash   bgmcommon.Hash // Block hash from which to retrieve headers (excludes Number)
-	Number uint64      // Block hash from which to retrieve headers (excludes Hash)
+	Hash   bgmcommon.Hash // Block hash from which to retrieve Headers (excludes Number)
+	Number Uint64      // Block hash from which to retrieve Headers (excludes Hash)
 }
 
 // EncodeRLP is a specialized encoder for hashOrNumber to encode only one of the

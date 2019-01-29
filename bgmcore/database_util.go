@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the BMG Chain project source. If not, you can see <http://www.gnu.org/licenses/> for detail.
 
-package bgmcore
+package bgmCore
 
 import (
 	"bytes"
@@ -24,10 +24,10 @@ import (
 	"math/big"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/bgmlogs"
-	"github.com/ssldltd/bgmchain/metrics"
+	"github.com/ssldltd/bgmchain/metics"
 	"github.com/ssldltd/bgmchain/bgmparam"
 	"github.com/ssldltd/bgmchain/rlp"
 )
@@ -47,14 +47,14 @@ var (
 	headFastKey   = []byte("LastFast")
 
 	// Data item prefixes (use single byte to avoid mixing data types, avoid `i`).
-	headerPrefix        = []byte("h") // headerPrefix + num (uint64 big endian) + hash -> header
-	tdSuffix            = []byte("t") // headerPrefix + num (uint64 big endian) + hash + tdSuffix -> td
-	numSuffix           = []byte("n") // headerPrefix + num (uint64 big endian) + numSuffix -> hash
-	blockHashPrefix     = []byte("H") // blockHashPrefix + hash -> num (uint64 big endian)
-	bodyPrefix          = []byte("b") // bodyPrefix + num (uint64 big endian) + hash -> block body
-	blockReceiptsPrefix = []byte("r") // blockReceiptsPrefix + num (uint64 big endian) + hash -> block receipts
+	HeaderPrefix        = []byte("h") // HeaderPrefix + num (Uint64 big endian) + hash -> Header
+	tdSuffix            = []byte("t") // HeaderPrefix + num (Uint64 big endian) + hash + tdSuffix -> td
+	numSuffix           = []byte("n") // HeaderPrefix + num (Uint64 big endian) + numSuffix -> hash
+	blockHashPrefix     = []byte("H") // blockHashPrefix + hash -> num (Uint64 big endian)
+	bodyPrefix          = []byte("b") // bodyPrefix + num (Uint64 big endian) + hash -> block body
+	blockReceiptsPrefix = []byte("r") // blockReceiptsPrefix + num (Uint64 big endian) + hash -> block receipts
 	lookupPrefix        = []byte("l") // lookupPrefix + hash -> transaction/receipt lookup metadata
-	bloomBitsPrefix     = []byte("B") // bloomBitsPrefix + bit (uint16 big endian) + section (uint64 big endian) + hash -> bloom bits
+	bloomBitsPrefix     = []byte("B") // bloomBitsPrefix + bit (uint16 big endian) + section (Uint64 big endian) + hash -> bloom bits
 
 	preimagePrefix = "secure-key-"              // preimagePrefix + hash -> preimage
 	configPrefix   = []byte("bgmchain-config-") // config prefix for the db
@@ -68,20 +68,20 @@ var (
 
 	ErrChainConfigNotFound = errors.New("ChainConfig not found") // general config not found error
 
-	preimageCounter    = metrics.NewCounter("db/preimage/total")
-	preimageHitCounter = metrics.NewCounter("db/preimage/hits")
+	preimageCounter    = metics.NewCounter("db/preimage/total")
+	preimageHitCounter = metics.NewCounter("db/preimage/hits")
 )
 
 // a transaction or receipt given only its hashPtr.
 type TxLookupEntry struct {
-	BlockHash  bgmcommon.Hash
-	BlockIndex uint64
-	Index      uint64
+	hash  bgmcommon.Hash
+	BlockIndex Uint64
+	Index      Uint64
 }
 
 // GetTxLookupEntry retrieves the positional metadata associated with a transaction
 // hash to allow retrieving the transaction or receipt by hashPtr.
-func GetTxLookupEntry(db DatabaseReader, hash bgmcommon.Hash) (bgmcommon.Hash, uint64, uint64) {
+func GetTxLookupEntry(db DatabaseReader, hash bgmcommon.Hash) (bgmcommon.Hash, Uint64, Uint64) {
 	// Load the positional metadata from disk and bail if it fails
 	data, _ := dbPtr.Get(append(lookupPrefix, hashPtr.Bytes()...))
 	if len(data) == 0 {
@@ -93,11 +93,11 @@ func GetTxLookupEntry(db DatabaseReader, hash bgmcommon.Hash) (bgmcommon.Hash, u
 		bgmlogs.Error("Invalid lookup entry RLP", "hash", hash, "err", err)
 		return bgmcommon.Hash{}, 0, 0
 	}
-	return entry.BlockHash, entry.BlockIndex, entry.Index
+	return entry.hash, entry.BlockIndex, entry.Index
 }
 
 // GetTransaction retrieves a specific transaction from the database, along with
-func GetTransaction(db DatabaseReader, hash bgmcommon.Hash) (*types.Transaction, bgmcommon.Hash, uint64, uint64) {
+func GetTransaction(db DatabaseReader, hash bgmcommon.Hash) (*types.Transaction, bgmcommon.Hash, Uint64, Uint64) {
 	// Retrieve the lookup metadata and resolve the transaction from the body
 	blockHash, blockNumber, txIndex := GetTxLookupEntry(db, hash)
 
@@ -127,31 +127,31 @@ func GetTransaction(db DatabaseReader, hash bgmcommon.Hash) (*types.Transaction,
 	if err := rlp.DecodeBytes(data, &entry); err != nil {
 		return nil, bgmcommon.Hash{}, 0, 0
 	}
-	return &tx, entry.BlockHash, entry.BlockIndex, entry.Index
+	return &tx, entry.hash, entry.BlockIndex, entry.Index
 }
 
 
-// encodeBlockNumber encodes a block number as big endian uint64
-func encodeBlockNumber(number uint64) []byte {
+// encodenumber encodes a block number as big endian Uint64
+func encodenumber(number Uint64) []byte {
 	enc := make([]byte, 8)
 	binary.BigEndian.PutUint64(enc, number)
 	return enc
 }
 
 // GetCanonicalHash retrieves a hash assigned to a canonical block number.
-func GetCanonicalHash(db DatabaseReader, number uint64) bgmcommon.Hash {
-	data, _ := dbPtr.Get(append(append(headerPrefix, encodeBlockNumber(number)...), numSuffix...))
+func GetCanonicalHash(db DatabaseReader, number Uint64) bgmcommon.Hash {
+	data, _ := dbPtr.Get(append(append(HeaderPrefix, encodenumber(number)...), numSuffix...))
 	if len(data) == 0 {
 		return bgmcommon.Hash{}
 	}
 	return bgmcommon.BytesToHash(data)
 }
 
-// missingNumber is returned by GetBlockNumber if no header with the
-const missingNumber = uint64(0xffffffffffffffff)
+// missingNumber is returned by Getnumber if no Header with the
+const missingNumber = Uint64(0xffffffffffffffff)
 
-// if the corresponding header is present in the database
-func GetBlockNumber(db DatabaseReader, hash bgmcommon.Hash) uint64 {
+// if the corresponding Header is present in the database
+func Getnumber(db DatabaseReader, hash bgmcommon.Hash) Uint64 {
 	data, _ := dbPtr.Get(append(blockHashPrefix, hashPtr.Bytes()...))
 	if len(data) != 8 {
 		return missingNumber
@@ -169,8 +169,8 @@ func GetHeadHeaderHash(db DatabaseReader) bgmcommon.Hash {
 	return bgmcommon.BytesToHash(data)
 }
 
-// GetHeadBlockHash retrieves the hash of the current canonical head block.
-func GetHeadBlockHash(db DatabaseReader) bgmcommon.Hash {
+// GetHeadhash retrieves the hash of the current canonical head block.
+func GetHeadhash(db DatabaseReader) bgmcommon.Hash {
 	data, _ := dbPtr.Get(headBlockKey)
 	if len(data) == 0 {
 		return bgmcommon.Hash{}
@@ -180,7 +180,7 @@ func GetHeadBlockHash(db DatabaseReader) bgmcommon.Hash {
 
 // whereas the last block hash is only updated upon a full block import, the last
 // fast hash is updated when importing pre-processed blocks.
-func GetHeadFastBlockHash(db DatabaseReader) bgmcommon.Hash {
+func GetHeadFasthash(db DatabaseReader) bgmcommon.Hash {
 	data, _ := dbPtr.Get(headFastKey)
 	if len(data) == 0 {
 		return bgmcommon.Hash{}
@@ -188,42 +188,42 @@ func GetHeadFastBlockHash(db DatabaseReader) bgmcommon.Hash {
 	return bgmcommon.BytesToHash(data)
 }
 
-// GetHeaderRLP retrieves a block header in its raw RLP database encoding, or nil
-func GetHeaderRLP(db DatabaseReader, hash bgmcommon.Hash, number uint64) rlp.RawValue {
-	data, _ := dbPtr.Get(headerKey(hash, number))
+// GetHeaderRLP retrieves a block Header in its raw RLP database encoding, or nil
+func GetHeaderRLP(db DatabaseReader, hash bgmcommon.Hash, number Uint64) rlp.RawValue {
+	data, _ := dbPtr.Get(HeaderKey(hash, number))
 	return data
 }
 
-// GetHeader retrieves the block header corresponding to the hash, nil if none
-func GetHeader(db DatabaseReader, hash bgmcommon.Hash, number uint64) *types.Header {
+// GetHeader retrieves the block Header corresponding to the hash, nil if none
+func GetHeader(db DatabaseReader, hash bgmcommon.Hash, number Uint64) *types.Header {
 	data := GetHeaderRLP(db, hash, number)
 	if len(data) == 0 {
 		return nil
 	}
-	header := new(types.Header)
-	if err := rlp.Decode(bytes.NewReader(data), header); err != nil {
-		bgmlogs.Error("Invalid block header RLP", "hash", hash, "err", err)
+	Header := new(types.Header)
+	if err := rlp.Decode(bytes.NewReader(data), Header); err != nil {
+		bgmlogs.Error("Invalid block Header RLP", "hash", hash, "err", err)
 		return nil
 	}
-	return header
+	return Header
 }
 
 // GetBodyRLP retrieves the block body (transactions and uncles) in RLP encoding.
-func GetBodyRLP(db DatabaseReader, hash bgmcommon.Hash, number uint64) rlp.RawValue {
+func GetBodyRLP(db DatabaseReader, hash bgmcommon.Hash, number Uint64) rlp.RawValue {
 	data, _ := dbPtr.Get(blockBodyKey(hash, number))
 	return data
 }
 
-func headerKey(hash bgmcommon.Hash, number uint64) []byte {
-	return append(append(headerPrefix, encodeBlockNumber(number)...), hashPtr.Bytes()...)
+func HeaderKey(hash bgmcommon.Hash, number Uint64) []byte {
+	return append(append(HeaderPrefix, encodenumber(number)...), hashPtr.Bytes()...)
 }
 
-func blockBodyKey(hash bgmcommon.Hash, number uint64) []byte {
-	return append(append(bodyPrefix, encodeBlockNumber(number)...), hashPtr.Bytes()...)
+func blockBodyKey(hash bgmcommon.Hash, number Uint64) []byte {
+	return append(append(bodyPrefix, encodenumber(number)...), hashPtr.Bytes()...)
 }
 
 // hash, nil if none found.
-func GetBody(db DatabaseReader, hash bgmcommon.Hash, number uint64) *types.Body {
+func GetBody(db DatabaseReader, hash bgmcommon.Hash, number Uint64) *types.Body {
 	data := GetBodyRLP(db, hash, number)
 	if len(data) == 0 {
 		return nil
@@ -237,8 +237,8 @@ func GetBody(db DatabaseReader, hash bgmcommon.Hash, number uint64) *types.Body 
 }
 
 // GetTd retrieves a block's total difficulty corresponding to the hash, nil if
-func GetTd(db DatabaseReader, hash bgmcommon.Hash, number uint64) *big.Int {
-	data, _ := dbPtr.Get(append(append(append(headerPrefix, encodeBlockNumber(number)...), hash[:]...), tdSuffix...))
+func GetTd(db DatabaseReader, hash bgmcommon.Hash, number Uint64) *big.Int {
+	data, _ := dbPtr.Get(append(append(append(HeaderPrefix, encodenumber(number)...), hash[:]...), tdSuffix...))
 	if len(data) == 0 {
 		return nil
 	}
@@ -251,10 +251,10 @@ func GetTd(db DatabaseReader, hash bgmcommon.Hash, number uint64) *big.Int {
 }
 
 // GetBlock retrieves an entire block corresponding to the hash, assembling it
-func GetBlock(db DatabaseReader, hash bgmcommon.Hash, number uint64) *types.Block {
-	// Retrieve the block header and body contents
-	header := GetHeader(db, hash, number)
-	if header == nil {
+func GetBlock(db DatabaseReader, hash bgmcommon.Hash, number Uint64) *types.Block {
+	// Retrieve the block Header and body contents
+	Header := GetHeader(db, hash, number)
+	if Header == nil {
 		return nil
 	}
 	body := GetBody(db, hash, number)
@@ -263,15 +263,15 @@ func GetBlock(db DatabaseReader, hash bgmcommon.Hash, number uint64) *types.Bloc
 	}
 
 	// Reassemble the block and return
-	block := types.NewBlockWithHeader(header).WithBody(body.Transactions, body.Uncles)
+	block := types.NewBlockWithHeader(Header).WithBody(body.Transactions, body.Uncles)
 
 	// add dposContext to block
-	block.DposContext = getDposContextTrie(dbPtr.(bgmdbPtr.Database), header)
+	block.DposContext = getDposContextTrie(dbPtr.(bgmdbPtr.Database), Header)
 	return block
 }
 
-func getDposContextTrie(db bgmdbPtr.Database, headerPtr *types.Header) *types.DposContext {
-	dposContestProto := headerPtr.DposContext
+func getDposContextTrie(db bgmdbPtr.Database, HeaderPtr *types.Header) *types.DposContext {
+	dposContestProto := HeaderPtr.DposContext
 	if dposContestProto != nil {
 		dposContext, err := types.NewDposContextFromProto(db, dposContestProto)
 		if err != nil {
@@ -283,8 +283,8 @@ func getDposContextTrie(db bgmdbPtr.Database, headerPtr *types.Header) *types.Dp
 }
 
 // GetBlockReceipts retrieves the receipts generated by the transactions included
-func GetBlockReceipts(db DatabaseReader, hash bgmcommon.Hash, number uint64) types.Receipts {
-	data, _ := dbPtr.Get(append(append(blockReceiptsPrefix, encodeBlockNumber(number)...), hash[:]...))
+func GetBlockReceipts(db DatabaseReader, hash bgmcommon.Hash, number Uint64) types.Receipts {
+	data, _ := dbPtr.Get(append(append(blockReceiptsPrefix, encodenumber(number)...), hash[:]...))
 	if len(data) == 0 {
 		return nil
 	}
@@ -303,7 +303,7 @@ func GetBlockReceipts(db DatabaseReader, hash bgmcommon.Hash, number uint64) typ
 
 // GetReceipt retrieves a specific transaction receipt from the database, along with
 // its added positional metadata.
-func GetReceipt(db DatabaseReader, hash bgmcommon.Hash) (*types.Receipt, bgmcommon.Hash, uint64, uint64) {
+func GetReceipt(db DatabaseReader, hash bgmcommon.Hash) (*types.Receipt, bgmcommon.Hash, Uint64, Uint64) {
 	// Retrieve the lookup metadata and resolve the receipt from the receipts
 	blockHash, blockNumber, receiptIndex := GetTxLookupEntry(db, hash)
 
@@ -330,7 +330,7 @@ func GetReceipt(db DatabaseReader, hash bgmcommon.Hash) (*types.Receipt, bgmcomm
 
 // GetBloomBits retrieves the compressed bloom bit vector belonging to the given
 // section and bit index from the.
-func GetBloomBits(db DatabaseReader, bit uint, section uint64, head bgmcommon.Hash) ([]byte, error) {
+func GetBloomBits(db DatabaseReader, bit uint, section Uint64, head bgmcommon.Hash) ([]byte, error) {
 	key := append(append(bloomBitsPrefix, make([]byte, 10)...), head.Bytes()...)
 
 	binary.BigEndian.PutUint16(key[1:], uint16(bit))
@@ -340,60 +340,60 @@ func GetBloomBits(db DatabaseReader, bit uint, section uint64, head bgmcommon.Ha
 }
 
 // WriteCanonicalHash stores the canonical hash for the given block number.
-func WriteCanonicalHash(db bgmdbPtr.Putter, hash bgmcommon.Hash, number uint64) error {
-	key := append(append(headerPrefix, encodeBlockNumber(number)...), numSuffix...)
+func WriteCanonicalHash(db bgmdbPtr.Putter, hash bgmcommon.Hash, number Uint64) error {
+	key := append(append(HeaderPrefix, encodenumber(number)...), numSuffix...)
 	if err := dbPtr.Put(key, hashPtr.Bytes()); err != nil {
 		bgmlogs.Crit("Failed to store number to hash mapping", "err", err)
 	}
 	return nil
 }
 
-// WriteHeadHeaderHash stores the head header's hashPtr.
+// WriteHeadHeaderHash stores the head Header's hashPtr.
 func WriteHeadHeaderHash(db bgmdbPtr.Putter, hash bgmcommon.Hash) error {
 	if err := dbPtr.Put(headHeaderKey, hashPtr.Bytes()); err != nil {
-		bgmlogs.Crit("Failed to store last header's hash", "err", err)
+		bgmlogs.Crit("Failed to store last Header's hash", "err", err)
 	}
 	return nil
 }
 
-// WriteHeadBlockHash stores the head block's hashPtr.
-func WriteHeadBlockHash(db bgmdbPtr.Putter, hash bgmcommon.Hash) error {
+// WriteHeadhash stores the head block's hashPtr.
+func WriteHeadhash(db bgmdbPtr.Putter, hash bgmcommon.Hash) error {
 	if err := dbPtr.Put(headBlockKey, hashPtr.Bytes()); err != nil {
 		bgmlogs.Crit("Failed to store last block's hash", "err", err)
 	}
 	return nil
 }
 
-// WriteHeadFastBlockHash stores the fast head block's hashPtr.
-func WriteHeadFastBlockHash(db bgmdbPtr.Putter, hash bgmcommon.Hash) error {
+// WriteHeadFasthash stores the fast head block's hashPtr.
+func WriteHeadFasthash(db bgmdbPtr.Putter, hash bgmcommon.Hash) error {
 	if err := dbPtr.Put(headFastKey, hashPtr.Bytes()); err != nil {
 		bgmlogs.Crit("Failed to store last fast block's hash", "err", err)
 	}
 	return nil
 }
 
-// WriteHeader serializes a block header into the database.
-func WriteHeader(db bgmdbPtr.Putter, headerPtr *types.Header) error {
-	data, err := rlp.EncodeToBytes(header)
+// WriteHeader serializes a block Header into the database.
+func WriteHeader(db bgmdbPtr.Putter, HeaderPtr *types.Header) error {
+	data, err := rlp.EncodeToBytes(Header)
 	if err != nil {
 		return err
 	}
-	hash := headerPtr.Hash().Bytes()
-	num := headerPtr.Number.Uint64()
-	encNum := encodeBlockNumber(num)
+	hash := HeaderPtr.Hash().Bytes()
+	num := HeaderPtr.Number.Uint64()
+	encNum := encodenumber(num)
 	key := append(blockHashPrefix, hashPtr...)
 	if err := dbPtr.Put(key, encNum); err != nil {
 		bgmlogs.Crit("Failed to store hash to number mapping", "err", err)
 	}
-	key = append(append(headerPrefix, encNumPtr...), hashPtr...)
+	key = append(append(HeaderPrefix, encNumPtr...), hashPtr...)
 	if err := dbPtr.Put(key, data); err != nil {
-		bgmlogs.Crit("Failed to store header", "err", err)
+		bgmlogs.Crit("Failed to store Header", "err", err)
 	}
 	return nil
 }
 
 // WriteBody serializes the body of a block into the database.
-func WriteBody(db bgmdbPtr.Putter, hash bgmcommon.Hash, number uint64, body *types.Body) error {
+func WriteBody(db bgmdbPtr.Putter, hash bgmcommon.Hash, number Uint64, body *types.Body) error {
 	data, err := rlp.EncodeToBytes(body)
 	if err != nil {
 		return err
@@ -402,8 +402,8 @@ func WriteBody(db bgmdbPtr.Putter, hash bgmcommon.Hash, number uint64, body *typ
 }
 
 // WriteBodyRLP writes a serialized body of a block into the database.
-func WriteBodyRLP(db bgmdbPtr.Putter, hash bgmcommon.Hash, number uint64, rlp rlp.RawValue) error {
-	key := append(append(bodyPrefix, encodeBlockNumber(number)...), hashPtr.Bytes()...)
+func WriteBodyRLP(db bgmdbPtr.Putter, hash bgmcommon.Hash, number Uint64, rlp rlp.RawValue) error {
+	key := append(append(bodyPrefix, encodenumber(number)...), hashPtr.Bytes()...)
 	if err := dbPtr.Put(key, rlp); err != nil {
 		bgmlogs.Crit("Failed to store block body", "err", err)
 	}
@@ -411,25 +411,25 @@ func WriteBodyRLP(db bgmdbPtr.Putter, hash bgmcommon.Hash, number uint64, rlp rl
 }
 
 // WriteTd serializes the total difficulty of a block into the database.
-func WriteTd(db bgmdbPtr.Putter, hash bgmcommon.Hash, number uint64, td *big.Int) error {
+func WriteTd(db bgmdbPtr.Putter, hash bgmcommon.Hash, number Uint64, td *big.Int) error {
 	data, err := rlp.EncodeToBytes(td)
 	if err != nil {
 		return err
 	}
-	key := append(append(append(headerPrefix, encodeBlockNumber(number)...), hashPtr.Bytes()...), tdSuffix...)
+	key := append(append(append(HeaderPrefix, encodenumber(number)...), hashPtr.Bytes()...), tdSuffix...)
 	if err := dbPtr.Put(key, data); err != nil {
 		bgmlogs.Crit("Failed to store block total difficulty", "err", err)
 	}
 	return nil
 }
 
-// WriteBlock serializes a block into the database, header and body separately.
+// WriteBlock serializes a block into the database, Header and body separately.
 func WriteBlock(db bgmdbPtr.Putter, block *types.Block) error {
 	// Store the body first to retain database consistency
 	if err := WriteBody(db, block.Hash(), block.NumberU64(), block.Body()); err != nil {
 		return err
 	}
-	// Store the header too, signaling full block ownership
+	// Store the Header too, signaling full block ownership
 	if err := WriteHeader(db, block.Header()); err != nil {
 		return err
 	}
@@ -439,7 +439,7 @@ func WriteBlock(db bgmdbPtr.Putter, block *types.Block) error {
 // WriteBlockReceipts stores all the transaction receipts belonging to a block
 // as a single receipt slice. This is used during chain reorganisations for
 // rescheduling dropped transactions.
-func WriteBlockReceipts(db bgmdbPtr.Putter, hash bgmcommon.Hash, number uint64, receipts types.Receipts) error {
+func WriteBlockReceipts(db bgmdbPtr.Putter, hash bgmcommon.Hash, number Uint64, receipts types.Receipts) error {
 	// Convert the receipts into their storage form and serialize them
 	storageReceipts := make([]*types.ReceiptForStorage, len(receipts))
 	for i, receipt := range receipts {
@@ -450,7 +450,7 @@ func WriteBlockReceipts(db bgmdbPtr.Putter, hash bgmcommon.Hash, number uint64, 
 		return err
 	}
 	// Store the flattened receipt slice
-	key := append(append(blockReceiptsPrefix, encodeBlockNumber(number)...), hashPtr.Bytes()...)
+	key := append(append(blockReceiptsPrefix, encodenumber(number)...), hashPtr.Bytes()...)
 	if err := dbPtr.Put(key, bytes); err != nil {
 		bgmlogs.Crit("Failed to store block receipts", "err", err)
 	}
@@ -463,9 +463,9 @@ func WriteTxLookupEntries(db bgmdbPtr.Putter, block *types.Block) error {
 	// Iterate over each transaction and encode its metadata
 	for i, tx := range block.Transactions() {
 		entry := TxLookupEntry{
-			BlockHash:  block.Hash(),
+			hash:  block.Hash(),
 			BlockIndex: block.NumberU64(),
-			Index:      uint64(i),
+			Index:      Uint64(i),
 		}
 		data, err := rlp.EncodeToBytes(entry)
 		if err != nil {
@@ -480,7 +480,7 @@ func WriteTxLookupEntries(db bgmdbPtr.Putter, block *types.Block) error {
 
 // WriteBloomBits writes the compressed bloom bits vector belonging to the given
 // section and bit index.
-func WriteBloomBits(db bgmdbPtr.Putter, bit uint, section uint64, head bgmcommon.Hash, bits []byte) {
+func WriteBloomBits(db bgmdbPtr.Putter, bit uint, section Uint64, head bgmcommon.Hash, bits []byte) {
 	key := append(append(bloomBitsPrefix, make([]byte, 10)...), head.Bytes()...)
 
 	binary.BigEndian.PutUint16(key[1:], uint16(bit))
@@ -492,28 +492,28 @@ func WriteBloomBits(db bgmdbPtr.Putter, bit uint, section uint64, head bgmcommon
 }
 
 // DeleteCanonicalHash removes the number to hash canonical mapping.
-func DeleteCanonicalHash(db DatabaseDeleter, number uint64) {
-	dbPtr.Delete(append(append(headerPrefix, encodeBlockNumber(number)...), numSuffix...))
+func DeleteCanonicalHash(db DatabaseDeleter, number Uint64) {
+	dbPtr.Delete(append(append(HeaderPrefix, encodenumber(number)...), numSuffix...))
 }
 
-// DeleteHeader removes all block header data associated with a hashPtr.
-func DeleteHeader(db DatabaseDeleter, hash bgmcommon.Hash, number uint64) {
+// DeleteHeader removes all block Header data associated with a hashPtr.
+func DeleteHeader(db DatabaseDeleter, hash bgmcommon.Hash, number Uint64) {
 	dbPtr.Delete(append(blockHashPrefix, hashPtr.Bytes()...))
-	dbPtr.Delete(append(append(headerPrefix, encodeBlockNumber(number)...), hashPtr.Bytes()...))
+	dbPtr.Delete(append(append(HeaderPrefix, encodenumber(number)...), hashPtr.Bytes()...))
 }
 
 // DeleteBody removes all block body data associated with a hashPtr.
-func DeleteBody(db DatabaseDeleter, hash bgmcommon.Hash, number uint64) {
-	dbPtr.Delete(append(append(bodyPrefix, encodeBlockNumber(number)...), hashPtr.Bytes()...))
+func DeleteBody(db DatabaseDeleter, hash bgmcommon.Hash, number Uint64) {
+	dbPtr.Delete(append(append(bodyPrefix, encodenumber(number)...), hashPtr.Bytes()...))
 }
 
 // DeleteTd removes all block total difficulty data associated with a hashPtr.
-func DeleteTd(db DatabaseDeleter, hash bgmcommon.Hash, number uint64) {
-	dbPtr.Delete(append(append(append(headerPrefix, encodeBlockNumber(number)...), hashPtr.Bytes()...), tdSuffix...))
+func DeleteTd(db DatabaseDeleter, hash bgmcommon.Hash, number Uint64) {
+	dbPtr.Delete(append(append(append(HeaderPrefix, encodenumber(number)...), hashPtr.Bytes()...), tdSuffix...))
 }
 
 // DeleteBlock removes all block data associated with a hashPtr.
-func DeleteBlock(db DatabaseDeleter, hash bgmcommon.Hash, number uint64) {
+func DeleteBlock(db DatabaseDeleter, hash bgmcommon.Hash, number Uint64) {
 	DeleteBlockReceipts(db, hash, number)
 	DeleteHeader(db, hash, number)
 	DeleteBody(db, hash, number)
@@ -521,8 +521,8 @@ func DeleteBlock(db DatabaseDeleter, hash bgmcommon.Hash, number uint64) {
 }
 
 // DeleteBlockReceipts removes all receipt data associated with a block hashPtr.
-func DeleteBlockReceipts(db DatabaseDeleter, hash bgmcommon.Hash, number uint64) {
-	dbPtr.Delete(append(append(blockReceiptsPrefix, encodeBlockNumber(number)...), hashPtr.Bytes()...))
+func DeleteBlockReceipts(db DatabaseDeleter, hash bgmcommon.Hash, number Uint64) {
+	dbPtr.Delete(append(append(blockReceiptsPrefix, encodenumber(number)...), hashPtr.Bytes()...))
 }
 
 // DeleteTxLookupEntry removes all transaction data associated with a hashPtr.
@@ -537,7 +537,7 @@ func PreimageTable(db bgmdbPtr.Database) bgmdbPtr.Database {
 
 // WritePreimages writes the provided set of preimages to the database. `number` is the
 // current block number, and is used for debug messages only.
-func WritePreimages(db bgmdbPtr.Database, number uint64, preimages map[bgmcommon.Hash][]byte) error {
+func WritePreimages(db bgmdbPtr.Database, number Uint64, preimages map[bgmcommon.Hash][]byte) error {
 	table := PreimageTable(db)
 	batch := table.NewBatch()
 	hitCount := 0
@@ -601,7 +601,7 @@ func GetChainConfig(db DatabaseReader, hash bgmcommon.Hash) (*bgmparam.ChainConf
 	return &config, nil
 }
 
-// FindbgmcommonAncestor returns the last bgmcommon ancestor of two block headers
+// FindbgmcommonAncestor returns the last bgmcommon ancestor of two block Headers
 func FindbgmcommonAncestor(db DatabaseReader, a, bPtr *types.Header) *types.Header {
 	for bn := bPtr.Number.Uint64(); a.Number.Uint64() > bn; {
 		a = GetHeader(db, a.ParentHash, a.Number.Uint64()-1)

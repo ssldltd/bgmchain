@@ -12,7 +12,7 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with the BMG Chain project source. If not, you can see <http://www.gnu.org/licenses/> for detail.
-package bgmcore
+package bgmCore
 
 import (
 	"fmt"
@@ -22,9 +22,9 @@ import (
 	"github.com/ssldltd/bgmchain/consensus/dpos"
 	"github.com/ssldltd/bgmchain/consensus/bgmash"
 	"github.com/ssldltd/bgmchain/consensus/misc"
-	"github.com/ssldltd/bgmchain/bgmcore/state"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
-	"github.com/ssldltd/bgmchain/bgmcore/vm"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/vm"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/bgmparam"
 )
@@ -33,7 +33,7 @@ type BlockGen struct {
 	i       int
 	parent  *types.Block
 	chain   []*types.Block
-	header  *types.Header
+	Header  *types.Header
 	statedbPtr *state.StateDB
 
 	gasPool  *GasPool
@@ -49,14 +49,14 @@ var (
 	forkSeed      = 2
 )
 
-// OffsetTime modifies the time instance of a block, implicitly changing its
+// Offsettime modifies the time instance of a block, implicitly changing its
 // associated difficulty. It's useful to test scenarios where forking is not
-func (bPtr *BlockGen) OffsetTime(seconds int64) {
-	bPtr.headerPtr.Time.Add(bPtr.headerPtr.Time, new(big.Int).SetInt64(seconds))
-	if bPtr.headerPtr.Time.Cmp(bPtr.parent.Header().Time) <= 0 {
+func (bPtr *BlockGen) Offsettime(seconds int64) {
+	bPtr.HeaderPtr.time.Add(bPtr.HeaderPtr.time, new(big.Int).SetInt64(seconds))
+	if bPtr.HeaderPtr.time.Cmp(bPtr.parent.Header().time) <= 0 {
 		panic("Fatal: block time out of range")
 	}
-	bPtr.headerPtr.Difficulty = bgmashPtr.CalcDifficulty(bPtr.config, bPtr.headerPtr.Time.Uint64(), bPtr.parent.Header())
+	bPtr.HeaderPtr.Difficulty = bgmashPtr.CalcDifficulty(bPtr.config, bPtr.HeaderPtr.time.Uint64(), bPtr.parent.Header())
 }
 // Blocks created by GenerateChain do not contain valid proof of work
 // values. Inserting them into BlockChain requires use of FakePow or
@@ -66,8 +66,8 @@ func GenerateChain(config *bgmparam.ChainConfig, parent *types.Block, db bgmdbPt
 		config = bgmparam.DposChainConfig
 	}
 	blocks, receipts := make(types.Blocks, n), make([]types.Receipts, n)
-	genblock := func(i int, hPtr *types.headerPtr, statedbPtr *state.StateDB) (*types.Block, types.Receipts) {
-		b := &BlockGen{parent: parent, i: i, chain: blocks, header: h, statedb: statedb, config: config}
+	genblock := func(i int, hPtr *types.HeaderPtr, statedbPtr *state.StateDB) (*types.Block, types.Receipts) {
+		b := &BlockGen{parent: parent, i: i, chain: blocks, Header: h, statedb: statedb, config: config}
 		// Mutate the state and block according to any hard-fork specs
 		if daoBlock := config.DAOForkBlock; daoBlock != nil {
 			limit := new(big.Int).Add(daoBlock, bgmparam.DAOForkExtraRange)
@@ -85,11 +85,11 @@ func GenerateChain(config *bgmparam.ChainConfig, parent *types.Block, db bgmdbPt
 			gen(i, b)
 		}
 		dpos.AccumulateRewards(config, statedb, h, bPtr.uncles)
-		root, err := statedb.commitTo(db, config.IsEIP158(hPtr.Number))
+		blockRoot, err := statedb.commitTo(db, config.IsEIP158(hPtr.Number))
 		if err != nil {
 			panic(fmt.Sprintf("state write error: %v", err))
 		}
-		hPtr.Root = root
+		hPtr.Root = blockRoot
 		hPtr.DposContext = parent.Header().DposContext
 		return types.NewBlock(h, bPtr.txs, bPtr.uncles, bPtr.receipts), bPtr.receipts
 	}
@@ -98,8 +98,8 @@ func GenerateChain(config *bgmparam.ChainConfig, parent *types.Block, db bgmdbPt
 		if err != nil {
 			panic(err)
 		}
-		header := makeHeader(config, parent, statedb)
-		block, receipt := genblock(i, headerPtr, statedb)
+		Header := makeHeader(config, parent, statedb)
+		block, receipt := genblock(i, HeaderPtr, statedb)
 		blocks[i] = block
 		receipts[i] = receipt
 		parent = block
@@ -116,13 +116,13 @@ func (bPtr *BlockGen) SetCoinbase(addr bgmcommon.Address) {
 		}
 		panic("Fatal: coinbase can only be set once")
 	}
-	bPtr.headerPtr.Coinbase = addr
-	bPtr.gasPool = new(GasPool).AddGas(bPtr.headerPtr.GasLimit)
+	bPtr.HeaderPtr.Coinbase = addr
+	bPtr.gasPool = new(GasPool).AddGas(bPtr.HeaderPtr.GasLimit)
 }
 
 // SetExtra sets the extra data field of the generated block.
 func (bPtr *BlockGen) SetExtra(data []byte) {
-	bPtr.headerPtr.Extra = data
+	bPtr.HeaderPtr.Extra = data
 }
 
 // been set, the block's coinbase is set to the zero address.
@@ -135,7 +135,7 @@ func (bPtr *BlockGen) AddTx(tx *types.Transaction) {
 		bPtr.SetCoinbase(bgmcommon.Address{})
 	}
 	bPtr.statedbPtr.Prepare(tx.Hash(), bgmcommon.Hash{}, len(bPtr.txs))
-	receipt, _, err := ApplyTransaction(bPtr.config, nil, nil, &bPtr.headerPtr.Coinbase, bPtr.gasPool, bPtr.statedb, bPtr.headerPtr, tx, bPtr.headerPtr.GasUsed, vmPtr.Config{})
+	receipt, _, err := ApplyTransaction(bPtr.config, nil, nil, &bPtr.HeaderPtr.Coinbase, bPtr.gasPool, bPtr.statedb, bPtr.HeaderPtr, tx, bPtr.HeaderPtr.GasUsed, vmPtr.Config{})
 	if err != nil {
 		panic(err)
 	}
@@ -145,7 +145,7 @@ func (bPtr *BlockGen) AddTx(tx *types.Transaction) {
 
 // Number returns the block number of the block being generated.
 func (bPtr *BlockGen) Number() *big.Int {
-	return new(big.Int).Set(bPtr.headerPtr.Number)
+	return new(big.Int).Set(bPtr.HeaderPtr.Number)
 }
 
 // backing transaction.
@@ -157,14 +157,14 @@ func (bPtr *BlockGen) AddUncheckedReceipt(receipt *types.Receipt) {
 }
 
 // account at addr. It panics if the account does not exist.
-func (bPtr *BlockGen) TxNonce(addr bgmcommon.Address) uint64 {
+func (bPtr *BlockGen) TxNonce(addr bgmcommon.Address) Uint64 {
 	if !bPtr.statedbPtr.Exist(addr) {
 		panic("Fatal: account does not exist")
 	}
 	return bPtr.statedbPtr.GetNonce(addr)
 }
 
-// AddUncle adds an uncle header to the generated block.
+// AddUncle adds an uncle Header to the generated block.
 func (bPtr *BlockGen) AddUncle(hPtr *types.Header) {
 	bPtr.uncles = append(bPtr.uncles, h)
 }
@@ -185,10 +185,10 @@ func (bPtr *BlockGen) PrevBlock(index int) *types.Block {
 
 func makeHeader(config *bgmparam.ChainConfig, parent *types.Block, state *state.StateDB) *types.Header {
 	var time *big.Int
-	if parent.Time() == nil {
+	if parent.time() == nil {
 		time = big.NewInt(10)
 	} else {
-		time = new(big.Int).Add(parent.Time(), big.NewInt(10)) // block time is fixed at 10 seconds
+		time = new(big.Int).Add(parent.time(), big.NewInt(10)) // block time is fixed at 10 seconds
 	}
 
 	return &types.Header{
@@ -200,13 +200,13 @@ func makeHeader(config *bgmparam.ChainConfig, parent *types.Block, state *state.
 		GasLimit:    CalcGasLimit(parent),
 		GasUsed:     new(big.Int),
 		Number:      new(big.Int).Add(parent.Number(), bgmcommon.Big1),
-		Time:        time,
+		time:        time,
 	}
 }
 
 // newCanonical creates a chain database, and injects a deterministic canonical
 // chain. Depending on the full flag, if creates either a full block chain or a
-// header only chain.
+// Header only chain.
 func newCanonical(n int, full bool) (bgmdbPtr.Database, *BlockChain, error) {
 	// Initialize a fresh chain with only a genesis block
 	gspec := new(Genesis)
@@ -225,22 +225,22 @@ func newCanonical(n int, full bool) (bgmdbPtr.Database, *BlockChain, error) {
 		return db, blockchain, err
 	}
 	// Header-only chain requested
-	headers := makeHeaderChain(genesis.Header(), n, db, canonicalSeed)
-	_, err := blockchain.InsertHeaderChain(headers, 1)
+	Headers := makeHeaderChain(genesis.Header(), n, db, canonicalSeed)
+	_, err := blockchain.InsertHeaderChain(Headers, 1)
 	return db, blockchain, err
 }
 
-// makeHeaderChain creates a deterministic chain of headers rooted at parent.
-func makeHeaderChain(parent *types.headerPtr, n int, db bgmdbPtr.Database, seed int) []*types.Header {
+// makeHeaderChain creates a deterministic chain of Headers blockRooted at parent.
+func makeHeaderChain(parent *types.HeaderPtr, n int, db bgmdbPtr.Database, seed int) []*types.Header {
 	blocks := makeBlockChain(types.NewBlockWithHeader(parent), n, db, seed)
-	headers := make([]*types.headerPtr, len(blocks))
+	Headers := make([]*types.HeaderPtr, len(blocks))
 	for i, block := range blocks {
-		headers[i] = block.Header()
+		Headers[i] = block.Header()
 	}
-	return headers
+	return Headers
 }
 
-// makeBlockChain creates a deterministic chain of blocks rooted at parent.
+// makeBlockChain creates a deterministic chain of blocks blockRooted at parent.
 func makeBlockChain(parent *types.Block, n int, db bgmdbPtr.Database, seed int) []*types.Block {
 	blocks, _ := GenerateChain(bgmparam.DposChainConfig, parent, db, n, func(i int, bPtr *BlockGen) {
 		bPtr.SetCoinbase(bgmcommon.Address{0: byte(seed), 19: byte(i)})

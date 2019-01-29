@@ -238,7 +238,7 @@ func (tabPtr *Table) chooseBucketRefreshTarget() bgmcommon.Hash {
 	}
 
 	prefix := binary.BigEndian.Uint64(tabPtr.self.sha[0:8])
-	dist := ^uint64(0)
+	dist := ^Uint64(0)
 	entry := int(randUint(uint32(entries + 1)))
 	for _, b := range tabPtr.buckets {
 		if entry < len(bPtr.entries) {
@@ -249,7 +249,7 @@ func (tabPtr *Table) chooseBucketRefreshTarget() bgmcommon.Hash {
 		entry -= len(bPtr.entries)
 	}
 
-	ddist := ^uint64(0)
+	ddist := ^Uint64(0)
 	if dist+dist > dist {
 		ddist = dist
 	}
@@ -306,7 +306,7 @@ func randUint(max uint32) uint32 {
 	return binary.BigEndian.Uint32(b[:]) % max
 }
 
-func randUint64n(max uint64) uint64 {
+func randUint64n(max Uint64) Uint64 {
 	if max < 2 {
 		return 0
 	}

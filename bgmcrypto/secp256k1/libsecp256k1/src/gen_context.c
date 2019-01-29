@@ -25,7 +25,7 @@ static const secp256k1_callback default_error_callback = {
 };
 
 int main(int argc, char **argv) {
-    secp256k1_ecmult_gen_context ctx;
+    secp256k1_ecmult_gen_context CTX;
     int inner;
     int outer;
     FILE* fp;
@@ -45,12 +45,12 @@ int main(int argc, char **argv) {
     fprintf(fp, "#define SC SECP256K1_GE_STORAGE_CONST\n");
     fprintf(fp, "static const secp256k1_ge_storage secp256k1_ecmult_static_context[64][16] = {\n");
 
-    secp256k1_ecmult_gen_context_init(&ctx);
-    secp256k1_ecmult_gen_context_build(&ctx, &default_error_callback);
+    secp256k1_ecmult_gen_context_init(&CTX);
+    secp256k1_ecmult_gen_context_build(&CTX, &default_error_callback);
     for(outer = 0; outer != 64; outer++) {
         fprintf(fp,"{\n");
         for(inner = 0; inner != 16; inner++) {
-            fprintf(fp,"    SC(%uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu)", SECP256K1_GE_STORAGE_CONST_GET((*ctx.prec)[outer][inner]));
+            fprintf(fp,"    SC(%uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu, %uu)", SECP256K1_GE_STORAGE_CONST_GET((*CTX.prec)[outer][inner]));
             if (inner != 15) {
                 fprintf(fp,",\n");
             } else {
@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
         }
     }
     fprintf(fp,"};\n");
-    secp256k1_ecmult_gen_context_clear(&ctx);
+    secp256k1_ecmult_gen_context_clear(&CTX);
     
     fprintf(fp, "#undef SC\n");
     fprintf(fp, "#endif\n");

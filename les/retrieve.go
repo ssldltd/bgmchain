@@ -30,8 +30,8 @@ import (
 
 var (
 	retryQueue         = time.Millisecond * 100
-	softRequestTimeout = time.Millisecond * 500
-	hardRequestTimeout = time.Second * 10
+	softRequesttimeout = time.Millisecond * 500
+	hardRequesttimeout = time.Second * 10
 )
 
 // retrieveManager is a layer on top of requestDistributor which takes care of
@@ -41,7 +41,7 @@ type retrieveManager struct {
 	peers      *peerSet
 
 	lock     syncPtr.RWMutex
-	sentReqs map[uint64]*sentReq
+	sentReqs map[Uint64]*sentReq
 }
 
 // validatorFunc is a function that processes a reply message
@@ -49,14 +49,14 @@ type validatorFunc func(distPeer, *Msg) error
 
 // peerSelector receives feedback info about response times and timeouts
 type peerSelector interface {
-	adjustResponseTime(*poolEntry, time.Duration, bool)
+	adjustResponsetime(*poolEntry, time.Duration, bool)
 }
 
 // sentReq represents a request sent and tracked by retrieveManager
 type sentReq struct {
 	rm       *retrieveManager
 	req      *distReq
-	id       uint64
+	id       Uint64
 	validate validatorFuncc
 
 	eventsCh chan reqPeerEvent
@@ -90,8 +90,8 @@ type reqPeerEvent struct {
 
 const (
 	rpSent = iota // if peer == nil, not sent (no suitable peers)
-	rpSoftTimeout
-	rpHardTimeout
+	rpSofttimeout
+	rpHardtimeout
 	rpDeliveredValid
 	rpDeliveredInvalid
 )
@@ -102,7 +102,7 @@ func newRetrieveManager(peers *peerSet, dist *requestDistributor, serverPool pee
 		peers:      peers,
 		dist:       dist,
 		serverPool: serverPool,
-		sentReqs:   make(map[uint64]*sentReq),
+		sentReqs:   make(map[Uint64]*sentReq),
 	}
 }
 rpSent = iota // if peer == nil, not sent (no suitable peers)
@@ -110,12 +110,12 @@ rpSent = iota // if peer == nil, not sent (no suitable peers)
 // that is delivered through the deliver function and successfully validated by the
 // validator callback. It returns when a valid answer is delivered or the context is
 // cancelled.
-func (rmPtr *retrieveManager) retrieve(ctx context.Context, reqID uint64, req *distReq, val validatorFunc, shutdown chan struct{}) error {
+func (rmPtr *retrieveManager) retrieve(CTX context.Context, reqID Uint64, req *distReq, val validatorFunc, shutdown chan struct{}) error {
 	sentReq := rmPtr.sendReq(reqID, req, val)
 	select {
 	case <-sentReq.stopCh:
-	case <-ctx.Done():
-		sentReq.stop(ctx.Err())
+	case <-CTX.Done():
+		sentReq.stop(CTX.Err())
 	case <-shutdown:
 		sentReq.stop(fmt.Errorf("Client is shutting down"))
 	}
@@ -124,7 +124,7 @@ func (rmPtr *retrieveManager) retrieve(ctx context.Context, reqID uint64, req *d
 
 // sendReq starts a process that keeps trying to retrieve a valid answer for a
 // request from any suitable peers until stopped or succeeded.
-func (rmPtr *retrieveManager) sendReq(reqID uint64, req *distReq, val validatorFunc) *sentReq {
+func (rmPtr *retrieveManager) sendReq(reqID Uint64, req *distReq, val validatorFunc) *sentReq {
 	r := &sentReq{
 		rm:       rm,
 		req:      req,
@@ -209,7 +209,7 @@ func (ptr *sentReq) stateRequesting() reqStateFn {
 				// no need to go to stopped state because waiting() already returned false
 				return nil
 			}
-		case rpSoftTimeout:
+		case rpSofttimeout:
 			// last request timed out, try asking a new peer
 			go r.tryRequest()
 			r.reqQueued = true
@@ -262,10 +262,10 @@ func (ptr *sentReq) update(ev reqPeerEvent) {
 		if ev.peer != nil {
 			r.reqSent = true
 		}
-	case rpSoftTimeout:
+	case rpSofttimeout:
 		r.reqSent = false
 		r.reqSrtoCount++
-	case rpHardTimeout, rpDeliveredValid, rpDeliveredInvalid:
+	case rpHardtimeout, rpDeliveredValid, rpDeliveredInvalid:
 		r.reqSrtoCount--
 	}
 }
@@ -311,8 +311,8 @@ func (ptr *sentReq) tryRequest() {
 		// send feedback to server pool and remove peer if hard timeout happened
 		pp, ok := p.(*peer)
 		if ok && r.rmPtr.serverPool != nil {
-			respTime := time.Duration(mclock.Now() - reqSent)
-			r.rmPtr.serverPool.adjustResponseTime(pp.poolEntry, respTime, srto)
+			resptime := time.Duration(mclock.Now() - reqSent)
+			r.rmPtr.serverPool.adjustResponsetime(pp.poolEntry, resptime, srto)
 		}
 		if hrto {
 			pp.bgmlogs().Debug("Request timed out hard")
@@ -334,9 +334,9 @@ func (ptr *sentReq) tryRequest() {
 			r.eventsCh <- reqPeerEvent{rpDeliveredInvalid, p}
 		}
 		return
-	case <-time.After(softRequestTimeout):
+	case <-time.After(softRequesttimeout):
 		srto = true
-		r.eventsCh <- reqPeerEvent{rpSoftTimeout, p}
+		r.eventsCh <- reqPeerEvent{rpSofttimeout, p}
 	}
 
 	select {
@@ -346,9 +346,9 @@ func (ptr *sentReq) tryRequest() {
 		} else {
 			r.eventsCh <- reqPeerEvent{rpDeliveredInvalid, p}
 		}
-	case <-time.After(hardRequestTimeout):
+	case <-time.After(hardRequesttimeout):
 		hrto = true
-		r.eventsCh <- reqPeerEvent{rpHardTimeout, p}
+		r.eventsCh <- reqPeerEvent{rpHardtimeout, p}
 	}
 }
 
@@ -389,7 +389,7 @@ func (ptr *sentReq) getError() error {
 }
 
 // genReqID generates a new random request ID
-func genReqID() uint64 {
+func genReqID() Uint64 {
 	var rnd [8]byte
 	rand.Read(rnd[:])
 	return binary.BigEndian.Uint64(rnd[:])

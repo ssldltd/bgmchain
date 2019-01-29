@@ -27,9 +27,9 @@ import (
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/consensus"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/state"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgm"
 	"github.com/ssldltd/bgmchain/bgm/downloader"
 	"github.com/ssldltd/bgmchain/bgmdb"
@@ -45,12 +45,12 @@ import (
 )
 
 const (
-	softResponseLimit = 2 * 1024 * 1024 // Target maximum size of returned blocks, headers or node data.
-	estHeaderRlpSize  = 500             // Approximate size of an RLP encoded block header
+	softResponseLimit = 2 * 1024 * 1024 // Target maximum size of returned blocks, Headers or node data.
+	estHeaderRlpSize  = 500             // Approximate size of an RLP encoded block Header
 
 	bgmVersion = 63 // equivalent bgm version for the downloader
 
-	MaxHeaderFetch           = 192 // Amount of block headers to be fetched per retrieval request
+	MaxHeaderFetch           = 192 // Amount of block Headers to be fetched per retrieval request
 	MaxBodyFetch             = 32  // Amount of block bodies to be fetched per retrieval request
 	MaxRecChaintFetch          = 128 // Amount of transaction recChaints to allow fetching per request
 	MaxCodeFetch             = 64  // Amount of contract codes to allow fetching per request
@@ -71,31 +71,31 @@ func errResp(code errCode, format string, v ...interface{}) error {
 }
 
 type BlockChain interface {
-	HasHeader(hash bgmcommon.Hash, number uint64) bool
-	GetHeader(hash bgmcommon.Hash, number uint64) *types.Header
+	HasHeader(hash bgmcommon.Hash, number Uint64) bool
+	GetHeader(hash bgmcommon.Hash, number Uint64) *types.Header
 	GetHeaderByHash(hash bgmcommon.Hash) *types.Header
 	CurrentHeader() *types.Header
 	GetTdByHash(hash bgmcommon.Hash) *big.Int
-	InsertHeaderChain(chain []*types.headerPtr, checkFreq int) (int, error)
+	InsertHeaderChain(chain []*types.HeaderPtr, checkFreq int) (int, error)
 	Rollback(chain []bgmcommon.Hash)
 	Status() (td *big.Int, currentBlock bgmcommon.Hash, genesisBlock bgmcommon.Hash)
-	GetHeaderByNumber(number uint64) *types.Header
-	GetBlockHashesFromHash(hash bgmcommon.Hash, max uint64) []bgmcommon.Hash
-	LastBlockHash() bgmcommon.Hash
+	GetHeaderByNumber(number Uint64) *types.Header
+	GethashesFromHash(hash bgmcommon.Hash, max Uint64) []bgmcommon.Hash
+	Lasthash() bgmcommon.Hash
 	Genesis() *types.Block
-	SubscribeChainHeadEvent(ch chan<- bgmcore.ChainHeadEvent) event.Subscription
+	SubscribeChainHeadEvent(ch chan<- bgmCore.ChainHeadEvent) event.Subscription
 }
 
 type txPool interface {
 	AddRemotes(txs []*types.Transaction) []error
-	Status(hashes []bgmcommon.Hash) []bgmcore.TxStatus
+	Status(hashes []bgmcommon.Hash) []bgmCore.TxStatus
 }
 
 type ProtocolManager struct {
 	lightSync   bool
 	txpool      txPool
 	txrelay     *LesTxRelay
-	networkId   uint64
+	networkId   Uint64
 	chainConfig *bgmparam.ChainConfig
 	blockchain  BlockChain
 	chainDb     bgmdbPtr.Database
@@ -126,7 +126,7 @@ type ProtocolManager struct {
 
 // NewProtocolManager returns a new bgmchain sub protocol manager. The Bgmchain sub protocol manages peers capable
 // with the bgmchain network.
-func NewProtocolManager(chainConfig *bgmparam.ChainConfig, lightSync bool, protocolVersions []uint, networkId uint64, mux *event.TypeMux, engine consensus.Engine, peers *peerSet, blockchain BlockChain, txpool txPool, chainDb bgmdbPtr.Database, odr *LesOdr, txrelay *LesTxRelay, quitSync chan struct{}, wg *syncPtr.WaitGroup) (*ProtocolManager, error) {
+func NewProtocolManager(chainConfig *bgmparam.ChainConfig, lightSync bool, protocolVersions []uint, networkId Uint64, mux *event.TypeMux, engine consensus.Engine, peers *peerSet, blockchain BlockChain, txpool txPool, chainDb bgmdbPtr.Database, odr *LesOdr, txrelay *LesTxRelay, quitSync chan struct{}, wg *syncPtr.WaitGroup) (*ProtocolManager, error) {
 	// Create the protocol manager with the base fields
 	manager := &ProtocolManager{
 		lightSync:   lightSync,
@@ -250,7 +250,7 @@ func (pmPtr *ProtocolManager) Stop() {
 	bgmlogs.Info("Light Bgmchain protocol stopped")
 }
 
-func (pmPtr *ProtocolManager) newPeer(pv int, nv uint64, p *p2p.Peer, rw p2p.MsgReadWriter) *peer {
+func (pmPtr *ProtocolManager) newPeer(pv int, nv Uint64, p *p2p.Peer, rw p2p.MsgReadWriter) *peer {
 	return newPeer(pv, nv, p, newMeteredMsgWriter(rw))
 }
 
@@ -261,7 +261,7 @@ func (pmPtr *ProtocolManager) handle(p *peer) error {
 
 	// Execute the LES handshake
 	td, head, genesis := pmPtr.blockchain.Status()
-	headNum := bgmcore.GetBlockNumber(pmPtr.chainDb, head)
+	headNum := bgmCore.Getnumber(pmPtr.chainDb, head)
 	if err := p.Handshake(td, head, headNum, genesis, pmPtr.server); err != nil {
 		p.bgmlogs().Debug("Light Bgmchain handshake failed", "err", err)
 		return err
@@ -317,7 +317,7 @@ func (pmPtr *ProtocolManager) handle(p *peer) error {
 	}
 }
 
-var reqList = []uint64{GetBlockHeadersMsg, GetBlockBodiesMsg, GetCodeMsg, GetRecChaintsMsg, GetProofsV1Msg, SendTxMsg, SendTxV2Msg, GetTxStatusMsg, GetHeaderProofsMsg, GetProofsV2Msg, GetHelperTrieProofsMsg}
+var reqList = []Uint64{GetBlockHeadersMsg, GetBlockBodiesMsg, GetCodeMsg, GetRecChaintsMsg, GetProofsV1Msg, SendTxMsg, SendTxV2Msg, GetTxStatusMsg, GetHeaderProofsMsg, GetProofsV2Msg, GetHelperTrieProofsMsg}
 
 // handleMsg is invoked whenever an inbound message is received from a remote
 // peer. The remote connection is torn down upon returning any error.
@@ -330,7 +330,7 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 	p.bgmlogs().Trace("Light Bgmchain message arrived", "code", msg.Code, "bytes", msg.Size)
 
 	costs := p.fcCosts[msg.Code]
-	reject := func(reqCnt, maxCnt uint64) bool {
+	reject := func(reqCnt, maxCnt Uint64) bool {
 		if p.fcClient == nil || reqCnt > maxCnt {
 			return true
 		}
@@ -361,7 +361,7 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 		// Status messages should never arrive after the handshake
 		return errResp(ErrExtraStatusMsg, "uncontrolled status message")
 
-	// Block header query, collect the requested headers and reply
+	// Block Header query, collect the requested Headers and reply
 	case AnnounceMsg:
 		p.bgmlogs().Trace("Received announce message")
 		if p.requestAnnounceType == announceTypeNone {
@@ -387,10 +387,10 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 		}
 
 	case GetBlockHeadersMsg:
-		p.bgmlogs().Trace("Received block header request")
-		// Decode the complex header query
+		p.bgmlogs().Trace("Received block Header request")
+		// Decode the complex Header query
 		var req struct {
-			ReqID uint64
+			ReqID Uint64
 			Query getBlockHeadersData
 		}
 		if err := msg.Decode(&req); err != nil {
@@ -404,14 +404,14 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 
 		hashMode := query.Origin.Hash != (bgmcommon.Hash{})
 
-		// Gather headers until the fetch or network limits is reached
+		// Gather Headers until the fetch or network limits is reached
 		var (
 			bytes   bgmcommon.StorageSize
-			headers []*types.Header
+			Headers []*types.Header
 			unknown bool
 		)
-		for !unknown && len(headers) < int(query.Amount) && bytes < softResponseLimit {
-			// Retrieve the next header satisfying the query
+		for !unknown && len(Headers) < int(query.Amount) && bytes < softResponseLimit {
+			// Retrieve the next Header satisfying the query
 			var origin *types.Header
 			if hashMode {
 				origin = pmPtr.blockchain.GetHeaderByHash(query.Origin.Hash)
@@ -422,16 +422,16 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 				break
 			}
 			number := origin.Number.Uint64()
-			headers = append(headers, origin)
+			Headers = append(Headers, origin)
 			bytes += estHeaderRlpSize
 
-			// Advance to the next header of the query
+			// Advance to the next Header of the query
 			switch {
 			case query.Origin.Hash != (bgmcommon.Hash{}) && query.Reverse:
 				// Hash based traversal towards the genesis block
 				for i := 0; i < int(query.Skip)+1; i++ {
-					if header := pmPtr.blockchain.GetHeader(query.Origin.Hash, number); header != nil {
-						query.Origin.Hash = headerPtr.ParentHash
+					if Header := pmPtr.blockchain.GetHeader(query.Origin.Hash, number); Header != nil {
+						query.Origin.Hash = HeaderPtr.ParentHash
 						number--
 					} else {
 						unknown = true
@@ -440,9 +440,9 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 				}
 			case query.Origin.Hash != (bgmcommon.Hash{}) && !query.Reverse:
 				// Hash based traversal towards the leaf block
-				if header := pmPtr.blockchain.GetHeaderByNumber(origin.Number.Uint64() + query.Skip + 1); header != nil {
-					if pmPtr.blockchain.GetBlockHashesFromHash(headerPtr.Hash(), query.Skip+1)[query.Skip] == query.Origin.Hash {
-						query.Origin.Hash = headerPtr.Hash()
+				if Header := pmPtr.blockchain.GetHeaderByNumber(origin.Number.Uint64() + query.Skip + 1); Header != nil {
+					if pmPtr.blockchain.GethashesFromHash(HeaderPtr.Hash(), query.Skip+1)[query.Skip] == query.Origin.Hash {
+						query.Origin.Hash = HeaderPtr.Hash()
 					} else {
 						unknown = true
 					}
@@ -465,17 +465,17 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 
 		bv, rcost := p.fcClient.RequestProcessed(costs.baseCost + query.Amount*costs.reqCost)
 		pmPtr.server.fcCostStats.update(msg.Code, query.Amount, rcost)
-		return p.SendBlockHeaders(req.ReqID, bv, headers)
+		return p.SendBlockHeaders(req.ReqID, bv, Headers)
 
 	case BlockHeadersMsg:
 		if pmPtr.downloader == nil {
 			return errResp(ErrUnexpectedResponse, "")
 		}
 
-		p.bgmlogs().Trace("Received block header response message")
-		// A batch of headers arrived to one of our previous requests
+		p.bgmlogs().Trace("Received block Header response message")
+		// A batch of Headers arrived to one of our previous requests
 		var resp struct {
-			ReqID, BV uint64
+			ReqID, BV Uint64
 			Headers   []*types.Header
 		}
 		if err := msg.Decode(&resp); err != nil {
@@ -495,7 +495,7 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 		p.bgmlogs().Trace("Received block bodies request")
 		// Decode the retrieval message
 		var req struct {
-			ReqID  uint64
+			ReqID  Uint64
 			Hashes []bgmcommon.Hash
 		}
 		if err := msg.Decode(&req); err != nil {
@@ -507,7 +507,7 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 			bodies []rlp.RawValue
 		)
 		reqCnt := len(req.Hashes)
-		if reject(uint64(reqCnt), MaxBodyFetch) {
+		if reject(Uint64(reqCnt), MaxBodyFetch) {
 			return errResp(ErrRequestRejected, "")
 		}
 		for _, hash := range req.Hashes {
@@ -515,13 +515,13 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 				break
 			}
 			// Retrieve the requested block body, stopping if enough was found
-			if data := bgmcore.GetBodyRLP(pmPtr.chainDb, hash, bgmcore.GetBlockNumber(pmPtr.chainDb, hash)); len(data) != 0 {
+			if data := bgmCore.GetBodyRLP(pmPtr.chainDb, hash, bgmCore.Getnumber(pmPtr.chainDb, hash)); len(data) != 0 {
 				bodies = append(bodies, data)
 				bytes += len(data)
 			}
 		}
-		bv, rcost := p.fcClient.RequestProcessed(costs.baseCost + uint64(reqCnt)*costs.reqCost)
-		pmPtr.server.fcCostStats.update(msg.Code, uint64(reqCnt), rcost)
+		bv, rcost := p.fcClient.RequestProcessed(costs.baseCost + Uint64(reqCnt)*costs.reqCost)
+		pmPtr.server.fcCostStats.update(msg.Code, Uint64(reqCnt), rcost)
 		return p.SendBlockBodiesRLP(req.ReqID, bv, bodies)
 
 	case BlockBodiesMsg:
@@ -532,7 +532,7 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 		p.bgmlogs().Trace("Received block bodies response")
 		// A batch of block bodies arrived to one of our previous requests
 		var resp struct {
-			ReqID, BV uint64
+			ReqID, BV Uint64
 			Data      []*types.Body
 		}
 		if err := msg.Decode(&resp); err != nil {
@@ -549,7 +549,7 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 		p.bgmlogs().Trace("Received code request")
 		// Decode the retrieval message
 		var req struct {
-			ReqID uint64
+			ReqID Uint64
 			Reqs  []CodeReq
 		}
 		if err := msg.Decode(&req); err != nil {
@@ -561,13 +561,13 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 			data  [][]byte
 		)
 		reqCnt := len(req.Reqs)
-		if reject(uint64(reqCnt), MaxCodeFetch) {
+		if reject(Uint64(reqCnt), MaxCodeFetch) {
 			return errResp(ErrRequestRejected, "")
 		}
 		for _, req := range req.Reqs {
 			// Retrieve the requested state entry, stopping if enough was found
-			if header := bgmcore.GetHeader(pmPtr.chainDb, req.BHash, bgmcore.GetBlockNumber(pmPtr.chainDb, req.BHash)); header != nil {
-				if trie, _ := trie.New(headerPtr.Root, pmPtr.chainDb); trie != nil {
+			if Header := bgmCore.GetHeader(pmPtr.chainDb, req.BHash, bgmCore.Getnumber(pmPtr.chainDb, req.BHash)); Header != nil {
+				if trie, _ := trie.New(HeaderPtr.Root, pmPtr.chainDb); trie != nil {
 					sdata := trie.Get(req.AccKey)
 					var acc state.Account
 					if err := rlp.DecodeBytes(sdata, &acc); err == nil {
@@ -581,8 +581,8 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 				}
 			}
 		}
-		bv, rcost := p.fcClient.RequestProcessed(costs.baseCost + uint64(reqCnt)*costs.reqCost)
-		pmPtr.server.fcCostStats.update(msg.Code, uint64(reqCnt), rcost)
+		bv, rcost := p.fcClient.RequestProcessed(costs.baseCost + Uint64(reqCnt)*costs.reqCost)
+		pmPtr.server.fcCostStats.update(msg.Code, Uint64(reqCnt), rcost)
 		return p.SendCode(req.ReqID, bv, data)
 
 	case CodeMsg:
@@ -593,7 +593,7 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 		p.bgmlogs().Trace("Received code response")
 		// A batch of node state data arrived to one of our previous requests
 		var resp struct {
-			ReqID, BV uint64
+			ReqID, BV Uint64
 			Data      [][]byte
 		}
 		if err := msg.Decode(&resp); err != nil {
@@ -610,7 +610,7 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 		p.bgmlogs().Trace("Received recChaints request")
 		// Decode the retrieval message
 		var req struct {
-			ReqID  uint64
+			ReqID  Uint64
 			Hashes []bgmcommon.Hash
 		}
 		if err := msg.Decode(&req); err != nil {
@@ -622,7 +622,7 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 			recChaints []rlp.RawValue
 		)
 		reqCnt := len(req.Hashes)
-		if reject(uint64(reqCnt), MaxRecChaintFetch) {
+		if reject(Uint64(reqCnt), MaxRecChaintFetch) {
 			return errResp(ErrRequestRejected, "")
 		}
 		for _, hash := range req.Hashes {
@@ -630,9 +630,9 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 				break
 			}
 			// Retrieve the requested block's recChaints, skipping if unknown to us
-			results := bgmcore.GetBlockRecChaints(pmPtr.chainDb, hash, bgmcore.GetBlockNumber(pmPtr.chainDb, hash))
+			results := bgmCore.GetBlockRecChaints(pmPtr.chainDb, hash, bgmCore.Getnumber(pmPtr.chainDb, hash))
 			if results == nil {
-				if header := pmPtr.blockchain.GetHeaderByHash(hash); header == nil || headerPtr.RecChaintHash != types.EmptyRootHash {
+				if Header := pmPtr.blockchain.GetHeaderByHash(hash); Header == nil || HeaderPtr.RecChaintHash != types.EmptyRootHash {
 					continue
 				}
 			}
@@ -644,8 +644,8 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 				bytes += len(encoded)
 			}
 		}
-		bv, rcost := p.fcClient.RequestProcessed(costs.baseCost + uint64(reqCnt)*costs.reqCost)
-		pmPtr.server.fcCostStats.update(msg.Code, uint64(reqCnt), rcost)
+		bv, rcost := p.fcClient.RequestProcessed(costs.baseCost + Uint64(reqCnt)*costs.reqCost)
+		pmPtr.server.fcCostStats.update(msg.Code, Uint64(reqCnt), rcost)
 		return p.SendRecChaintsRLP(req.ReqID, bv, recChaints)
 
 	case RecChaintsMsg:
@@ -656,7 +656,7 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 		p.bgmlogs().Trace("Received recChaints response")
 		// A batch of recChaints arrived to one of our previous requests
 		var resp struct {
-			ReqID, BV uint64
+			ReqID, BV Uint64
 			RecChaints  []types.RecChaints
 		}
 		if err := msg.Decode(&resp); err != nil {
@@ -673,7 +673,7 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 		p.bgmlogs().Trace("Received proofs request")
 		// Decode the retrieval message
 		var req struct {
-			ReqID uint64
+			ReqID Uint64
 			Reqs  []ProofReq
 		}
 		if err := msg.Decode(&req); err != nil {
@@ -685,7 +685,7 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 			proofs proofsData
 		)
 		reqCnt := len(req.Reqs)
-		if reject(uint64(reqCnt), MaxProofsFetch) {
+		if reject(Uint64(reqCnt), MaxProofsFetch) {
 			return errResp(ErrRequestRejected, "")
 		}
 		for _, req := range req.Reqs {
@@ -693,8 +693,8 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 				break
 			}
 			// Retrieve the requested state entry, stopping if enough was found
-			if header := bgmcore.GetHeader(pmPtr.chainDb, req.BHash, bgmcore.GetBlockNumber(pmPtr.chainDb, req.BHash)); header != nil {
-				if tr, _ := trie.New(headerPtr.Root, pmPtr.chainDb); tr != nil {
+			if Header := bgmCore.GetHeader(pmPtr.chainDb, req.BHash, bgmCore.Getnumber(pmPtr.chainDb, req.BHash)); Header != nil {
+				if tr, _ := trie.New(HeaderPtr.Root, pmPtr.chainDb); tr != nil {
 					if len(req.AccKey) > 0 {
 						sdata := tr.Get(req.AccKey)
 						tr = nil
@@ -712,15 +712,15 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 				}
 			}
 		}
-		bv, rcost := p.fcClient.RequestProcessed(costs.baseCost + uint64(reqCnt)*costs.reqCost)
-		pmPtr.server.fcCostStats.update(msg.Code, uint64(reqCnt), rcost)
+		bv, rcost := p.fcClient.RequestProcessed(costs.baseCost + Uint64(reqCnt)*costs.reqCost)
+		pmPtr.server.fcCostStats.update(msg.Code, Uint64(reqCnt), rcost)
 		return p.SendProofs(req.ReqID, bv, proofs)
 
 	case GetProofsV2Msg:
 		p.bgmlogs().Trace("Received les/2 proofs request")
 		// Decode the retrieval message
 		var req struct {
-			ReqID uint64
+			ReqID Uint64
 			Reqs  []ProofReq
 		}
 		if err := msg.Decode(&req); err != nil {
@@ -733,7 +733,7 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 			tr, str    *trie.Trie
 		)
 		reqCnt := len(req.Reqs)
-		if reject(uint64(reqCnt), MaxProofsFetch) {
+		if reject(Uint64(reqCnt), MaxProofsFetch) {
 			return errResp(ErrRequestRejected, "")
 		}
 
@@ -744,8 +744,8 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 				break
 			}
 			if tr == nil || req.BHash != lastBHash {
-				if header := bgmcore.GetHeader(pmPtr.chainDb, req.BHash, bgmcore.GetBlockNumber(pmPtr.chainDb, req.BHash)); header != nil {
-					tr, _ = trie.New(headerPtr.Root, pmPtr.chainDb)
+				if Header := bgmCore.GetHeader(pmPtr.chainDb, req.BHash, bgmCore.Getnumber(pmPtr.chainDb, req.BHash)); Header != nil {
+					tr, _ = trie.New(HeaderPtr.Root, pmPtr.chainDb)
 				} else {
 					tr = nil
 				}
@@ -772,8 +772,8 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 			}
 		}
 		proofs := nodes.NodeList()
-		bv, rcost := p.fcClient.RequestProcessed(costs.baseCost + uint64(reqCnt)*costs.reqCost)
-		pmPtr.server.fcCostStats.update(msg.Code, uint64(reqCnt), rcost)
+		bv, rcost := p.fcClient.RequestProcessed(costs.baseCost + Uint64(reqCnt)*costs.reqCost)
+		pmPtr.server.fcCostStats.update(msg.Code, Uint64(reqCnt), rcost)
 		return p.SendProofsV2(req.ReqID, bv, proofs)
 
 	case ProofsV1Msg:
@@ -784,7 +784,7 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 		p.bgmlogs().Trace("Received proofs response")
 		// A batch of merkle proofs arrived to one of our previous requests
 		var resp struct {
-			ReqID, BV uint64
+			ReqID, BV Uint64
 			Data      []light.NodeList
 		}
 		if err := msg.Decode(&resp); err != nil {
@@ -805,7 +805,7 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 		p.bgmlogs().Trace("Received les/2 proofs response")
 		// A batch of merkle proofs arrived to one of our previous requests
 		var resp struct {
-			ReqID, BV uint64
+			ReqID, BV Uint64
 			Data      light.NodeList
 		}
 		if err := msg.Decode(&resp); err != nil {
@@ -819,10 +819,10 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 		}
 
 	case GetHeaderProofsMsg:
-		p.bgmlogs().Trace("Received headers proof request")
+		p.bgmlogs().Trace("Received Headers proof request")
 		// Decode the retrieval message
 		var req struct {
-			ReqID uint64
+			ReqID Uint64
 			Reqs  []ChtReq
 		}
 		if err := msg.Decode(&req); err != nil {
@@ -834,7 +834,7 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 			proofs []ChtResp
 		)
 		reqCnt := len(req.Reqs)
-		if reject(uint64(reqCnt), MaxHelperTrieProofsFetch) {
+		if reject(Uint64(reqCnt), MaxHelperTrieProofsFetch) {
 			return errResp(ErrRequestRejected, "")
 		}
 		trieDb := bgmdbPtr.NewTable(pmPtr.chainDb, light.ChtTablePrefix)
@@ -843,29 +843,29 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 				break
 			}
 
-			if header := pmPtr.blockchain.GetHeaderByNumber(req.BlockNum); header != nil {
-				sectionHead := bgmcore.GetCanonicalHash(pmPtr.chainDb, (req.ChtNum+1)*light.ChtV1Frequency-1)
-				if root := light.GetChtRoot(pmPtr.chainDb, req.ChtNum, sectionHead); root != (bgmcommon.Hash{}) {
-					if tr, _ := trie.New(root, trieDb); tr != nil {
+			if Header := pmPtr.blockchain.GetHeaderByNumber(req.BlockNum); Header != nil {
+				sectionHead := bgmCore.GetCanonicalHash(pmPtr.chainDb, (req.ChtNum+1)*light.ChtV1Frequency-1)
+				if blockRoot := light.GetChtRoot(pmPtr.chainDb, req.ChtNum, sectionHead); blockRoot != (bgmcommon.Hash{}) {
+					if tr, _ := trie.New(blockRoot, trieDb); tr != nil {
 						var encNumber [8]byte
 						binary.BigEndian.PutUint64(encNumber[:], req.BlockNum)
 						var proof light.NodeList
 						tr.Prove(encNumber[:], 0, &proof)
-						proofs = append(proofs, ChtResp{Header: headerPtr, Proof: proof})
+						proofs = append(proofs, ChtResp{Header: HeaderPtr, Proof: proof})
 						bytes += proof.DataSize() + estHeaderRlpSize
 					}
 				}
 			}
 		}
-		bv, rcost := p.fcClient.RequestProcessed(costs.baseCost + uint64(reqCnt)*costs.reqCost)
-		pmPtr.server.fcCostStats.update(msg.Code, uint64(reqCnt), rcost)
+		bv, rcost := p.fcClient.RequestProcessed(costs.baseCost + Uint64(reqCnt)*costs.reqCost)
+		pmPtr.server.fcCostStats.update(msg.Code, Uint64(reqCnt), rcost)
 		return p.SendHeaderProofs(req.ReqID, bv, proofs)
 
 	case GetHelperTrieProofsMsg:
 		p.bgmlogs().Trace("Received helper trie proof request")
 		// Decode the retrieval message
 		var req struct {
-			ReqID uint64
+			ReqID Uint64
 			Reqs  []HelperTrieReq
 		}
 		if err := msg.Decode(&req); err != nil {
@@ -877,14 +877,14 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 			auxData  [][]byte
 		)
 		reqCnt := len(req.Reqs)
-		if reject(uint64(reqCnt), MaxHelperTrieProofsFetch) {
+		if reject(Uint64(reqCnt), MaxHelperTrieProofsFetch) {
 			return errResp(ErrRequestRejected, "")
 		}
 
 		var (
-			lastIdx  uint64
+			lastIdx  Uint64
 			lastType uint
-			root     bgmcommon.Hash
+			blockRoot     bgmcommon.Hash
 			tr       *trie.Trie
 		)
 
@@ -896,9 +896,9 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 			}
 			if tr == nil || req.HelperTrieType != lastType || req.TrieIdx != lastIdx {
 				var prefix string
-				root, prefix = pmPtr.getHelperTrie(req.HelperTrieType, req.TrieIdx)
-				if root != (bgmcommon.Hash{}) {
-					if t, err := trie.New(root, bgmdbPtr.NewTable(pmPtr.chainDb, prefix)); err == nil {
+				blockRoot, prefix = pmPtr.getHelperTrie(req.HelperTrieType, req.TrieIdx)
+				if blockRoot != (bgmcommon.Hash{}) {
+					if t, err := trie.New(blockRoot, bgmdbPtr.NewTable(pmPtr.chainDb, prefix)); err == nil {
 						tr = t
 					}
 				}
@@ -907,8 +907,8 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 			}
 			if req.AuxReq == auxRoot {
 				var data []byte
-				if root != (bgmcommon.Hash{}) {
-					data = root[:]
+				if blockRoot != (bgmcommon.Hash{}) {
+					data = blockRoot[:]
 				}
 				auxData = append(auxData, data)
 				auxBytes += len(data)
@@ -924,8 +924,8 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 			}
 		}
 		proofs := nodes.NodeList()
-		bv, rcost := p.fcClient.RequestProcessed(costs.baseCost + uint64(reqCnt)*costs.reqCost)
-		pmPtr.server.fcCostStats.update(msg.Code, uint64(reqCnt), rcost)
+		bv, rcost := p.fcClient.RequestProcessed(costs.baseCost + Uint64(reqCnt)*costs.reqCost)
+		pmPtr.server.fcCostStats.update(msg.Code, Uint64(reqCnt), rcost)
 		return p.SendHelperTrieProofs(req.ReqID, bv, HelperTrieResps{Proofs: proofs, AuxData: auxData})
 
 	case HeaderProofsMsg:
@@ -933,9 +933,9 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 			return errResp(ErrUnexpectedResponse, "")
 		}
 
-		p.bgmlogs().Trace("Received headers proof response")
+		p.bgmlogs().Trace("Received Headers proof response")
 		var resp struct {
-			ReqID, BV uint64
+			ReqID, BV Uint64
 			Data      []ChtResp
 		}
 		if err := msg.Decode(&resp); err != nil {
@@ -955,7 +955,7 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 
 		p.bgmlogs().Trace("Received helper trie proof response")
 		var resp struct {
-			ReqID, BV uint64
+			ReqID, BV Uint64
 			Data      HelperTrieResps
 		}
 		if err := msg.Decode(&resp); err != nil {
@@ -979,13 +979,13 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 			return errResp(ErrDecode, "msg %v: %v", msg, err)
 		}
 		reqCnt := len(txs)
-		if reject(uint64(reqCnt), MaxTxSend) {
+		if reject(Uint64(reqCnt), MaxTxSend) {
 			return errResp(ErrRequestRejected, "")
 		}
 		pmPtr.txpool.AddRemotes(txs)
 
-		_, rcost := p.fcClient.RequestProcessed(costs.baseCost + uint64(reqCnt)*costs.reqCost)
-		pmPtr.server.fcCostStats.update(msg.Code, uint64(reqCnt), rcost)
+		_, rcost := p.fcClient.RequestProcessed(costs.baseCost + Uint64(reqCnt)*costs.reqCost)
+		pmPtr.server.fcCostStats.update(msg.Code, Uint64(reqCnt), rcost)
 
 	case SendTxV2Msg:
 		if pmPtr.txpool == nil {
@@ -993,14 +993,14 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 		}
 		// Transactions arrived, parse all of them and deliver to the pool
 		var req struct {
-			ReqID uint64
+			ReqID Uint64
 			Txs   []*types.Transaction
 		}
 		if err := msg.Decode(&req); err != nil {
 			return errResp(ErrDecode, "msg %v: %v", msg, err)
 		}
 		reqCnt := len(req.Txs)
-		if reject(uint64(reqCnt), MaxTxSend) {
+		if reject(Uint64(reqCnt), MaxTxSend) {
 			return errResp(ErrRequestRejected, "")
 		}
 
@@ -1010,7 +1010,7 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 		}
 		stats := pmPtr.txStatus(hashes)
 		for i, stat := range stats {
-			if stat.Status == bgmcore.TxStatusUnknown {
+			if stat.Status == bgmCore.TxStatusUnknown {
 				if errs := pmPtr.txpool.AddRemotes([]*types.Transaction{req.Txs[i]}); errs[0] != nil {
 					stats[i].Error = errs[0]
 					continue
@@ -1019,8 +1019,8 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 			}
 		}
 
-		bv, rcost := p.fcClient.RequestProcessed(costs.baseCost + uint64(reqCnt)*costs.reqCost)
-		pmPtr.server.fcCostStats.update(msg.Code, uint64(reqCnt), rcost)
+		bv, rcost := p.fcClient.RequestProcessed(costs.baseCost + Uint64(reqCnt)*costs.reqCost)
+		pmPtr.server.fcCostStats.update(msg.Code, Uint64(reqCnt), rcost)
 
 		return p.SendTxStatus(req.ReqID, bv, stats)
 
@@ -1030,18 +1030,18 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 		}
 		// Transactions arrived, parse all of them and deliver to the pool
 		var req struct {
-			ReqID  uint64
+			ReqID  Uint64
 			Hashes []bgmcommon.Hash
 		}
 		if err := msg.Decode(&req); err != nil {
 			return errResp(ErrDecode, "msg %v: %v", msg, err)
 		}
 		reqCnt := len(req.Hashes)
-		if reject(uint64(reqCnt), MaxTxStatus) {
+		if reject(Uint64(reqCnt), MaxTxStatus) {
 			return errResp(ErrRequestRejected, "")
 		}
-		bv, rcost := p.fcClient.RequestProcessed(costs.baseCost + uint64(reqCnt)*costs.reqCost)
-		pmPtr.server.fcCostStats.update(msg.Code, uint64(reqCnt), rcost)
+		bv, rcost := p.fcClient.RequestProcessed(costs.baseCost + Uint64(reqCnt)*costs.reqCost)
+		pmPtr.server.fcCostStats.update(msg.Code, Uint64(reqCnt), rcost)
 
 		return p.SendTxStatus(req.ReqID, bv, pmPtr.txStatus(req.Hashes))
 
@@ -1052,8 +1052,8 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 
 		p.bgmlogs().Trace("Received tx status response")
 		var resp struct {
-			ReqID, BV uint64
-			Status    []bgmcore.TxStatus
+			ReqID, BV Uint64
+			Status    []bgmCore.TxStatus
 		}
 		if err := msg.Decode(&resp); err != nil {
 			return errResp(ErrDecode, "msg %v: %v", msg, err)
@@ -1078,14 +1078,14 @@ func (pmPtr *ProtocolManager) handleMessage(p *peer) error {
 	return nil
 }
 
-// getHelperTrie returns the post-processed trie root for the given trie ID and section index
-func (pmPtr *ProtocolManager) getHelperTrie(id uint, idx uint64) (bgmcommon.Hash, string) {
+// getHelperTrie returns the post-processed trie blockRoot for the given trie ID and section index
+func (pmPtr *ProtocolManager) getHelperTrie(id uint, idx Uint64) (bgmcommon.Hash, string) {
 	switch id {
 	case htCanonical:
-		sectionHead := bgmcore.GetCanonicalHash(pmPtr.chainDb, (idx+1)*light.ChtFrequency-1)
+		sectionHead := bgmCore.GetCanonicalHash(pmPtr.chainDb, (idx+1)*light.ChtFrequency-1)
 		return light.GetChtV2Root(pmPtr.chainDb, idx, sectionHead), light.ChtTablePrefix
 	case htBloomBits:
-		sectionHead := bgmcore.GetCanonicalHash(pmPtr.chainDb, (idx+1)*light.BloomTrieFrequency-1)
+		sectionHead := bgmCore.GetCanonicalHash(pmPtr.chainDb, (idx+1)*light.BloomTrieFrequency-1)
 		return light.GetBloomTrieRoot(pmPtr.chainDb, idx, sectionHead), light.BloomTrieTablePrefix
 	}
 	return bgmcommon.Hash{}, ""
@@ -1098,8 +1098,8 @@ func (pmPtr *ProtocolManager) getHelperTrieAuxData(req HelperTrieReq) []byte {
 			return nil
 		}
 		blockNum := binary.BigEndian.Uint64(req.Key)
-		hash := bgmcore.GetCanonicalHash(pmPtr.chainDb, blockNum)
-		return bgmcore.GetHeaderRLP(pmPtr.chainDb, hash, blockNum)
+		hash := bgmCore.GetCanonicalHash(pmPtr.chainDb, blockNum)
+		return bgmCore.GetHeaderRLP(pmPtr.chainDb, hash, blockNum)
 	}
 	return nil
 }
@@ -1111,10 +1111,10 @@ func (pmPtr *ProtocolManager) txStatus(hashes []bgmcommon.Hash) []txStatus {
 		stats[i].Status = stat
 
 		// If the transaction is unknown to the pool, try looking it up locally
-		if stat == bgmcore.TxStatusUnknown {
-			if block, number, index := bgmcore.GetTxLookupEntry(pmPtr.chainDb, hashes[i]); block != (bgmcommon.Hash{}) {
-				stats[i].Status = bgmcore.TxStatusIncluded
-				stats[i].Lookup = &bgmcore.TxLookupEntry{BlockHash: block, BlockIndex: number, Index: index}
+		if stat == bgmCore.TxStatusUnknown {
+			if block, number, index := bgmCore.GetTxLookupEntry(pmPtr.chainDb, hashes[i]); block != (bgmcommon.Hash{}) {
+				stats[i].Status = bgmCore.TxStatusIncluded
+				stats[i].Lookup = &bgmCore.TxLookupEntry{hash: block, BlockIndex: number, Index: index}
 			}
 		}
 	}
@@ -1125,9 +1125,9 @@ func (pmPtr *ProtocolManager) txStatus(hashes []bgmcommon.Hash) []txStatus {
 func (self *ProtocolManager) NodeInfo() *bgmPtr.BgmNodeInfo {
 	return &bgmPtr.BgmNodeInfo{
 		Network:    self.networkId,
-		Difficulty: self.blockchain.GetTdByHash(self.blockchain.LastBlockHash()),
+		Difficulty: self.blockchain.GetTdByHash(self.blockchain.Lasthash()),
 		Genesis:    self.blockchain.Genesis().Hash(),
-		Head:       self.blockchain.LastBlockHash(),
+		Head:       self.blockchain.Lasthash(),
 	}
 }
 
@@ -1146,7 +1146,7 @@ func (pcPtr *peerConnection) Head() (bgmcommon.Hash, *big.Int) {
 func (pcPtr *peerConnection) RequestHeadersByHash(origin bgmcommon.Hash, amount int, skip int, reverse bool) error {
 	reqID := genReqID()
 	rq := &distReq{
-		getCost: func(dp distPeer) uint64 {
+		getCost: func(dp distPeer) Uint64 {
 			peer := dp.(*peer)
 			return peer.GetRequestCost(GetBlockHeadersMsg, amount)
 		},
@@ -1167,10 +1167,10 @@ func (pcPtr *peerConnection) RequestHeadersByHash(origin bgmcommon.Hash, amount 
 	return nil
 }
 
-func (pcPtr *peerConnection) RequestHeadersByNumber(origin uint64, amount int, skip int, reverse bool) error {
+func (pcPtr *peerConnection) RequestHeadersByNumber(origin Uint64, amount int, skip int, reverse bool) error {
 	reqID := genReqID()
 	rq := &distReq{
-		getCost: func(dp distPeer) uint64 {
+		getCost: func(dp distPeer) Uint64 {
 			peer := dp.(*peer)
 			return peer.GetRequestCost(GetBlockHeadersMsg, amount)
 		},

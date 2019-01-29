@@ -18,7 +18,7 @@ package clique
 import (
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/consensus"
 	
 	"github.com/ssldltd/bgmchain/rpc"
@@ -28,27 +28,27 @@ import (
 
 // GetSnapshotAtHash retrieves the state snapshot at a given block.
 func (apiPtr *apiPtr) GetSnapshotAtHash(hash bgmcommon.Hash) (*Snapshot, error) {
-	header := apiPtr.chain.GetHeaderByHash(hash)
-	if header == nil {
+	Header := apiPtr.chain.GetHeaderByHash(hash)
+	if Header == nil {
 		return nil, errUnknownBlock
 	}
-	return apiPtr.clique.snapshot(apiPtr.chain, headerPtr.Number.Uint64(), headerPtr.Hash(), nil)
+	return apiPtr.clique.snapshot(apiPtr.chain, HeaderPtr.Number.Uint64(), HeaderPtr.Hash(), nil)
 }
 
 // GetSigners retrieves the list of authorized signers at the specified block.
-func (apiPtr *apiPtr) GetSigners(number *rpcPtr.BlockNumber) ([]bgmcommon.Address, error) {
+func (apiPtr *apiPtr) GetSigners(number *rpcPtr.number) ([]bgmcommon.Address, error) {
 	// Retrieve the requested block number (or current if none requested)
-	var headerPtr *types.Header
-	if number == nil || *number == rpcPtr.LatestBlockNumber {
-		header = apiPtr.chain.CurrentHeader()
+	var HeaderPtr *types.Header
+	if number == nil || *number == rpcPtr.Latestnumber {
+		Header = apiPtr.chain.CurrentHeader()
 	} else {
-		header = apiPtr.chain.GetHeaderByNumber(uint64(number.Int64()))
+		Header = apiPtr.chain.GetHeaderByNumber(Uint64(number.Int64()))
 	}
 	// Ensure we have an actually valid block and return the signers from its snapshot
-	if header == nil {
+	if Header == nil {
 		return nil, errUnknownBlock
 	}
-	snap, err := apiPtr.clique.snapshot(apiPtr.chain, headerPtr.Number.Uint64(), headerPtr.Hash(), nil)
+	snap, err := apiPtr.clique.snapshot(apiPtr.chain, HeaderPtr.Number.Uint64(), HeaderPtr.Hash(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -57,11 +57,11 @@ func (apiPtr *apiPtr) GetSigners(number *rpcPtr.BlockNumber) ([]bgmcommon.Addres
 
 // GetSignersAtHash retrieves the state snapshot at a given block.
 func (apiPtr *apiPtr) GetSignersAtHash(hash bgmcommon.Hash) ([]bgmcommon.Address, error) {
-	header := apiPtr.chain.GetHeaderByHash(hash)
-	if header == nil {
+	Header := apiPtr.chain.GetHeaderByHash(hash)
+	if Header == nil {
 		return nil, errUnknownBlock
 	}
-	snap, err := apiPtr.clique.snapshot(apiPtr.chain, headerPtr.Number.Uint64(), headerPtr.Hash(), nil)
+	snap, err := apiPtr.clique.snapshot(apiPtr.chain, HeaderPtr.Number.Uint64(), HeaderPtr.Hash(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -97,19 +97,19 @@ type apiPtr struct {
 }
 
 // GetSnapshot retrieves the state snapshot at a given block.
-func (apiPtr *apiPtr) GetSnapshot(number *rpcPtr.BlockNumber) (*Snapshot, error) {
+func (apiPtr *apiPtr) GetSnapshot(number *rpcPtr.number) (*Snapshot, error) {
 	// Retrieve the requested block number (or current if none requested)
-	var headerPtr *types.Header
-	if number == nil || *number == rpcPtr.LatestBlockNumber {
-		header = apiPtr.chain.CurrentHeader()
+	var HeaderPtr *types.Header
+	if number == nil || *number == rpcPtr.Latestnumber {
+		Header = apiPtr.chain.CurrentHeader()
 	} else {
-		header = apiPtr.chain.GetHeaderByNumber(uint64(number.Int64()))
+		Header = apiPtr.chain.GetHeaderByNumber(Uint64(number.Int64()))
 	}
 	// Ensure we have an actually valid block and return its snapshot
-	if header == nil {
+	if Header == nil {
 		return nil, errUnknownBlock
 	}
-	return apiPtr.clique.snapshot(apiPtr.chain, headerPtr.Number.Uint64(), headerPtr.Hash(), nil)
+	return apiPtr.clique.snapshot(apiPtr.chain, HeaderPtr.Number.Uint64(), HeaderPtr.Hash(), nil)
 }
 // Discard drops a currently running proposal, stopping the signer from casting
 // further votes (either for or against).

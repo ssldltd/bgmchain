@@ -24,7 +24,7 @@ import (
 )
 
 // NewStateSync create a new state trie download scheduler.
-func NewStateSync(root bgmcommon.Hash, database trie.DatabaseReader) *trie.TrieSync {
+func NewStateSync(blockRoot bgmcommon.Hash, database trie.DatabaseReader) *trie.TrieSync {
 	var syncer *trie.TrieSync
 	callback := func(leaf []byte, parent bgmcommon.Hash) error {
 		var obj Account
@@ -35,6 +35,6 @@ func NewStateSync(root bgmcommon.Hash, database trie.DatabaseReader) *trie.TrieS
 		syncer.AddRawEntry(bgmcommon.BytesToHash(obj.CodeHash), 64, parent)
 		return nil
 	}
-	syncer = trie.NewTrieSync(root, database, callback)
+	syncer = trie.NewTrieSync(blockRoot, database, callback)
 	return syncer
 }

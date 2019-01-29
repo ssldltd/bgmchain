@@ -10,10 +10,10 @@ extern "C" {
 #endif
 /*
  * Class:     org_bitcoin_NativeSecp256k1
- * Method:    secp256k1_ctx_clone
+ * Method:    secp256k1_CTX_clone
  * Signature: (J)J
  */
-SECP256K1_API jlong JNICALL Java_org_bitcoin_NativeSecp256k1_secp256k1_1ctx_1clone
+SECP256K1_API jlong JNICALL Java_org_bitcoin_NativeSecp256k1_secp256k1_1CTX_1clone
   (JNIEnv *, jclass, jlong);
 
 /*
@@ -110,7 +110,7 @@ SECP256K1_API jobjectArray JNICALL Java_org_bitcoin_NativeSecp256k1_secp256k1_1e
  * Signature: (Ljava/nio/ByteBuffer;JI)[[B
  */
 SECP256K1_API jobjectArray JNICALL Java_org_bitcoin_NativeSecp256k1_secp256k1_1ecdh
-  (JNIEnv* env, jclass classObject, jobject byteBufferObject, jlong ctx_l, jint publen);
+  (JNIEnv* env, jclass classObject, jobject byteBufferObject, jlong CTX_l, jint publen);
 
 
 #ifdef __cplusplus

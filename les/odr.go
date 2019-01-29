@@ -17,7 +17,7 @@ package les
 import (
 	"context"
 
-	"github.com/ssldltd/bgmchain/bgmcore"
+	"github.com/ssldltd/bgmchain/bgmCore"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/light"
 	"github.com/ssldltd/bgmchain/bgmlogs"
@@ -26,12 +26,12 @@ import (
 // LesOdr implement light.OdrBackend
 type LesOdr struct {
 	db                                         bgmdbPtr.Database
-	chtIndexer, bloomTrieIndexer, bloomIndexer *bgmcore.ChainIndexer
+	chtIndexer, bloomTrieIndexer, bloomIndexer *bgmCore.ChainIndexer
 	retriever                                  *retrieveManager
 	stop                                       chan struct{}
 }
 
-func NewLesOdr(db bgmdbPtr.Database, chtIndexer, bloomTrieIndexer, bloomIndexer *bgmcore.ChainIndexer, retriever *retrieveManager) *LesOdr {
+func NewLesOdr(db bgmdbPtr.Database, chtIndexer, bloomTrieIndexer, bloomIndexer *bgmCore.ChainIndexer, retriever *retrieveManager) *LesOdr {
 	return &LesOdr{
 		db:               db,
 		chtIndexer:       chtIndexer,
@@ -53,17 +53,17 @@ func (odr *LesOdr) Database() bgmdbPtr.Database {
 }
 
 // ChtIndexer returns the CHT chain indexer
-func (odr *LesOdr) ChtIndexer() *bgmcore.ChainIndexer {
+func (odr *LesOdr) ChtIndexer() *bgmCore.ChainIndexer {
 	return odr.chtIndexer
 }
 
 // BloomTrieIndexer returns the bloom trie chain indexer
-func (odr *LesOdr) BloomTrieIndexer() *bgmcore.ChainIndexer {
+func (odr *LesOdr) BloomTrieIndexer() *bgmCore.ChainIndexer {
 	return odr.bloomTrieIndexer
 }
 
 // BloomIndexer returns the bloombits chain indexer
-func (odr *LesOdr) BloomIndexer() *bgmcore.ChainIndexer {
+func (odr *LesOdr) BloomIndexer() *bgmCore.ChainIndexer {
 	return odr.bloomIndexer
 }
 
@@ -80,18 +80,18 @@ const (
 // Msg encodes a LES message that delivers reply data for a request
 type Msg struct {
 	MsgType int
-	ReqID   uint64
+	ReqID   Uint64
 	Obj     interface{}
 }
 
 // Retrieve tries to fetch an object from the LES network.
 // If the network retrieval was successful, it stores the object in local dbPtr.
-func (odr *LesOdr) Retrieve(ctx context.Context, req light.OdrRequest) (err error) {
+func (odr *LesOdr) Retrieve(CTX context.Context, req light.OdrRequest) (err error) {
 	lreq := LesRequest(req)
 
 	reqID := genReqID()
 	rq := &distReq{
-		getCost: func(dp distPeer) uint64 {
+		getCost: func(dp distPeer) Uint64 {
 			return lreq.GetCost(dp.(*peer))
 		},
 		canSend: func(dp distPeer) bool {
@@ -106,7 +106,7 @@ func (odr *LesOdr) Retrieve(ctx context.Context, req light.OdrRequest) (err erro
 		},
 	}
 
-	if err = odr.retriever.retrieve(ctx, reqID, rq, func(p distPeer, msg *Msg) error { return lreq.Validate(odr.db, msg) }, odr.stop); err == nil {
+	if err = odr.retriever.retrieve(CTX, reqID, rq, func(p distPeer, msg *Msg) error { return lreq.Validate(odr.db, msg) }, odr.stop); err == nil {
 		// retrieved from network, store in db
 		req.StoreResult(odr.db)
 	} else {

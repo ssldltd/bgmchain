@@ -196,7 +196,7 @@ public class NativeSecp256k1 {
     public static long cloneContext() {
        r.lock();
        try {
-        return secp256k1_ctx_clone(Secp256k1Context.getContext());
+        return secp256k1_CTX_clone(Secp256k1Context.getContext());
        } finally { r.unlock(); }
     }
 
@@ -417,7 +417,7 @@ public class NativeSecp256k1 {
         }
     }
 
-    private static native long secp256k1_ctx_clone(long context);
+    private static native long secp256k1_CTX_clone(long context);
 
     private static native int secp256k1_context_randomize(ByteBuffer byteBuff, long context);
 

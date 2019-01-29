@@ -22,16 +22,16 @@ import (
 	"github.com/ssldltd/bgmchain/bgmcommon/mclock"
 )
 
-const fcTimeConst = time.Millisecond
+const fctimeConst = time.Millisecond
 
 type Serverbgmparam struct {
-	BufLimit, MinRecharge uint64
+	BufLimit, MinRecharge Uint64
 }
 
 type ClientNode struct {
 	bgmparam   *Serverbgmparam
-	bufValue uint64
-	lastTime mclock.AbsTime
+	bufValue Uint64
+	lasttime mclock.Abstime
 	lock     syncPtr.Mutex
 	cm       *ClientManager
 	cmNode   *cmNode
@@ -42,7 +42,7 @@ func NewClientNode(cmPtr *ClientManager, bgmparam *Serverbgmparam) *ClientNode {
 		cm:       cm,
 		bgmparam:   bgmparam,
 		bufValue: bgmparam.BufLimit,
-		lastTime: mclock.Now(),
+		lasttime: mclock.Now(),
 	}
 	node.cmNode = cmPtr.addNode(node)
 	return node
@@ -52,19 +52,19 @@ func (peer *ClientNode) Remove(cmPtr *ClientManager) {
 	cmPtr.removeNode(peer.cmNode)
 }
 
-func (peer *ClientNode) recalcBV(time mclock.AbsTime) {
-	dt := uint64(time - peer.lastTime)
-	if time < peer.lastTime {
+func (peer *ClientNode) recalcBV(time mclock.Abstime) {
+	dt := Uint64(time - peer.lasttime)
+	if time < peer.lasttime {
 		dt = 0
 	}
-	peer.bufValue += peer.bgmparam.MinRecharge * dt / uint64(fcTimeConst)
+	peer.bufValue += peer.bgmparam.MinRecharge * dt / Uint64(fctimeConst)
 	if peer.bufValue > peer.bgmparam.BufLimit {
 		peer.bufValue = peer.bgmparam.BufLimit
 	}
-	peer.lastTime = time
+	peer.lasttime = time
 }
 
-func (peer *ClientNode) AcceptRequest() (uint64, bool) {
+func (peer *ClientNode) AcceptRequest() (Uint64, bool) {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
 
@@ -73,7 +73,7 @@ func (peer *ClientNode) AcceptRequest() (uint64, bool) {
 	return peer.bufValue, peer.cmPtr.accept(peer.cmNode, time)
 }
 
-func (peer *ClientNode) RequestProcessed(cost uint64) (bv, realCost uint64) {
+func (peer *ClientNode) RequestProcessed(cost Uint64) (bv, realCost Uint64) {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
 
@@ -92,54 +92,54 @@ func (peer *ClientNode) RequestProcessed(cost uint64) (bv, realCost uint64) {
 }
 
 type ServerNode struct {
-	bufEstimate uint64
-	lastTime    mclock.AbsTime
+	bufEstimate Uint64
+	lasttime    mclock.Abstime
 	bgmparam      *Serverbgmparam
-	sumCost     uint64            // sum of req costs sent to this server
-	pending     map[uint64]uint64 // value = sumCost after sending the given req
+	sumCost     Uint64            // sum of req costs sent to this server
+	pending     map[Uint64]Uint64 // value = sumCost after sending the given req
 	lock        syncPtr.RWMutex
 }
 
 func NewServerNode(bgmparam *Serverbgmparam) *ServerNode {
 	return &ServerNode{
 		bufEstimate: bgmparam.BufLimit,
-		lastTime:    mclock.Now(),
+		lasttime:    mclock.Now(),
 		bgmparam:      bgmparam,
-		pending:     make(map[uint64]uint64),
+		pending:     make(map[Uint64]Uint64),
 	}
 }
 
-func (peer *ServerNode) recalcBLE(time mclock.AbsTime) {
-	dt := uint64(time - peer.lastTime)
-	if time < peer.lastTime {
+func (peer *ServerNode) recalcBLE(time mclock.Abstime) {
+	dt := Uint64(time - peer.lasttime)
+	if time < peer.lasttime {
 		dt = 0
 	}
-	peer.bufEstimate += peer.bgmparam.MinRecharge * dt / uint64(fcTimeConst)
+	peer.bufEstimate += peer.bgmparam.MinRecharge * dt / Uint64(fctimeConst)
 	if peer.bufEstimate > peer.bgmparam.BufLimit {
 		peer.bufEstimate = peer.bgmparam.BufLimit
 	}
-	peer.lastTime = time
+	peer.lasttime = time
 }
 
 // safetyMargin is added to the flow control waiting time when estimated buffer value is low
 const safetyMargin = time.Millisecond
 
-func (peer *ServerNode) canSend(maxCost uint64) (time.Duration, float64) {
+func (peer *ServerNode) canSend(maxCost Uint64) (time.Duration, float64) {
 	peer.recalcBLE(mclock.Now())
-	maxCost += uint64(safetyMargin) * peer.bgmparam.MinRecharge / uint64(fcTimeConst)
+	maxCost += Uint64(safetyMargin) * peer.bgmparam.MinRecharge / Uint64(fctimeConst)
 	if maxCost > peer.bgmparam.BufLimit {
 		maxCost = peer.bgmparam.BufLimit
 	}
 	if peer.bufEstimate >= maxCost {
 		return 0, float64(peer.bufEstimate-maxCost) / float64(peer.bgmparam.BufLimit)
 	}
-	return time.Duration((maxCost - peer.bufEstimate) * uint64(fcTimeConst) / peer.bgmparam.MinRecharge), 0
+	return time.Duration((maxCost - peer.bufEstimate) * Uint64(fctimeConst) / peer.bgmparam.MinRecharge), 0
 }
 
 // CanSend returns the minimum waiting time required before sending a request
 // with the given maximum estimated cost. Second return value is the relative
 // estimated buffer level after sending the request (divided by BufLimit).
-func (peer *ServerNode) CanSend(maxCost uint64) (time.Duration, float64) {
+func (peer *ServerNode) CanSend(maxCost Uint64) (time.Duration, float64) {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
 
@@ -149,7 +149,7 @@ func (peer *ServerNode) CanSend(maxCost uint64) (time.Duration, float64) {
 // QueueRequest should be called when the request has been assigned to the given
 // server node, before putting it in the send queue. It is mandatory that requests
 // are sent in the same order as the QueueRequest calls are made.
-func (peer *ServerNode) QueueRequest(reqID, maxCost uint64) {
+func (peer *ServerNode) QueueRequest(reqID, maxCost Uint64) {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
 
@@ -160,7 +160,7 @@ func (peer *ServerNode) QueueRequest(reqID, maxCost uint64) {
 
 // GotReply adjusts estimated buffer value according to the value included in
 // the latest request reply.
-func (peer *ServerNode) GotReply(reqID, bv uint64) {
+func (peer *ServerNode) GotReply(reqID, bv Uint64) {
 
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
@@ -178,5 +178,5 @@ func (peer *ServerNode) GotReply(reqID, bv uint64) {
 	if bv > cc {
 		peer.bufEstimate = bv - cc
 	}
-	peer.lastTime = mclock.Now()
+	peer.lasttime = mclock.Now()
 }

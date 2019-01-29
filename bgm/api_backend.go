@@ -23,11 +23,11 @@ import (
 	"github.com/ssldltd/bgmchain/account"
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmcommon/math"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/bloombits"
-	"github.com/ssldltd/bgmchain/bgmcore/state"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
-	"github.com/ssldltd/bgmchain/bgmcore/vm"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/bloombits"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/vm"
 	"github.com/ssldltd/bgmchain/bgm/downloader"
 	"github.com/ssldltd/bgmchain/bgm/gasprice"
 	"github.com/ssldltd/bgmchain/bgmdb"
@@ -50,81 +50,81 @@ func (bPtr *BgmApiBackend) CurrentBlock() *types.Block {
 	return bPtr.bgmPtr.blockchain.CurrentBlock()
 }
 
-func (bPtr *BgmApiBackend) SetHead(number uint64) {
+func (bPtr *BgmApiBackend) SetHead(number Uint64) {
 	bPtr.bgmPtr.protocolManager.downloader.Cancel()
 	bPtr.bgmPtr.blockchain.SetHead(number)
 }
 
-func (bPtr *BgmApiBackend) HeaderByNumber(ctx context.Context, blockNr rpcPtr.BlockNumber) (*types.headerPtr, error) {
+func (bPtr *BgmApiBackend) HeaderByNumber(CTX context.Context, blockNr rpcPtr.number) (*types.HeaderPtr, error) {
 	// Pending block is only known by the miner
-	if blockNr == rpcPtr.PendingBlockNumber {
+	if blockNr == rpcPtr.Pendingnumber {
 		block := bPtr.bgmPtr.miner.PendingBlock()
 		return block.Header(), nil
 	}
 	// Otherwise resolve and return the block
-	if blockNr == rpcPtr.LatestBlockNumber {
+	if blockNr == rpcPtr.Latestnumber {
 		return bPtr.bgmPtr.blockchain.CurrentBlock().Header(), nil
 	}
-	return bPtr.bgmPtr.blockchain.GetHeaderByNumber(uint64(blockNr)), nil
+	return bPtr.bgmPtr.blockchain.GetHeaderByNumber(Uint64(blockNr)), nil
 }
 
-func (bPtr *BgmApiBackend) GetEVM(ctx context.Context, msg bgmcore.Message, state *state.StateDB, headerPtr *types.headerPtr, vmCfg vmPtr.Config) (*vmPtr.EVM, func() error, error) {
+func (bPtr *BgmApiBackend) GetEVM(CTX context.Context, msg bgmCore.Message, state *state.StateDB, HeaderPtr *types.HeaderPtr, vmCfg vmPtr.Config) (*vmPtr.EVM, func() error, error) {
 	state.SetBalance(msg.From(), mathPtr.MaxBig256)
 	vmError := func() error { return nil }
 
-	context := bgmcore.NewEVMContext(msg, headerPtr, bPtr.bgmPtr.BlockChain(), nil)
+	context := bgmCore.NewEVMContext(msg, HeaderPtr, bPtr.bgmPtr.BlockChain(), nil)
 	return vmPtr.NewEVM(context, state, bPtr.bgmPtr.chainConfig, vmCfg), vmError, nil
 }
 
-func (bPtr *BgmApiBackend) SubscribeRemovedbgmlogssEvent(ch chan<- bgmcore.RemovedbgmlogssEvent) event.Subscription {
+func (bPtr *BgmApiBackend) SubscribeRemovedbgmlogssEvent(ch chan<- bgmCore.RemovedbgmlogssEvent) event.Subscription {
 	return bPtr.bgmPtr.BlockChain().SubscribeRemovedbgmlogssEvent(ch)
 }
 
-func (bPtr *BgmApiBackend) BlockByNumber(ctx context.Context, blockNr rpcPtr.BlockNumber) (*types.Block, error) {
+func (bPtr *BgmApiBackend) BlockByNumber(CTX context.Context, blockNr rpcPtr.number) (*types.Block, error) {
 	// Pending block is only known by the miner
-	if blockNr == rpcPtr.PendingBlockNumber {
+	if blockNr == rpcPtr.Pendingnumber {
 		block := bPtr.bgmPtr.miner.PendingBlock()
 		return block, nil
 	}
 	// Otherwise resolve and return the block
-	if blockNr == rpcPtr.LatestBlockNumber {
+	if blockNr == rpcPtr.Latestnumber {
 		return bPtr.bgmPtr.blockchain.CurrentBlock(), nil
 	}
-	return bPtr.bgmPtr.blockchain.GetBlockByNumber(uint64(blockNr)), nil
+	return bPtr.bgmPtr.blockchain.GetBlockByNumber(Uint64(blockNr)), nil
 }
 
-func (bPtr *BgmApiBackend) StateAndHeaderByNumber(ctx context.Context, blockNr rpcPtr.BlockNumber) (*state.StateDB, *types.headerPtr, error) {
+func (bPtr *BgmApiBackend) StateAndHeaderByNumber(CTX context.Context, blockNr rpcPtr.number) (*state.StateDB, *types.HeaderPtr, error) {
 	// Pending state is only known by the miner
-	if blockNr == rpcPtr.PendingBlockNumber {
+	if blockNr == rpcPtr.Pendingnumber {
 		block, state := bPtr.bgmPtr.miner.Pending()
 		return state, block.Header(), nil
 	}
 	// Otherwise resolve the block number and return its state
-	headerPtr, err := bPtr.HeaderByNumber(ctx, blockNr)
-	if header == nil || err != nil {
+	HeaderPtr, err := bPtr.HeaderByNumber(CTX, blockNr)
+	if Header == nil || err != nil {
 		return nil, nil, err
 	}
-	stateDb, err := bPtr.bgmPtr.BlockChain().StateAt(headerPtr.Root)
-	return stateDb, headerPtr, err
+	stateDb, err := bPtr.bgmPtr.BlockChain().StateAt(HeaderPtr.Root)
+	return stateDb, HeaderPtr, err
 }
 
-func (bPtr *BgmApiBackend) GetBlock(ctx context.Context, blockHash bgmcommon.Hash) (*types.Block, error) {
+func (bPtr *BgmApiBackend) GetBlock(CTX context.Context, blockHash bgmcommon.Hash) (*types.Block, error) {
 	return bPtr.bgmPtr.blockchain.GetBlockByHash(blockHash), nil
 }
 
-func (bPtr *BgmApiBackend) GetReceipts(ctx context.Context, blockHash bgmcommon.Hash) (types.Receipts, error) {
-	return bgmcore.GetBlockReceipts(bPtr.bgmPtr.chainDb, blockHash, bgmcore.GetBlockNumber(bPtr.bgmPtr.chainDb, blockHash)), nil
+func (bPtr *BgmApiBackend) GetReceipts(CTX context.Context, blockHash bgmcommon.Hash) (types.Receipts, error) {
+	return bgmCore.GetBlockReceipts(bPtr.bgmPtr.chainDb, blockHash, bgmCore.Getnumber(bPtr.bgmPtr.chainDb, blockHash)), nil
 }
 
 func (bPtr *BgmApiBackend) GetTd(blockHash bgmcommon.Hash) *big.Int {
 	return bPtr.bgmPtr.blockchain.GetTdByHash(blockHash)
 }
 
-func (bPtr *BgmApiBackend) SubscribeChainEvent(ch chan<- bgmcore.ChainEvent) event.Subscription {
+func (bPtr *BgmApiBackend) SubscribeChainEvent(ch chan<- bgmCore.ChainEvent) event.Subscription {
 	return bPtr.bgmPtr.BlockChain().SubscribeChainEvent(ch)
 }
 
-func (bPtr *BgmApiBackend) SubscribeChainHeadEvent(ch chan<- bgmcore.ChainHeadEvent) event.Subscription {
+func (bPtr *BgmApiBackend) SubscribeChainHeadEvent(ch chan<- bgmCore.ChainHeadEvent) event.Subscription {
 	return bPtr.bgmPtr.BlockChain().SubscribeChainHeadEvent(ch)
 }
 
@@ -132,7 +132,7 @@ func (bPtr *BgmApiBackend) SubscribebgmlogssEvent(ch chan<- []*types.bgmlogs) ev
 	return bPtr.bgmPtr.BlockChain().SubscribebgmlogssEvent(ch)
 }
 
-func (bPtr *BgmApiBackend) SendTx(ctx context.Context, signedTx *types.Transaction) error {
+func (bPtr *BgmApiBackend) SendTx(CTX context.Context, signedTx *types.Transaction) error {
 	return bPtr.bgmPtr.txPool.AddLocal(signedTx)
 }
 
@@ -152,7 +152,7 @@ func (bPtr *BgmApiBackend) GetPoolTransaction(hash bgmcommon.Hash) *types.Transa
 	return bPtr.bgmPtr.txPool.Get(hash)
 }
 
-func (bPtr *BgmApiBackend) GetPoolNonce(ctx context.Context, addr bgmcommon.Address) (uint64, error) {
+func (bPtr *BgmApiBackend) GetPoolNonce(CTX context.Context, addr bgmcommon.Address) (Uint64, error) {
 	return bPtr.bgmPtr.txPool.State().GetNonce(addr), nil
 }
 
@@ -164,7 +164,7 @@ func (bPtr *BgmApiBackend) TxPoolContent() (map[bgmcommon.Address]types.Transact
 	return bPtr.bgmPtr.TxPool().Content()
 }
 
-func (bPtr *BgmApiBackend) SubscribeTxPreEvent(ch chan<- bgmcore.TxPreEvent) event.Subscription {
+func (bPtr *BgmApiBackend) SubscribeTxPreEvent(ch chan<- bgmCore.TxPreEvent) event.Subscription {
 	return bPtr.bgmPtr.TxPool().SubscribeTxPreEvent(ch)
 }
 
@@ -176,8 +176,8 @@ func (bPtr *BgmApiBackend) ProtocolVersion() int {
 	return bPtr.bgmPtr.BgmVersion()
 }
 
-func (bPtr *BgmApiBackend) SuggestPrice(ctx context.Context) (*big.Int, error) {
-	return bPtr.gpo.SuggestPrice(ctx)
+func (bPtr *BgmApiBackend) SuggestPrice(CTX context.Context) (*big.Int, error) {
+	return bPtr.gpo.SuggestPrice(CTX)
 }
 
 func (bPtr *BgmApiBackend) ChainDb() bgmdbPtr.Database {
@@ -187,7 +187,7 @@ func (bPtr *BgmApiBackend) ChainDb() bgmdbPtr.Database {
 func (bPtr *BgmApiBackend) EventMux() *event.TypeMux {
 	return bPtr.bgmPtr.EventMux()
 }
-func (bPtr *BgmApiBackend) ServiceFilter(ctx context.Context, session *bloombits.MatcherSession) {
+func (bPtr *BgmApiBackend) ServiceFilter(CTX context.Context, session *bloombits.MatcherSession) {
 	for i := 0; i < bloomFilterThreads; i++ {
 		go session.Multiplex(bloomRetrievalBatch, bloomRetrievalWait, bPtr.bgmPtr.bloomRequests)
 	}
@@ -196,7 +196,7 @@ func (bPtr *BgmApiBackend) AccountManager() *accounts.Manager {
 	return bPtr.bgmPtr.AccountManager()
 }
 
-func (bPtr *BgmApiBackend) BloomStatus() (uint64, uint64) {
+func (bPtr *BgmApiBackend) BloomStatus() (Uint64, Uint64) {
 	sections, _, _ := bPtr.bgmPtr.bloomIndexer.Sections()
 	return bgmparam.BloomBitsBlocks, sections
 }

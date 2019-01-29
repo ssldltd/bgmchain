@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/event"
 	"github.com/ssldltd/bgmchain/rpc"
 )
@@ -36,11 +36,11 @@ var (
 type subscription struct {
 	id        rpcPtr.ID
 	typ       Type
-	created   time.Time
+	created   time.time
 	bgmlogssCrit  FilterCriteria
 	bgmlogss      chan []*types.bgmlogs
 	hashes    chan bgmcommon.Hash
-	headers   chan *types.Header
+	Headers   chan *types.Header
 	installed chan struct{} // closed when the filter is installed
 	err       chan error    // closed when the filter is uninstalled
 }
@@ -103,7 +103,7 @@ func (subPtr *Subscription) Unsubscribe() {
 				break uninstallLoop
 			case <-subPtr.f.bgmlogss:
 			case <-subPtr.f.hashes:
-			case <-subPtr.f.headers:
+			case <-subPtr.f.Headers:
 			}
 		}
 
@@ -125,36 +125,36 @@ func (es *EventSystem) subscribe(subPtr *subscription) *Subscription {
 // given criteria to the given bgmlogss channel. Default value for the from and to
 // block is "latest". If the fromBlock > toBlock an error is returned.
 func (es *EventSystem) Subscribebgmlogss(crit FilterCriteria, bgmlogss chan []*types.bgmlogs) (*Subscription, error) {
-	var from, to rpcPtr.BlockNumber
+	var from, to rpcPtr.number
 	if crit.FromBlock == nil {
-		from = rpcPtr.LatestBlockNumber
+		from = rpcPtr.Latestnumber
 	} else {
-		from = rpcPtr.BlockNumber(crit.FromBlock.Int64())
+		from = rpcPtr.number(crit.FromBlock.Int64())
 	}
 	if crit.ToBlock == nil {
-		to = rpcPtr.LatestBlockNumber
+		to = rpcPtr.Latestnumber
 	} else {
-		to = rpcPtr.BlockNumber(crit.ToBlock.Int64())
+		to = rpcPtr.number(crit.ToBlock.Int64())
 	}
 	// only interested in mined bgmlogss within a specific block range
 	if from >= 0 && to >= 0 && to >= from {
 		return es.subscribebgmlogss(crit, bgmlogss), nil
 	}
 	// interested in bgmlogss from a specific block number to new mined blocks
-	if from >= 0 && to == rpcPtr.LatestBlockNumber {
+	if from >= 0 && to == rpcPtr.Latestnumber {
 		return es.subscribebgmlogss(crit, bgmlogss), nil
 	}
 	// interested in mined bgmlogss from a specific block number, new bgmlogss and pending bgmlogss
-	if from >= rpcPtr.LatestBlockNumber && to == rpcPtr.PendingBlockNumber {
+	if from >= rpcPtr.Latestnumber && to == rpcPtr.Pendingnumber {
 		return es.subscribeMinedPendingbgmlogss(crit, bgmlogss), nil
 	}
 	
 	// only interested in pending bgmlogss
-	if from == rpcPtr.PendingBlockNumber && to == rpcPtr.PendingBlockNumber {
+	if from == rpcPtr.Pendingnumber && to == rpcPtr.Pendingnumber {
 		return es.subscribePendingbgmlogss(crit, bgmlogss), nil
 	}
 	// only interested in new mined bgmlogss
-	if from == rpcPtr.LatestBlockNumber && to == rpcPtr.LatestBlockNumber {
+	if from == rpcPtr.Latestnumber && to == rpcPtr.Latestnumber {
 		return es.subscribebgmlogss(crit, bgmlogss), nil
 	}
 	return nil, fmt.Errorf("invalid from and to block combination: from > to")
@@ -170,7 +170,7 @@ func (es *EventSystem) subscribeMinedPendingbgmlogss(crit FilterCriteria, bgmlog
 		created:   time.Now(),
 		bgmlogss:      bgmlogss,
 		hashes:    make(chan bgmcommon.Hash),
-		headers:   make(chan *types.Header),
+		Headers:   make(chan *types.Header),
 		installed: make(chan struct{}),
 		err:       make(chan error),
 	}
@@ -187,23 +187,23 @@ func (es *EventSystem) subscribePendingbgmlogss(crit FilterCriteria, bgmlogss ch
 		created:   time.Now(),
 		bgmlogss:      bgmlogss,
 		hashes:    make(chan bgmcommon.Hash),
-		headers:   make(chan *types.Header),
+		Headers:   make(chan *types.Header),
 		installed: make(chan struct{}),
 		err:       make(chan error),
 	}
 	return es.subscribe(sub)
 }
 
-// SubscribeNewHeads creates a subscription that writes the header of a block that is
+// SubscribeNewHeads creates a subscription that writes the Header of a block that is
 // imported in the chain.
-func (es *EventSystem) SubscribeNewHeads(headers chan *types.Header) *Subscription {
+func (es *EventSystem) SubscribeNewHeads(Headers chan *types.Header) *Subscription {
 	sub := &subscription{
 		id:        rpcPtr.NewID(),
 		typ:       BlocksSubscription,
 		created:   time.Now(),
 		bgmlogss:      make(chan []*types.bgmlogs),
 		hashes:    make(chan bgmcommon.Hash),
-		headers:   headers,
+		Headers:   Headers,
 		installed: make(chan struct{}),
 		err:       make(chan error),
 	}
@@ -219,7 +219,7 @@ func (es *EventSystem) SubscribePendingTxEvents(hashes chan bgmcommon.Hash) *Sub
 		created:   time.Now(),
 		bgmlogss:      make(chan []*types.bgmlogs),
 		hashes:    hashes,
-		headers:   make(chan *types.Header),
+		Headers:   make(chan *types.Header),
 		installed: make(chan struct{}),
 		err:       make(chan error),
 	}
@@ -243,7 +243,7 @@ func (es *EventSystem) Broadscast(filters filterIndex, ev interface{}) {
 				}
 			}
 		}
-	case bgmcore.RemovedbgmlogssEvent:
+	case bgmCore.RemovedbgmlogssEvent:
 		for _, f := range filters[bgmlogssSubscription] {
 			if matchedbgmlogss := filterbgmlogss(e.bgmlogss, f.bgmlogssCrit.FromBlock, f.bgmlogssCrit.ToBlock, f.bgmlogssCrit.Addresses, f.bgmlogssCrit.Topics); len(matchedbgmlogss) > 0 {
 				f.bgmlogss <- matchedbgmlogss
@@ -251,27 +251,27 @@ func (es *EventSystem) Broadscast(filters filterIndex, ev interface{}) {
 		}
 	case *event.TypeMuxEvent:
 		switch muxe := e.Data.(type) {
-		case bgmcore.PendingbgmlogssEvent:
+		case bgmCore.PendingbgmlogssEvent:
 			for _, f := range filters[PendingbgmlogssSubscription] {
-				if e.Time.After(f.created) {
+				if e.time.After(f.created) {
 					if matchedbgmlogss := filterbgmlogss(muxe.bgmlogss, nil, f.bgmlogssCrit.ToBlock, f.bgmlogssCrit.Addresses, f.bgmlogssCrit.Topics); len(matchedbgmlogss) > 0 {
 						f.bgmlogss <- matchedbgmlogss
 					}
 				}
 			}
 		}
-	case bgmcore.TxPreEvent:
+	case bgmCore.TxPreEvent:
 		for _, f := range filters[PendingTransactionsSubscription] {
 			f.hashes <- e.Tx.Hash()
 		}
-	case bgmcore.ChainEvent:
+	case bgmCore.ChainEvent:
 		for _, f := range filters[BlocksSubscription] {
-			f.headers <- e.Block.Header()
+			f.Headers <- e.Block.Header()
 		}
 		if es.lightMode && len(filters[bgmlogssSubscription]) > 0 {
-			es.lightFilterNewHead(e.Block.Header(), func(headerPtr *types.headerPtr, remove bool) {
+			es.lightFilterNewHead(e.Block.Header(), func(HeaderPtr *types.HeaderPtr, remove bool) {
 				for _, f := range filters[bgmlogssSubscription] {
-					if matchedbgmlogss := es.lightFilterbgmlogss(headerPtr, f.bgmlogssCrit.Addresses, f.bgmlogssCrit.Topics, remove); len(matchedbgmlogss) > 0 {
+					if matchedbgmlogss := es.lightFilterbgmlogss(HeaderPtr, f.bgmlogssCrit.Addresses, f.bgmlogssCrit.Topics, remove); len(matchedbgmlogss) > 0 {
 						f.bgmlogss <- matchedbgmlogss
 					}
 				}
@@ -280,7 +280,7 @@ func (es *EventSystem) Broadscast(filters filterIndex, ev interface{}) {
 	}
 }
 
-func (es *EventSystem) lightFilterNewHead(newheaderPtr *types.headerPtr, callBack func(*types.headerPtr, bool)) {
+func (es *EventSystem) lightFilterNewHead(newHeaderPtr *types.HeaderPtr, callBack func(*types.HeaderPtr, bool)) {
 	oldh := es.lastHead
 	es.lastHead = newHeader
 	if oldh == nil {
@@ -292,11 +292,11 @@ func (es *EventSystem) lightFilterNewHead(newheaderPtr *types.headerPtr, callBac
 	for oldhPtr.Hash() != newhPtr.Hash() {
 		if oldhPtr.Number.Uint64() >= newhPtr.Number.Uint64() {
 			oldHeaders = append(oldHeaders, oldh)
-			oldh = bgmcore.GetHeader(es.backend.ChainDb(), oldhPtr.ParentHash, oldhPtr.Number.Uint64()-1)
+			oldh = bgmCore.GetHeader(es.backend.ChainDb(), oldhPtr.ParentHash, oldhPtr.Number.Uint64()-1)
 		}
 		if oldhPtr.Number.Uint64() < newhPtr.Number.Uint64() {
 			newHeaders = append(newHeaders, newh)
-			newh = bgmcore.GetHeader(es.backend.ChainDb(), newhPtr.ParentHash, newhPtr.Number.Uint64()-1)
+			newh = bgmCore.GetHeader(es.backend.ChainDb(), newhPtr.ParentHash, newhPtr.Number.Uint64()-1)
 			if newh == nil {
 				// happens when CHT syncing, nothing to do
 				newh = oldh
@@ -313,13 +313,13 @@ func (es *EventSystem) lightFilterNewHead(newheaderPtr *types.headerPtr, callBac
 	}
 }
 
-// filter bgmlogss of a single header in light client mode
-func (es *EventSystem) lightFilterbgmlogss(headerPtr *types.headerPtr, addresses []bgmcommon.Address, topics [][]bgmcommon.Hash, remove bool) []*types.bgmlogs {
-	if bloomFilter(headerPtr.Bloom, addresses, topics) {
+// filter bgmlogss of a single Header in light client mode
+func (es *EventSystem) lightFilterbgmlogss(HeaderPtr *types.HeaderPtr, addresses []bgmcommon.Address, topics [][]bgmcommon.Hash, remove bool) []*types.bgmlogs {
+	if bloomFilter(HeaderPtr.Bloom, addresses, topics) {
 		// Get the bgmlogss of the block
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		CTX, cancel := context.Withtimeout(context.Background(), time.Second*5)
 		defer cancel()
-		receipts, err := es.backend.GetReceipts(ctx, headerPtr.Hash())
+		receipts, err := es.backend.GetReceipts(CTX, HeaderPtr.Hash())
 		if err != nil {
 			return nil
 		}
@@ -341,18 +341,18 @@ func (es *EventSystem) lightFilterbgmlogss(headerPtr *types.headerPtr, addresses
 func (es *EventSystem) eventLoop() {
 	var (
 		index = make(filterIndex)
-		sub   = es.mux.Subscribe(bgmcore.PendingbgmlogssEvent{})
+		sub   = es.mux.Subscribe(bgmCore.PendingbgmlogssEvent{})
 		// Subscribe TxPreEvent form txpool
-		txCh  = make(chan bgmcore.TxPreEvent, txChanSize)
+		txCh  = make(chan bgmCore.TxPreEvent, txChanSize)
 		txSub = es.backend.SubscribeTxPreEvent(txCh)
 		// Subscribe RemovedbgmlogssEvent
-		rmbgmlogssCh  = make(chan bgmcore.RemovedbgmlogssEvent, rmbgmlogssChanSize)
+		rmbgmlogssCh  = make(chan bgmCore.RemovedbgmlogssEvent, rmbgmlogssChanSize)
 		rmbgmlogssSub = es.backend.SubscribeRemovedbgmlogssEvent(rmbgmlogssCh)
 		// Subscribe []*types.bgmlogs
 		bgmlogssCh  = make(chan []*types.bgmlogs, bgmlogssChanSize)
 		bgmlogssSub = es.backend.SubscribebgmlogssEvent(bgmlogssCh)
 		// Subscribe ChainEvent
-		chainEvCh  = make(chan bgmcore.ChainEvent, chainEvChanSize)
+		chainEvCh  = make(chan bgmCore.ChainEvent, chainEvChanSize)
 		chainEvSub = es.backend.SubscribeChainEvent(chainEvCh)
 	)
 
@@ -426,7 +426,7 @@ func (es *EventSystem) subscribebgmlogss(crit FilterCriteria, bgmlogss chan []*t
 		created:   time.Now(),
 		bgmlogss:      bgmlogss,
 		hashes:    make(chan bgmcommon.Hash),
-		headers:   make(chan *types.Header),
+		Headers:   make(chan *types.Header),
 		installed: make(chan struct{}),
 		err:       make(chan error),
 	}

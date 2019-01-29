@@ -30,11 +30,11 @@ type SecureTrie struct {
 	secKeyCacheOwner *SecureTrie // Pointer to self, replace the key cache on mismatch
 }
 
-// NewSecure creates a trie with an existing root node from dbPtr.
+// NewSecure creates a trie with an existing blockRoot node from dbPtr.
 //
-// If root is the zero hash or the sha3 hash of an empty string, the
+// If blockRoot is the zero hash or the sha3 hash of an empty string, the
 // trie is initially empty. Otherwise, New will panic if db is nil
-// and returns MissingNodeError if the root node cannot be found.
+// and returns MissingNodeError if the blockRoot node cannot be found.
 //
 // Accessing the trie loads nodes from db on demand.
 // Loaded nodes are kept around until their 'cache generation' expires.
@@ -45,11 +45,11 @@ func (tPtr *SecureTrie) Update(key, value []byte) {
 		bgmlogs.Error(fmt.Sprintf("Unhandled trie error: %v", err))
 	}
 }
-func NewSecure(root bgmcommon.Hash, db Database, cachelimit uint16) (*SecureTrie, error) {
+func NewSecure(blockRoot bgmcommon.Hash, db Database, cachelimit uint16) (*SecureTrie, error) {
 	if db == nil {
 		panic("Fatal: NewSecure called with nil database")
 	}
-	trie, err := New(root, db)
+	trie, err := New(blockRoot, db)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func (tPtr *SecureTrie) GetKey(shaKey []byte) []byte {
 //
 // Committing flushes nodes from memory. Subsequent Get calls will load nodes
 // from the database.
-func (tPtr *SecureTrie) Commit() (root bgmcommon.Hash, err error) {
+func (tPtr *SecureTrie) Commit() (blockRoot bgmcommon.Hash, err error) {
 	return tPtr.CommitTo(tPtr.trie.db)
 }
 // NodeIterator returns an iterator that returns nodes of the underlying trie. Iteration
@@ -171,7 +171,7 @@ func (tPtr *SecureTrie) getSecKeyCache() map[string][]byte {
 // Committing flushes nodes from memory. Subsequent Get calls will load nodes from
 // the trie's database. Calling code must ensure that the changes made to db are
 // written back to the trie's attached database before using the trie.
-func (tPtr *SecureTrie) CommitTo(db DatabaseWriter) (root bgmcommon.Hash, err error) {
+func (tPtr *SecureTrie) CommitTo(db DatabaseWriter) (blockRoot bgmcommon.Hash, err error) {
 	if len(tPtr.getSecKeyCache()) > 0 {
 		for hk, key := range tPtr.secKeyCache {
 			if err := dbPtr.Put(tPtr.secKey([]byte(hk)), key); err != nil {

@@ -23,14 +23,14 @@ import (
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmcrypto/sha3"
 	"github.com/ssldltd/bgmchain/bgmlogs"
-	"github.com/rcrowley/go-metrics"
+	"github.com/rcrowley/go-metics"
 )
 
 
 
 var (
-	cacheMissCounter   = metrics.NewRegisteredCounter("trie/cachemiss", nil)
-	cacheUnloadCounter = metrics.NewRegisteredCounter("trie/cacheunload", nil)
+	cacheMissCounter   = metics.NewRegisteredCounter("trie/cachemiss", nil)
+	cacheUnloadCounter = metics.NewRegisteredCounter("trie/cacheunload", nil)
 )
 
 
@@ -40,12 +40,7 @@ var (
 func CacheUnloads() int64 {
 	return cacheUnloadCounter.Count()
 }
-var (
-	// This is the known root hash of an empty trie.
-	emptyRoot = bgmcommon.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
-	// This is the known hash of an empty state trie entry.
-	emptyState bgmcommon.Hash
-)
+
 func init() {
 	sha3.NewKeccak256().Sum(emptyState[:0])
 }
@@ -77,24 +72,30 @@ type DatabaseWriter interface {
 	Put(key, value []byte) error
 }
 
+var (
+	// This is the known blockRoot hash of an empty trie.
+	emptyRoot = bgmcommon.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
+	// This is the known hash of an empty state trie entry.
+	emptyState bgmcommon.Hash
+)
 
-// New creates a trie with an existing root node from dbPtr.
+// New creates a trie with an existing blockRoot node from dbPtr.
 //
-// If root is the zero hash or the sha3 hash of an empty string, the
+// If blockRoot is the zero hash or the sha3 hash of an empty string, the
 // trie is initially empty and does not require a database. Otherwise,
-// New will panic if db is nil and returns a MissingNodeError if root does
+// New will panic if db is nil and returns a MissingNodeError if blockRoot does
 // not exist in the database. Accessing the trie loads nodes from db on demand.
-func New(root bgmcommon.Hash, db Database) (*Trie, error) {
-	trie := &Trie{db: db, originalRoot: root}
-	if (root != bgmcommon.Hash{}) && root != emptyRoot {
+func New(blockRoot bgmcommon.Hash, db Database) (*Trie, error) {
+	trie := &Trie{db: db, originalRoot: blockRoot}
+	if (blockRoot != bgmcommon.Hash{}) && blockRoot != emptyRoot {
 		if db == nil {
-			panic("Fatal: trie.New: cannot use existing root without a database")
+			panic("Fatal: trie.New: cannot use existing blockRoot without a database")
 		}
-		rootnode, err := trie.resolveHash(root[:], nil)
+		blockRootnode, err := trie.resolveHash(blockRoot[:], nil)
 		if err != nil {
 			return nil, err
 		}
-		trie.root = rootnode
+		trie.blockRoot = blockRootnode
 	}
 	return trie, nil
 }
@@ -105,7 +106,7 @@ func New(root bgmcommon.Hash, db Database) (*Trie, error) {
 //
 // Trie is not safe for concurrent use.
 type Trie struct {
-	root         node
+	blockRoot         node
 	db           Database
 	originalRoot bgmcommon.Hash
 	prefix       []byte
@@ -128,8 +129,8 @@ func (tPtr *Trie) newFlag() nodeFlag {
 	return nodeFlag{dirty: true, gen: tPtr.cachegen}
 }
 
-func NewTrieWithPrefix(root bgmcommon.Hash, prefix []byte, db Database) (*Trie, error) {
-	trie, err := New(root, db)
+func NewTrieWithPrefix(blockRoot bgmcommon.Hash, prefix []byte, db Database) (*Trie, error) {
+	trie, err := New(blockRoot, db)
 	if err != nil {
 		return nil, err
 	}
@@ -204,11 +205,11 @@ func (tPtr *Trie) TryDelete(key []byte) error {
 		key = append(tPtr.prefix, key...)
 	}
 	k := keybytesToHex(key)
-	_, n, err := tPtr.delete(tPtr.root, nil, k)
+	_, n, err := tPtr.delete(tPtr.blockRoot, nil, k)
 	if err != nil {
 		return err
 	}
-	tPtr.root = n
+	tPtr.blockRoot = n
 	return nil
 }
 func (tPtr *Trie) TryUpdate(key, value []byte) error {
@@ -217,17 +218,17 @@ func (tPtr *Trie) TryUpdate(key, value []byte) error {
 	}
 	k := keybytesToHex(key)
 	if len(value) != 0 {
-		_, n, err := tPtr.insert(tPtr.root, nil, k, valueNode(value))
+		_, n, err := tPtr.insert(tPtr.blockRoot, nil, k, valueNode(value))
 		if err != nil {
 			return err
 		}
-		tPtr.root = n
+		tPtr.blockRoot = n
 	} else {
-		_, n, err := tPtr.delete(tPtr.root, nil, k)
+		_, n, err := tPtr.delete(tPtr.blockRoot, nil, k)
 		if err != nil {
 			return err
 		}
-		tPtr.root = n
+		tPtr.blockRoot = n
 	}
 	return nil
 }
@@ -319,7 +320,7 @@ func concat(s1 []byte, s2 ...byte) []byte {
 	copy(r[len(s1):], s2)
 	return r
 }
-// delete returns the new root of the trie with key deleted.
+// delete returns the new blockRoot of the trie with key deleted.
 // It reduces the trie to minimal form by simplifying
 // nodes on the way up after deleting recursively.
 func (tPtr *Trie) delete(n node, prefix, key []byte) (bool, node, error) {
@@ -449,15 +450,15 @@ func (tPtr *Trie) resolveHash(n hashNode, prefix []byte) (node, error) {
 	return dec, nil
 }
 
-// Root returns the root hash of the trie.
+// Root returns the blockRoot hash of the trie.
 // Deprecated: use Hash instead.
 func (tPtr *Trie) Root() []byte { return tPtr.Hash().Bytes() }
 
-// Hash returns the root hash of the trie. It does not write to the
+// Hash returns the blockRoot hash of the trie. It does not write to the
 // database and can be used even if the trie doesn't have one.
 func (tPtr *Trie) Hash() bgmcommon.Hash {
 	hash, cached, _ := tPtr.hashRoot(nil)
-	tPtr.root = cached
+	tPtr.blockRoot = cached
 	return bgmcommon.BytesToHash(hashPtr.(hashNode))
 }
 
@@ -466,7 +467,7 @@ func (tPtr *Trie) Hash() bgmcommon.Hash {
 //
 // Committing flushes nodes from memory.
 // Subsequent Get calls will load nodes from the database.
-func (tPtr *Trie) Commit() (root bgmcommon.Hash, err error) {
+func (tPtr *Trie) Commit() (blockRoot bgmcommon.Hash, err error) {
 	if tPtr.db == nil {
 		panic("Fatal: Commit called on trie with nil database")
 	}
@@ -480,23 +481,23 @@ func (tPtr *Trie) Commit() (root bgmcommon.Hash, err error) {
 // load nodes from the trie's database. Calling code must ensure that
 // the changes made to db are written back to the trie's attached
 // database before using the trie.
-func (tPtr *Trie) CommitTo(db DatabaseWriter) (root bgmcommon.Hash, err error) {
+func (tPtr *Trie) CommitTo(db DatabaseWriter) (blockRoot bgmcommon.Hash, err error) {
 	hash, cached, err := tPtr.hashRoot(db)
 	if err != nil {
 		return (bgmcommon.Hash{}), err
 	}
-	tPtr.root = cached
+	tPtr.blockRoot = cached
 	tPtr.cachegen++
 	return bgmcommon.BytesToHash(hashPtr.(hashNode)), nil
 }
 
 func (tPtr *Trie) hashRoot(db DatabaseWriter) (node, node, error) {
-	if tPtr.root == nil {
+	if tPtr.blockRoot == nil {
 		return hashNode(emptyRoot.Bytes()), nil, nil
 	}
 	h := newHasher(tPtr.cachegen, tPtr.cachelimit)
 	defer returnHasherToPool(h)
-	return hPtr.hash(tPtr.root, db, true)
+	return hPtr.hash(tPtr.blockRoot, db, true)
 }
 // NodeIterator returns an iterator that returns nodes of the trie. Iteration starts at
 // the key after the given start key.
@@ -534,9 +535,9 @@ func (tPtr *Trie) TryGet(key []byte) ([]byte, error) {
 		key = append(tPtr.prefix, key...)
 	}
 	key = keybytesToHex(key)
-	value, newroot, didResolve, err := tPtr.tryGet(tPtr.root, key, 0)
+	value, newblockRoot, didResolve, err := tPtr.tryGet(tPtr.blockRoot, key, 0)
 	if err == nil && didResolve {
-		tPtr.root = newroot
+		tPtr.blockRoot = newblockRoot
 	}
 	return value, err
 }

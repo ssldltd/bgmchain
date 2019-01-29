@@ -23,7 +23,7 @@ import (
 	"github.com/ssldltd/bgmchain/account/abi"
 	"github.com/ssldltd/bgmchain/account/abi/bind"
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 )
 
 

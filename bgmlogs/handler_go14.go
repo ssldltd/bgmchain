@@ -23,12 +23,14 @@ type swapHandler struct {
 	handler atomicPtr.Value
 }
 
-func (hPtr *swapHandler) bgmlogs(r *Record) error {
-	return (*hPtr.handler.Load().(*Handler)).bgmlogs(r)
-}
 
 func (hPtr *swapHandler) Swap(newHandler Handler) {
 	hPtr.handler.Store(&newHandler)
+}
+
+
+func (hPtr *swapHandler) bgmlogs(r *Record) error {
+	return (*hPtr.handler.Load().(*Handler)).bgmlogs(r)
 }
 
 func (hPtr *swapHandler) Get() Handler {

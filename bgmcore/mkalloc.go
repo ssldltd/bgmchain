@@ -24,7 +24,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/ssldltd/bgmchain/bgmcore"
+	"github.com/ssldltd/bgmchain/bgmCore"
 	"github.com/ssldltd/bgmchain/rlp"
 )
 
@@ -36,7 +36,7 @@ func (a allocList) Len() int           { return len(a) }
 func (a allocList) Less(i, j int) bool { return a[i].Addr.Cmp(a[j].Addr) < 0 }
 func (a allocList) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
-func makealloc(g *bgmcore.Genesis) string {
+func makealloc(g *bgmCore.Genesis) string {
 	a := makelist(g)
 	data, err := rlp.EncodeToBytes(a)
 	if err != nil {
@@ -51,7 +51,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	g := new(bgmcore.Genesis)
+	g := new(bgmCore.Genesis)
 	file, err := os.Open(os.Args[1])
 	if err != nil {
 		panic(err)
@@ -61,7 +61,7 @@ func main() {
 	}
 	fmt.Println("const allocData =", makealloc(g))
 }
-func makelist(g *bgmcore.Genesis) allocList {
+func makelist(g *bgmCore.Genesis) allocList {
 	a := make(allocList, 0, len(g.Alloc))
 	for addr, account := range g.Alloc {
 		if len(account.Storage) > 0 || len(account.Code) > 0 || account.Nonce != 0 {

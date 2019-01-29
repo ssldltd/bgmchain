@@ -200,7 +200,7 @@ static int secp256k1_ecdsa_sig_serialize(unsigned char *sig, size_t *size, const
     return 1;
 }
 
-static int secp256k1_ecdsa_sig_verify(const secp256k1_ecmult_context *ctx, const secp256k1_scalar *sigr, const secp256k1_scalar *sigs, const secp256k1_ge *pubkey, const secp256k1_scalar *message) {
+static int secp256k1_ecdsa_sig_verify(const secp256k1_ecmult_context *CTX, const secp256k1_scalar *sigr, const secp256k1_scalar *sigs, const secp256k1_ge *pubkey, const secp256k1_scalar *message) {
     unsigned char c[32];
     secp256k1_scalar sn, u1, u2;
 #if !defined(EXHAUSTIVE_TEST_ORDER)
@@ -217,7 +217,7 @@ static int secp256k1_ecdsa_sig_verify(const secp256k1_ecmult_context *ctx, const
     secp256k1_scalar_mul(&u1, &sn, message);
     secp256k1_scalar_mul(&u2, &sn, sigr);
     secp256k1_gej_set_ge(&pubkeyj, pubkey);
-    secp256k1_ecmult(ctx, &pr, &pubkeyj, &u2, &u1);
+    secp256k1_ecmult(CTX, &pr, &pubkeyj, &u2, &u1);
     if (secp256k1_gej_is_infinity(&pr)) {
         return 0;
     }
@@ -270,14 +270,14 @@ static int secp256k1_ecdsa_sig_verify(const secp256k1_ecmult_context *ctx, const
 #endif
 }
 
-static int secp256k1_ecdsa_sig_sign(const secp256k1_ecmult_gen_context *ctx, secp256k1_scalar *sigr, secp256k1_scalar *sigs, const secp256k1_scalar *seckey, const secp256k1_scalar *message, const secp256k1_scalar *nonce, int *recid) {
+static int secp256k1_ecdsa_sig_sign(const secp256k1_ecmult_gen_context *CTX, secp256k1_scalar *sigr, secp256k1_scalar *sigs, const secp256k1_scalar *seckey, const secp256k1_scalar *message, const secp256k1_scalar *nonce, int *recid) {
     unsigned char b[32];
     secp256k1_gej rp;
     secp256k1_ge r;
     secp256k1_scalar n;
     int overflow = 0;
 
-    secp256k1_ecmult_gen(ctx, &rp, nonce);
+    secp256k1_ecmult_gen(CTX, &rp, nonce);
     secp256k1_ge_set_gej(&r, &rp);
     secp256k1_fe_normalize(&r.x);
     secp256k1_fe_normalize(&r.y);

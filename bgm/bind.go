@@ -23,7 +23,7 @@ import (
 	"github.com/ssldltd/bgmchain"
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmcommon/hexutil"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/internal/bgmapi"
 	"github.com/ssldltd/bgmchain/rlp"
 	"github.com/ssldltd/bgmchain/rpc"
@@ -37,18 +37,18 @@ type ContractBackended struct {
 
 // PendingAccountNonce implements bind.ContractTransactor retrieving the current
 // pending nonce associated with an account.
-func (bPtr *ContractBackended) PendingNonceAt(ctx context.Context, account bgmcommon.Address) (nonce uint64, err error) {
-	out, err := bPtr.txapi.GetTransactionCount(ctx, account, rpcPtr.PendingBlockNumber)
+func (bPtr *ContractBackended) PendingNonceAt(CTX context.Context, account bgmcommon.Address) (nonce Uint64, err error) {
+	out, err := bPtr.txapi.GetTransactionCount(CTX, account, rpcPtr.Pendingnumber)
 	if out != nil {
-		nonce = uint64(*out)
+		nonce = Uint64(*out)
 	}
 	return nonce, err
 }
 
 // SuggestGasPrice implements bind.ContractTransactor retrieving the currently
 // suggested gas price to allow a timely execution of a transaction.
-func (bPtr *ContractBackended) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
-	return bPtr.eapi.GasPrice(ctx)
+func (bPtr *ContractBackended) SuggestGasPrice(CTX context.Context) (*big.Int, error) {
+	return bPtr.eapi.GasPrice(CTX)
 }
 
 func NewContractBackended(apiBackend bgmapi.Backend) *ContractBackended {
@@ -62,16 +62,16 @@ func NewContractBackended(apiBackend bgmapi.Backend) *ContractBackended {
 // ContractCall implements bind.ContractCalled executing an Bgmchain contract
 // call with the specified data as the input. The pending flag requests execution
 // against the pending block, not the stable head of the chain.
-func (bPtr *ContractBackended) CallContract(ctx context.Context, msg bgmchain.CallMsg, blockNumPtr *big.Int) ([]byte, error) {
-	out, err := bPtr.bcapi.Call(ctx, toCallArgs(msg), toBlockNumber(blockNum))
+func (bPtr *ContractBackended) CallContract(CTX context.Context, msg bgmchain.CallMsg, blockNumPtr *big.Int) ([]byte, error) {
+	out, err := bPtr.bcapi.Call(CTX, toCallArgs(msg), tonumber(blockNum))
 	return out, err
 }
 
 // ContractCall implements bind.ContractCalled executing an Bgmchain contract
 // call with the specified data as the input. The pending flag requests execution
 // against the pending block, not the stable head of the chain.
-func (bPtr *ContractBackended) PendingCallContract(ctx context.Context, msg bgmchain.CallMsg) ([]byte, error) {
-	out, err := bPtr.bcapi.Call(ctx, toCallArgs(msg), rpcPtr.PendingBlockNumber)
+func (bPtr *ContractBackended) PendingCallContract(CTX context.Context, msg bgmchain.CallMsg) ([]byte, error) {
+	out, err := bPtr.bcapi.Call(CTX, toCallArgs(msg), rpcPtr.Pendingnumber)
 	return out, err
 }
 
@@ -93,11 +93,11 @@ func toCallArgs(msg bgmchain.CallMsg) bgmapi.CallArgs {
 	return args
 }
 
-func toBlockNumber(numPtr *big.Int) rpcPtr.BlockNumber {
+func tonumber(numPtr *big.Int) rpcPtr.number {
 	if num == nil {
-		return rpcPtr.LatestBlockNumber
+		return rpcPtr.Latestnumber
 	}
-	return rpcPtr.BlockNumber(numPtr.Int64())
+	return rpcPtr.number(numPtr.Int64())
 }
 
 // EstimateGasLimit implements bind.ContractTransactor triing to estimate the gas
@@ -105,24 +105,24 @@ func toBlockNumber(numPtr *big.Int) rpcPtr.BlockNumber {
 // the backend blockchain. There is no guarantee that this is the true gas limit
 // requirement as other transactions may be added or removed by miners, but it
 // should provide a basis for setting a reasonable default.
-func (bPtr *ContractBackended) EstimateGas(ctx context.Context, msg bgmchain.CallMsg) (*big.Int, error) {
-	out, err := bPtr.bcapi.EstimateGas(ctx, toCallArgs(msg))
+func (bPtr *ContractBackended) EstimateGas(CTX context.Context, msg bgmchain.CallMsg) (*big.Int, error) {
+	out, err := bPtr.bcapi.EstimateGas(CTX, toCallArgs(msg))
 	return out.ToInt(), err
 }
 
 // SendTransaction implements bind.ContractTransactor injects the transaction
 // into the pending pool for execution.
-func (bPtr *ContractBackended) SendTransaction(ctx context.Context, tx *types.Transaction) error {
+func (bPtr *ContractBackended) SendTransaction(CTX context.Context, tx *types.Transaction) error {
 	raw, _ := rlp.EncodeToBytes(tx)
-	_, err := bPtr.txapi.SendRawTransaction(ctx, raw)
+	_, err := bPtr.txapi.SendRawTransaction(CTX, raw)
 	return err
 }
 // CodeAt retrieves any code associated with the contract from the local API.
-func (bPtr *ContractBackended) CodeAt(ctx context.Context, contract bgmcommon.Address, blockNumPtr *big.Int) ([]byte, error) {
-	return bPtr.bcapi.GetCode(ctx, contract, toBlockNumber(blockNum))
+func (bPtr *ContractBackended) CodeAt(CTX context.Context, contract bgmcommon.Address, blockNumPtr *big.Int) ([]byte, error) {
+	return bPtr.bcapi.GetCode(CTX, contract, tonumber(blockNum))
 }
 
 // CodeAt retrieves any code associated with the contract from the local API.
-func (bPtr *ContractBackended) PendingCodeAt(ctx context.Context, contract bgmcommon.Address) ([]byte, error) {
-	return bPtr.bcapi.GetCode(ctx, contract, rpcPtr.PendingBlockNumber)
+func (bPtr *ContractBackended) PendingCodeAt(CTX context.Context, contract bgmcommon.Address) ([]byte, error) {
+	return bPtr.bcapi.GetCode(CTX, contract, rpcPtr.Pendingnumber)
 }

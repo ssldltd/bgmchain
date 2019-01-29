@@ -7,7 +7,7 @@
 /****
  * Please do not link this file directly. It is not part of the libsecp256k1
  * project and does not promise any stability in its API, functionality or
- * presence. Projects which use this code should instead copy this header
+ * presence. Projects which use this code should instead copy this Header
  * and its accompanying .c file directly into their codebase.
  ****/
 
@@ -60,7 +60,7 @@ extern "C" {
 /** Parse a signature in "lax DER" format
  *
  *  Returns: 1 when the signature could be parsed, 0 otherwise.
- *  Args: ctx:      a secp256k1 context object
+ *  Args: CTX:      a secp256k1 context object
  *  Out:  sig:      a pointer to a signature object
  *  In:   input:    a pointer to the signature to be parsed
  *        inputlen: the length of the array pointed to be input
@@ -78,7 +78,7 @@ extern "C" {
  *  guaranteed to fail for every message and public key.
  */
 int ecdsa_signature_parse_der_lax(
-    const secp256k1_context* ctx,
+    const secp256k1_context* CTX,
     secp256k1_ecdsa_signature* sig,
     const unsigned char *input,
     size_t inputlen

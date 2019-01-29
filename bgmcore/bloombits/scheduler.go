@@ -22,7 +22,7 @@ import (
 // request represents a bloom retrieval task to prioritize and pull from the local
 // database or remotely from the network.
 type request struct {
-	section uint64 // Section index to retrieve the a bit-vector from
+	section Uint64 // Section index to retrieve the a bit-vector from
 	bit     uint   // Bit index within the section to retrieve the vector of
 }
 
@@ -39,7 +39,7 @@ type response struct {
 // scenarios.
 type scheduler struct {
 	bit       uint                 // Index of the bit in the bloom filter this scheduler is responsible for
-	responses map[uint64]*response // Currently pending retrieval requests or already cached responses
+	responses map[Uint64]*response // Currently pending retrieval requests or already cached responses
 	lock      syncPtr.Mutex           // Lock protecting the responses from concurrent access
 }
 
@@ -48,17 +48,17 @@ type scheduler struct {
 func newScheduler(idx uint) *scheduler {
 	return &scheduler{
 		bit:       idx,
-		responses: make(map[uint64]*response),
+		responses: make(map[Uint64]*response),
 	}
 }
 
 // run creates a retrieval pipeline, receiving section indexes from sections and
 // returning the results in the same order through the done channel. Concurrent
 // runs of the same scheduler are allowed, leading to retrieval task deduplication.
-func (s *scheduler) run(sections chan uint64, dist chan *request, done chan []byte, quit chan struct{}, wg *syncPtr.WaitGroup) {
+func (s *scheduler) run(sections chan Uint64, dist chan *request, done chan []byte, quit chan struct{}, wg *syncPtr.WaitGroup) {
 	// Create a forwarder channel between requests and responses of the same size as
 	// the distribution channel (since that will block the pipeline anyway).
-	pend := make(chan uint64, cap(dist))
+	pend := make(chan Uint64, cap(dist))
 
 	// Start the pipeline schedulers to forward between user -> distributor -> user
 	wg.Add(2)
@@ -83,7 +83,7 @@ func (s *scheduler) reset() {
 // scheduleRequests reads section retrieval requests from the input channel,
 // deduplicates the stream and pushes unique retrieval tasks into the distribution
 // channel for a database or network layer to honour.
-func (s *scheduler) scheduleRequests(reqs chan uint64, dist chan *request, pend chan uint64, quit chan struct{}, wg *syncPtr.WaitGroup) {
+func (s *scheduler) scheduleRequests(reqs chan Uint64, dist chan *request, pend chan Uint64, quit chan struct{}, wg *syncPtr.WaitGroup) {
 	// Clean up the goroutine and pipeline when done
 	defer wg.Done()
 	defer close(pend)
@@ -130,7 +130,7 @@ func (s *scheduler) scheduleRequests(reqs chan uint64, dist chan *request, pend 
 
 // scheduleDeliveries reads section acceptance notifications and waits for them
 // to be delivered, pushing them into the output data buffer.
-func (s *scheduler) scheduleDeliveries(pend chan uint64, done chan []byte, quit chan struct{}, wg *syncPtr.WaitGroup) {
+func (s *scheduler) scheduleDeliveries(pend chan Uint64, done chan []byte, quit chan struct{}, wg *syncPtr.WaitGroup) {
 	// Clean up the goroutine and pipeline when done
 	defer wg.Done()
 	defer close(done)
@@ -167,7 +167,7 @@ func (s *scheduler) scheduleDeliveries(pend chan uint64, done chan []byte, quit 
 }
 
 // deliver is called by the request distributor when a reply to a request arrives.
-func (s *scheduler) deliver(sections []uint64, data [][]byte) {
+func (s *scheduler) deliver(sections []Uint64, data [][]byte) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 

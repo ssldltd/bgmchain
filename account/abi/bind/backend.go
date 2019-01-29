@@ -21,7 +21,7 @@ import (
 
 	"github.com/ssldltd/bgmchain"
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 )
 
 var (
@@ -35,16 +35,16 @@ var (
 type ContractCalled interface {
 	// CodeAt返回给定帐户的代码。 这需要区分
 	//合同内部错误和本地链之间不同步。
-	CodeAt(ctx context.Context, contract bgmcommon.Address, blockNumber *big.Int) ([]byte, error)
+	CodeAt(CTX context.Context, contract bgmcommon.Address, blockNumber *big.Int) ([]byte, error)
 	// ContractCall使用指定的数据执行Bgmchain合约调用
 	//输入
-	CallContract(ctx context.Context, call bgmchain.CallMsg, blockNumber *big.Int) ([]byte, error)
+	CallContract(CTX context.Context, call bgmchain.CallMsg, blockNumber *big.Int) ([]byte, error)
 }
 
 // DeployedBackend包装WaittingMined和WaittingDeployed所需的操作。
 type DeployedBackend interface {
-	TransactionReceipt(ctx context.Context, txHash bgmcommon.Hash) (*types.Receipt, error)
-	CodeAt(ctx context.Context, account bgmcommon.Address, blockNumber *big.Int) ([]byte, error)
+	TransactionReceipt(CTX context.Context, txHash bgmcommon.Hash) (*types.Receipt, error)
+	CodeAt(CTX context.Context, account bgmcommon.Address, blockNumber *big.Int) ([]byte, error)
 }
 
 // PendingContractCalled定义了在挂起状态下执行合同调用的方法。
@@ -52,9 +52,9 @@ type DeployedBackend interface {
 //如果后端不支持挂起状态，则Call返回ErrorNoPendingState。
 type PendingContractCalled interface {
 	// PendingCodeAt返回处于暂挂状态的给定帐户的代码。
-	PendingCodeAt(ctx context.Context, contract bgmcommon.Address) ([]byte, error)
+	PendingCodeAt(CTX context.Context, contract bgmcommon.Address) ([]byte, error)
 	// PendingCallContract针对挂起状态执行Bgmchain合约调用。
-	PendingCallContract(ctx context.Context, call bgmchain.CallMsg) ([]byte, error)
+	PendingCallContract(CTX context.Context, call bgmchain.CallMsg) ([]byte, error)
 }
 
 // ContractTransactor定义允许合同操作所需的方法
@@ -63,20 +63,20 @@ type PendingContractCalled interface {
 //到交易者来决定。
 type ContractTransactor interface {
 	// PendingCodeAt返回处于暂挂状态的给定帐户的代码。
-	PendingCodeAt(ctx context.Context, account bgmcommon.Address) ([]byte, error)
+	PendingCodeAt(CTX context.Context, account bgmcommon.Address) ([]byte, error)
 	// PendingNonceAt检索与帐户关联的当前待处理的nonce。
-	PendingNonceAt(ctx context.Context, account bgmcommon.Address) (uint64, error)
+	PendingNonceAt(CTX context.Context, account bgmcommon.Address) (Uint64, error)
 	// SuggestGasPrice检索当前建议的汽油价格以及时
 	//执行交易。
-	SuggestGasPrice(ctx context.Context) (*big.Int, error)
+	SuggestGasPrice(CTX context.Context) (*big.Int, error)
 	// EstimateGas尝试估算执行特定所需的气体
 	//基于后端区块链当前挂起状态的事务。
 	//无法保证这是其他的真正的气体限制要求
 	//矿工可以添加或删除交易，但它应该提供基础
 	//用于设置合理的默认值。
-	EstimateGas(ctx context.Context, call bgmchain.CallMsg) (usedGas *big.Int, err error)
+	EstimateGas(CTX context.Context, call bgmchain.CallMsg) (usedGas *big.Int, err error)
 	// SendTransaction将事务注入待处理池以供执行。
-	SendTransaction(ctx context.Context, tx *types.Transaction) error
+	SendTransaction(CTX context.Context, tx *types.Transaction) error
 }
 // ContractBackended定义了以读写方式处理合同所需的方法。
 type ContractBackended interface {

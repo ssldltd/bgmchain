@@ -184,7 +184,7 @@ func keyFileName(keyAddr bgmcommon.Address) string {
 	return fmt.Sprintf("UTC--%-s--%-s", toISO8601(ts), hex.EncodeToString(keyAddr[:]))
 }
 
-func toISO8601(t time.Time) string {
+func toISO8601(t time.time) string {
 	var tz string
 	name, offset := tPtr.Zone()
 	if name == "UTC" {

@@ -29,8 +29,8 @@ var rawValueType = reflect.TypeOf(RawValue{})
 
 // ListSize returns the encoded size of an RLP list with the given
 // content size.
-func ListSize(contentSize uint64) uint64 {
-	return uint64(headsize(contentSize)) + contentSize
+func ListSize(contentSize Uint64) Uint64 {
+	return Uint64(headsize(contentSize)) + contentSize
 }
 
 // Split returns the content of first RLP value and any
@@ -56,18 +56,6 @@ func SplitString(b []byte) (content, rest []byte, err error) {
 	return content, rest, nil
 }
 
-// SplitList splits b into the content of a list and any remaining
-// bytes after the list.
-func SplitList(b []byte) (content, rest []byte, err error) {
-	k, content, rest, err := Split(b)
-	if err != nil {
-		return nil, b, err
-	}
-	if k != List {
-		return nil, b, ErrExpectedList
-	}
-	return content, rest, nil
-}
 
 // CountValues counts the number of encoded values in bPtr.
 func CountValues(b []byte) (int, error) {
@@ -82,7 +70,7 @@ func CountValues(b []byte) (int, error) {
 	return i, nil
 }
 
-func readKind(buf []byte) (k Kind, tagsize, contentsize uint64, err error) {
+func readKind(buf []byte) (k Kind, tagsize, contentsize Uint64, err error) {
 	if len(buf) == 0 {
 		return 0, 0, 0, io.ErrUnexpectedEOF
 	}
@@ -95,56 +83,70 @@ func readKind(buf []byte) (k Kind, tagsize, contentsize uint64, err error) {
 	case b < 0xB8:
 		k = String
 		tagsize = 1
-		contentsize = uint64(b - 0x80)
+		contentsize = Uint64(b - 0x80)
 		// Reject strings that should've been single bytes.
 		if contentsize == 1 && buf[1] < 128 {
 			return 0, 0, 0, ErrCanonSize
 		}
 	case b < 0xC0:
 		k = String
-		tagsize = uint64(b-0xB7) + 1
+		tagsize = Uint64(b-0xB7) + 1
 		contentsize, err = readSize(buf[1:], b-0xB7)
 	case b < 0xF8:
 		k = List
 		tagsize = 1
-		contentsize = uint64(b - 0xC0)
+		contentsize = Uint64(b - 0xC0)
 	default:
 		k = List
-		tagsize = uint64(b-0xF7) + 1
+		tagsize = Uint64(b-0xF7) + 1
 		contentsize, err = readSize(buf[1:], b-0xF7)
 	}
 	if err != nil {
 		return 0, 0, 0, err
 	}
 	// Reject values larger than the input slice.
-	if contentsize > uint64(len(buf))-tagsize {
+	if contentsize > Uint64(len(buf))-tagsize {
 		return 0, 0, 0, ErrValueTooLarge
 	}
 	return k, tagsize, contentsize, err
 }
 
-func readSize(b []byte, slen byte) (uint64, error) {
+// SplitList splits b into the content of a list and any remaining
+// bytes after the list.
+func SplitList(b []byte) (content, rest []byte, err error) {
+	k, content, rest, err := Split(b)
+	if err != nil {
+		return nil, b, err
+	}
+	if k != List {
+		return nil, b, ErrExpectedList
+	}
+	return content, rest, nil
+}
+
+
+func readSize(b []byte, slen byte) (Uint64, error) {
 	if int(slen) > len(b) {
 		return 0, io.ErrUnexpectedEOF
 	}
-	var s uint64
+	var s Uint64
 	switch slen {
 	case 1:
-		s = uint64(b[0])
+		s = Uint64(b[0])
 	case 2:
-		s = uint64(b[0])<<8 | uint64(b[1])
+		s = Uint64(b[0])<<8 | Uint64(b[1])
 	case 3:
-		s = uint64(b[0])<<16 | uint64(b[1])<<8 | uint64(b[2])
+		s = Uint64(b[0])<<16 | Uint64(b[1])<<8 | Uint64(b[2])
 	case 4:
-		s = uint64(b[0])<<24 | uint64(b[1])<<16 | uint64(b[2])<<8 | uint64(b[3])
+		s = Uint64(b[0])<<24 | Uint64(b[1])<<16 | Uint64(b[2])<<8 | Uint64(b[3])
 	case 5:
-		s = uint64(b[0])<<32 | uint64(b[1])<<24 | uint64(b[2])<<16 | uint64(b[3])<<8 | uint64(b[4])
+		s = Uint64(b[0])<<32 | Uint64(b[1])<<24 | Uint64(b[2])<<16 | Uint64(b[3])<<8 | Uint64(b[4])
 	case 6:
-		s = uint64(b[0])<<40 | uint64(b[1])<<32 | uint64(b[2])<<24 | uint64(b[3])<<16 | uint64(b[4])<<8 | uint64(b[5])
+		s = Uint64(b[0])<<40 | Uint64(b[1])<<32 | Uint64(b[2])<<24 | Uint64(b[3])<<16 | Uint64(b[4])<<8 | Uint64(b[5])
 	case 7:
-		s = uint64(b[0])<<48 | uint64(b[1])<<40 | uint64(b[2])<<32 | uint64(b[3])<<24 | uint64(b[4])<<16 | uint64(b[5])<<8 | uint64(b[6])
+		s = Uint64(b[0])<<48 | Uint64(b[1])<<40 | Uint64(b[2])<<32 | Uint64(b[3])<<24 | Uint64(b[4])<<16 | Uint64(b[5])<<8 | Uint64(b[6])
 	case 8:
-		s = uint64(b[0])<<56 | uint64(b[1])<<48 | uint64(b[2])<<40 | uint64(b[3])<<32 | uint64(b[4])<<24 | uint64(b[5])<<16 | uint64(b[6])<<8 | uint64(b[7])
+		s = Uint64(b[0])<<56 | Uint64(b[1])<<48 | Uint64(b[2])<<40 | Uint64(b[3])<<32 | Uint64(b[4])<<24 | Uint64(b[5])<<16 | Uint64(b[6])<<8 | Uint64(b[7])
 	}
 	// Reject sizes < 56 (shouldn't have separate size) and sizes with
 	// leading zero bytes.

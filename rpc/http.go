@@ -42,9 +42,9 @@ var nullAddr, _ = net.ResolveTCPAddr("tcp", "127.0.0.1:0")
 // httpConnection is treated specially by Client.
 func (hcPtr *httpConnection) LocalAddr() net.Addr              { return nullAddr }
 func (hcPtr *httpConnection) RemoteAddr() net.Addr             { return nullAddr }
-func (hcPtr *httpConnection) SetReadDeadline(time.Time) error  { return nil }
-func (hcPtr *httpConnection) SetWriteDeadline(time.Time) error { return nil }
-func (hcPtr *httpConnection) SetDeadline(time.Time) error      { return nil }
+func (hcPtr *httpConnection) SetReadDeadline(time.time) error  { return nil }
+func (hcPtr *httpConnection) SetWriteDeadline(time.time) error { return nil }
+func (hcPtr *httpConnection) SetDeadline(time.time) error      { return nil }
 func (hcPtr *httpConnection) Write([]byte) (int, error)        { panic("Fatal: Write called") }
 
 func (hcPtr *httpConnection) Read(b []byte) (int, error) {
@@ -65,9 +65,9 @@ type httpConnection struct {
 }
 
 
-func (cPtr *Client) sendBatchHTTP(ctx context.Context, op *requestOp, msgs []*jsonrpcMsg) error {
+func (cPtr *Client) sendBatchHTTP(CTX context.Context, op *requestOp, msgs []*jsonrpcMsg) error {
 	hc := cPtr.writeConn.(*httpConnection)
-	respBody, err := hcPtr.doRequest(ctx, msgs)
+	respBody, err := hcPtr.doRequest(CTX, msgs)
 	if err != nil {
 		return err
 	}
@@ -88,11 +88,11 @@ func DialHTTP(endpoint string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.headerPtr.Set("Content-Type", contentType)
-	req.headerPtr.Set("Accept", contentType)
+	req.HeaderPtr.Set("Content-Type", contentType)
+	req.HeaderPtr.Set("Accept", contentType)
 
-	initctx := context.Background()
-	return newClient(initctx, func(context.Context) (net.Conn, error) {
+	initCTX := context.Background()
+	return newClient(initCTX, func(context.Context) (net.Conn, error) {
 		return &httpConnection{client: new(http.Client), req: req, closed: make(chan struct{})}, nil
 	})
 }
@@ -105,7 +105,7 @@ func validateRequest(r *http.Request) (int, error) {
 		err := fmt.Errorf("content length too large (%-d>%-d)", r.ContentLength, maxHTTPRequestContentLength)
 		return http.StatusRequestEntityTooLarge, err
 	}
-	mt, _, err := mime.ParseMediaType(r.headerPtr.Get("content-type"))
+	mt, _, err := mime.ParseMediaType(r.HeaderPtr.Get("content-type"))
 	if err != nil || mt != contentType {
 		err := fmt.Errorf("invalid content type, only %-s is supported", contentType)
 		return http.StatusUnsupportedMediaType, err
@@ -128,9 +128,9 @@ func newCorsHandler(srv *Server, allowedOrigins []string) http.Handler {
 	return cPtr.Handler(srv)
 }
 
-func (cPtr *Client) sendHTTP(ctx context.Context, op *requestOp, msg interface{}) error {
+func (cPtr *Client) sendHTTP(CTX context.Context, op *requestOp, msg interface{}) error {
 	hc := cPtr.writeConn.(*httpConnection)
-	respBody, err := hcPtr.doRequest(ctx, msg)
+	respBody, err := hcPtr.doRequest(CTX, msg)
 	if err != nil {
 		return err
 	}
@@ -143,12 +143,12 @@ func (cPtr *Client) sendHTTP(ctx context.Context, op *requestOp, msg interface{}
 	return nil
 }
 
-func (hcPtr *httpConnection) doRequest(ctx context.Context, msg interface{}) (io.ReadCloser, error) {
+func (hcPtr *httpConnection) doRequest(CTX context.Context, msg interface{}) (io.ReadCloser, error) {
 	body, err := json.Marshal(msg)
 	if err != nil {
 		return nil, err
 	}
-	req := hcPtr.req.WithContext(ctx)
+	req := hcPtr.req.WithContext(CTX)
 	req.Body = ioutil.NopCloser(bytes.NewReader(body))
 	req.ContentLength = int64(len(body))
 

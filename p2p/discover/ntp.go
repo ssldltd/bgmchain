@@ -67,8 +67,8 @@ func sntpDrift(measurements int) (time.Duration, error) {
 		}
 		elapsed := time.Since(sent)
 
-		sec := uint64(reply[43]) | uint64(reply[42])<<8 | uint64(reply[41])<<16 | uint64(reply[40])<<24
-		frac := uint64(reply[47]) | uint64(reply[46])<<8 | uint64(reply[45])<<16 | uint64(reply[44])<<24
+		sec := Uint64(reply[43]) | Uint64(reply[42])<<8 | Uint64(reply[41])<<16 | Uint64(reply[40])<<24
+		frac := Uint64(reply[47]) | Uint64(reply[46])<<8 | Uint64(reply[45])<<16 | Uint64(reply[44])<<24
 
 		nanosec := sec*1e9 + (frac*1e9)>>32
 

@@ -147,7 +147,7 @@ type RPCDialer interface {
 type Services map[string]ServiceFunc
 
 // ServiceFunc returns a Nodes.Service which can be used to boot a devp2p Nodes
-type ServiceFunc func(ctx *ServiceContext) (Nodes.Service, error)
+type ServiceFunc func(CTX *ServiceContext) (Nodes.Service, error)
 
 // serviceFuncs is a map of registered services which are used to boot devp2p
 // Nodess

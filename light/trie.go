@@ -19,33 +19,33 @@ import (
 	"fmt"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/state"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmcrypto"
 	"github.com/ssldltd/bgmchain/trie"
 )
 
-func NewState(ctx context.Context, head *types.headerPtr, odr OdrBackend) *state.StateDB {
-	state, _ := state.New(head.Root, NewStateDatabase(ctx, head, odr))
+func NewState(CTX context.Context, head *types.HeaderPtr, odr OdrBackend) *state.StateDB {
+	state, _ := state.New(head.Root, NewStateDatabase(CTX, head, odr))
 	return state
 }
 
-func NewStateDatabase(ctx context.Context, head *types.headerPtr, odr OdrBackend) state.Database {
-	return &odrDatabase{ctx, StateTrieID(head), odr}
+func NewStateDatabase(CTX context.Context, head *types.HeaderPtr, odr OdrBackend) state.Database {
+	return &odrDatabase{CTX, StateTrieID(head), odr}
 }
 
 type odrDatabase struct {
-	ctx     context.Context
+	CTX     context.Context
 	id      *TrieID
 	backend OdrBackend
 }
 
-func (dbPtr *odrDatabase) OpenTrie(root bgmcommon.Hash) (state.Trie, error) {
+func (dbPtr *odrDatabase) OpenTrie(blockRoot bgmcommon.Hash) (state.Trie, error) {
 	return &odrTrie{db: db, id: dbPtr.id}, nil
 }
 
-func (dbPtr *odrDatabase) OpenStorageTrie(addrHash, root bgmcommon.Hash) (state.Trie, error) {
-	return &odrTrie{db: db, id: StorageTrieID(dbPtr.id, addrHash, root)}, nil
+func (dbPtr *odrDatabase) OpenStorageTrie(addrHash, blockRoot bgmcommon.Hash) (state.Trie, error) {
+	return &odrTrie{db: db, id: StorageTrieID(dbPtr.id, addrHash, blockRoot)}, nil
 }
 
 func (dbPtr *odrDatabase) CopyTrie(t state.Trie) state.Trie {
@@ -72,7 +72,7 @@ func (dbPtr *odrDatabase) ContractCode(addrHash, codeHash bgmcommon.Hash) ([]byt
 	id := *dbPtr.id
 	id.AccKey = addrHash[:]
 	req := &CodeRequest{Id: &id, Hash: codeHash}
-	err := dbPtr.backend.Retrieve(dbPtr.ctx, req)
+	err := dbPtr.backend.Retrieve(dbPtr.CTX, req)
 	return req.Data, err
 }
 
@@ -148,7 +148,7 @@ func (tPtr *odrTrie) do(key []byte, fn func() error) error {
 			return err
 		}
 		r := &TrieRequest{Id: tPtr.id, Key: key}
-		if err := tPtr.dbPtr.backend.Retrieve(tPtr.dbPtr.ctx, r); err != nil {
+		if err := tPtr.dbPtr.backend.Retrieve(tPtr.dbPtr.CTX, r); err != nil {
 			return fmt.Errorf("can't fetch trie key %x: %v", key, err)
 		}
 	}
@@ -203,7 +203,7 @@ func (it *nodeIterator) do(fn func() error) {
 		}
 		lasthash = missing.NodeHash
 		r := &TrieRequest{Id: it.tPtr.id, Key: nibblesToKey(missing.Path)}
-		if it.err = it.tPtr.dbPtr.backend.Retrieve(it.tPtr.dbPtr.ctx, r); it.err != nil {
+		if it.err = it.tPtr.dbPtr.backend.Retrieve(it.tPtr.dbPtr.CTX, r); it.err != nil {
 			return
 		}
 	}

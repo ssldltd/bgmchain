@@ -21,9 +21,9 @@ import (
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmcommon/bitutil"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/bloombits"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/bloombits"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/bgmparam"
 )
@@ -40,8 +40,8 @@ func (bgmPtr *Bgmchain) startBloomHandlers() {
 					task := <-request
 					task.Bitsets = make([][]byte, len(task.Sections))
 					for i, section := range task.Sections {
-						head := bgmcore.GetCanonicalHash(bgmPtr.chainDb, (section+1)*bgmparam.BloomBitsBlocks-1)
-						if compVector, err := bgmcore.GetBloomBits(bgmPtr.chainDb, task.Bit, section, head); err == nil {
+						head := bgmCore.GetCanonicalHash(bgmPtr.chainDb, (section+1)*bgmparam.BloomBitsBlocks-1)
+						if compVector, err := bgmCore.GetBloomBits(bgmPtr.chainDb, task.Bit, section, head); err == nil {
 							if blob, err := bitutil.DecompressBytes(compVector, int(bgmparam.BloomBitsBlocks)/8); err == nil {
 								task.Bitsets[i] = blob
 							} else {
@@ -58,46 +58,46 @@ func (bgmPtr *Bgmchain) startBloomHandlers() {
 	}
 }
 
-// BloomIndexer implements a bgmcore.ChainIndexer, building up a rotated bloom bits index
-// for the Bgmchain header bloom filters, permitting blazing fast filtering.
+// BloomIndexer implements a bgmCore.ChainIndexer, building up a rotated bloom bits index
+// for the Bgmchain Header bloom filters, permitting blazing fast filtering.
 type BloomIndexer struct {
-	size uint64 // section size to generate bloombits for
+	size Uint64 // section size to generate bloombits for
 
 	db  bgmdbPtr.Database       // database instance to write index data and metadata into
 	gen *bloombits.Generator // generator to rotate the bloom bits crating the bloom index
 
-	section uint64      // Section is the section number being processed currently
-	head    bgmcommon.Hash // Head is the hash of the last header processed
+	section Uint64      // Section is the section number being processed currently
+	head    bgmcommon.Hash // Head is the hash of the last Header processed
 }
 
 // NewBloomIndexer returns a chain indexer that generates bloom bits data for the
 // canonical chain for fast bgmlogss filtering.
-func NewBloomIndexer(db bgmdbPtr.Database, size uint64) *bgmcore.ChainIndexer {
+func NewBloomIndexer(db bgmdbPtr.Database, size Uint64) *bgmCore.ChainIndexer {
 	backend := &BloomIndexer{
 		db:   db,
 		size: size,
 	}
-	table := bgmdbPtr.NewTable(db, string(bgmcore.BloomBitsIndexPrefix))
+	table := bgmdbPtr.NewTable(db, string(bgmCore.BloomBitsIndexPrefix))
 
-	return bgmcore.NewChainIndexer(db, table, backend, size, bloomConfirms, bloomThrottling, "bloombits")
+	return bgmCore.NewChainIndexer(db, table, backend, size, bloomConfirms, bloomThrottling, "bloombits")
 }
 
-// Reset implements bgmcore.ChainIndexerBackend, starting a new bloombits index
+// Reset implements bgmCore.ChainIndexerBackend, starting a new bloombits index
 // section.
-func (bPtr *BloomIndexer) Reset(section uint64, lastSectionHead bgmcommon.Hash) error {
+func (bPtr *BloomIndexer) Reset(section Uint64, lastSectionHead bgmcommon.Hash) error {
 	gen, err := bloombits.NewGenerator(uint(bPtr.size))
 	bPtr.gen, bPtr.section, bPtr.head = gen, section, bgmcommon.Hash{}
 	return err
 }
 
-// Process implements bgmcore.ChainIndexerBackend, adding a new header's bloom into
+// Process implements bgmCore.ChainIndexerBackend, adding a new Header's bloom into
 // the index.
-func (bPtr *BloomIndexer) Process(headerPtr *types.Header) {
-	bPtr.gen.AddBloom(uint(headerPtr.Number.Uint64()-bPtr.section*bPtr.size), headerPtr.Bloom)
-	bPtr.head = headerPtr.Hash()
+func (bPtr *BloomIndexer) Process(HeaderPtr *types.Header) {
+	bPtr.gen.AddBloom(uint(HeaderPtr.Number.Uint64()-bPtr.section*bPtr.size), HeaderPtr.Bloom)
+	bPtr.head = HeaderPtr.Hash()
 }
 
-// Commit implements bgmcore.ChainIndexerBackend, finalizing the bloom section and
+// Commit implements bgmCore.ChainIndexerBackend, finalizing the bloom section and
 // writing it out into the database.
 func (bPtr *BloomIndexer) Commit() error {
 	batch := bPtr.dbPtr.NewBatch()
@@ -107,7 +107,7 @@ func (bPtr *BloomIndexer) Commit() error {
 		if err != nil {
 			return err
 		}
-		bgmcore.WriteBloomBits(batch, uint(i), bPtr.section, bPtr.head, bitutil.CompressBytes(bits))
+		bgmCore.WriteBloomBits(batch, uint(i), bPtr.section, bPtr.head, bitutil.CompressBytes(bits))
 	}
 	return batchPtr.Write()
 }

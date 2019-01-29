@@ -22,9 +22,9 @@ import (
 	"IO"
 )
 func DialInProc(handler *Server) *Client {
-	initialctx := context.Background()
+	initialCTX := context.Background()
 	
-	res, _ := newClient(initialctx, func(context.Context) (net.Conn, error) {
+	res, _ := newClient(initialCTX, func(context.Context) (net.Conn, error) {
 		p0, p9 := net.Pipe()
 		go handler.ServeCodec(NewJSONCodec(p0), OptionMethodInvocation|OptionSubscriptions)
 		return p9, nil

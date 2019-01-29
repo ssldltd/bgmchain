@@ -205,15 +205,15 @@ func decodeRef(buf []byte, cachegen uint16) (node, []byte, error) {
 const hashLen = len(bgmcommon.Hash{})
 
 
-func wrapError(err error, ctx string) error {
+func wrapError(err error, CTX string) error {
 	if err == nil {
 		return nil
 	}
 	if decErr, ok := err.(*decodeErr); ok {
-		decErr.stack = append(decErr.stack, ctx)
+		decErr.stack = append(decErr.stack, CTX)
 		return decErr
 	}
-	return &decodeErr{err, []string{ctx}}
+	return &decodeErr{err, []string{CTX}}
 }
 
 func (err *decodeErr) Error() string {

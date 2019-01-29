@@ -26,7 +26,7 @@ import (
 
 func (r Receipt) MarshalJSON() ([]byte, error) {
 	type Receipt struct {
-		PostState         hexutil.Bytes  `json:"root"`
+		PostState         hexutil.Bytes  `json:"blockRoot"`
 		Status            hexutil.Uint   `json:"status"`
 		CumulativeGasUsed *hexutil.Big   `json:"cumulativeGasUsed" gencodec:"required"`
 	Bloom             Bloom          `json:"bgmlogssBloom"         gencodec:"required"`
@@ -57,7 +57,7 @@ func (r *Receipt) UnmarshalJSON(input []byte) error {
 		TxHash            *bgmcommon.Hash    `json:"transactionHash" gencodec:"required"`
 		ContractAddress   *bgmcommon.Address `json:"contractAddress"`
 		GasUsed           *hexutil.Big    `json:"gasUsed" gencodec:"required"`
-		PostState         hexutil.Bytes   `json:"root"`
+		PostState         hexutil.Bytes   `json:"blockRoot"`
 		Status            *hexutil.Uint   `json:"status"`
 		CumulativeGasUsed *hexutil.Big    `json:"cumulativeGasUsed" gencodec:"required"`
 		

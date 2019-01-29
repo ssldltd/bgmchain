@@ -19,4 +19,4 @@ package sha3
 
 //go:noescape
 
-func keccakF1600(state *[25]uint64)
+func keccakF1600(state *[25]Uint64)

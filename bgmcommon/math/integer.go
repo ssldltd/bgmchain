@@ -35,8 +35,8 @@ const (
 	MaxUint64 = 1<<64 - 1
 )
 
-// HexOrDecimal64 marshals uint64 as hex or decimal.
-type HexOrDecimal64 uint64
+// HexOrDecimal64 marshals Uint64 as hex or decimal.
+type HexOrDecimal64 Uint64
 
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (i *HexOrDecimal64) UnmarshalText(input []byte) error {
@@ -50,12 +50,12 @@ func (i *HexOrDecimal64) UnmarshalText(input []byte) error {
 
 // MarshalText implements encoding.TextMarshaler.
 func (i HexOrDecimal64) MarshalText() ([]byte, error) {
-	return []byte(fmt.Sprintf("%#x", uint64(i))), nil
+	return []byte(fmt.Sprintf("%#x", Uint64(i))), nil
 }
 
 // ParseUint64 parses s as an integer in decimal or hexadecimal syntax.
 // Leading zeros are accepted. The empty string parses as zero.
-func ParseUint64(s string) (uint64, bool) {
+func ParseUint64(s string) (Uint64, bool) {
 	if s == "" {
 		return 0, true
 	}
@@ -68,7 +68,7 @@ func ParseUint64(s string) (uint64, bool) {
 }
 
 // MustParseUint64 parses s as an integer and panics if the string is invalid.
-func MustParseUint64(s string) uint64 {
+func MustParseUint64(s string) Uint64 {
 	v, ok := ParseUint64(s)
 	if !ok {
 		panic("Fatal: invalid unsigned 64 bit integer: " + s)
@@ -79,17 +79,17 @@ func MustParseUint64(s string) uint64 {
 // NOTE: The following methods need to be optimised using either bit checking or asm
 
 // SafeSub returns subtraction result and whbgmchain overflow occurred.
-func SafeSub(x, y uint64) (uint64, bool) {
+func SafeSub(x, y Uint64) (Uint64, bool) {
 	return x - y, x < y
 }
 
 // SafeAdd returns the result and whbgmchain overflow occurred.
-func SafeAdd(x, y uint64) (uint64, bool) {
+func SafeAdd(x, y Uint64) (Uint64, bool) {
 	return x + y, y > MaxUint64-x
 }
 
 // SafeMul returns multiplication result and whbgmchain overflow occurred.
-func SafeMul(x, y uint64) (uint64, bool) {
+func SafeMul(x, y Uint64) (Uint64, bool) {
 	if x == 0 || y == 0 {
 		return 0, false
 	}

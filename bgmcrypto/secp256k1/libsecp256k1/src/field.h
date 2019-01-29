@@ -95,8 +95,8 @@ static void secp256k1_fe_mul(secp256k1_fe *r, const secp256k1_fe *a, const secp2
  *  The output magnitude is 1 (but not guaranteed to be normalized). */
 static void secp256k1_fe_sqr(secp256k1_fe *r, const secp256k1_fe *a);
 
-/** If a has a square root, it is computed in r and 1 is returned. If a does not
- *  have a square root, the root of its negation is computed and 0 is returned.
+/** If a has a square blockRoot, it is computed in r and 1 is returned. If a does not
+ *  have a square blockRoot, the blockRoot of its negation is computed and 0 is returned.
  *  The input's magnitude can be at most 8. The output magnitude is 1 (but not
  *  guaranteed to be normalized). The result in r will always be a square
  *  itself. */

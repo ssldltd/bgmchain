@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore"
+	"github.com/ssldltd/bgmchain/bgmCore"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 	"github.com/ssldltd/bgmchain/rlp"
@@ -58,7 +58,7 @@ func upgradeDeduplicateData(db bgmdbPtr.Database) func() error {
 		}()
 
 		var (
-			converted uint64
+			converted Uint64
 			failed    error
 		)
 		for failed == nil && it.Next() {
@@ -69,9 +69,9 @@ func upgradeDeduplicateData(db bgmdbPtr.Database) func() error {
 			}
 			// Skip any entries that don't contain metadata (name clash between <hash>0x01 and <some-prefix><hash>)
 			var meta struct {
-				BlockHash  bgmcommon.Hash
-				BlockIndex uint64
-				Index      uint64
+				hash  bgmcommon.Hash
+				BlockIndex Uint64
+				Index      Uint64
 			}
 			if err := rlp.DecodeBytes(it.Value(), &meta); err != nil {
 				continue
@@ -81,7 +81,7 @@ func upgradeDeduplicateData(db bgmdbPtr.Database) func() error {
 
 			if hash[0] == byte('l') {
 				// Potential clash, the "old" `hash` must point to a live transaction.
-				if tx, _, _, _ := bgmcore.GetTransaction(db, bgmcommon.BytesToHash(hash)); tx == nil || !bytes.Equal(tx.Hash().Bytes(), hash) {
+				if tx, _, _, _ := bgmCore.GetTransaction(db, bgmcommon.BytesToHash(hash)); tx == nil || !bytes.Equal(tx.Hash().Bytes(), hash) {
 					continue
 				}
 			}

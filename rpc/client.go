@@ -131,7 +131,7 @@ func (msg *jsonrpcMsg) isResponse() bool {
 // Client represents a connection to an RPC server.
 type Client struct {
 	idCounter   uint32
-	connectFunc func(ctx context.Context) (net.Conn, error)
+	connectFunc func(CTX context.Context) (net.Conn, error)
 	isHTTP      bool
 
 	// writeConn is only safe to access outside dispatch, with the
@@ -158,10 +158,10 @@ type requestOp struct {
 	sub  *ClientSubscription  // only set for BgmSubscribe requests
 }
 
-func (op *requestOp) wait(ctx context.Context) (*jsonrpcMsg, error) {
+func (op *requestOp) wait(CTX context.Context) (*jsonrpcMsg, error) {
 	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
+	case <-CTX.Done():
+		return nil, CTX.Err()
 	case resp := <-op.resp:
 		return resp, op.err
 	}
@@ -173,8 +173,8 @@ func (op *requestOp) wait(ctx context.Context) (*jsonrpcMsg, error) {
 // The result must be a pointer so that package json can unmarshal into it. You
 // can also pass nil, in which case the result is ignored.
 func (cPtr *Client) Call(result interface{}, method string, args ...interface{}) error {
-	ctx := context.Background()
-	return cPtr.CallContext(ctx, result, method, args...)
+	CTX := context.Background()
+	return cPtr.CallContext(CTX, result, method, args...)
 }
 
 // CallContext performs a JSON-RPC call with the given arguments. If the context is
@@ -182,7 +182,7 @@ func (cPtr *Client) Call(result interface{}, method string, args ...interface{})
 //
 // The result must be a pointer so that package json can unmarshal into it. You
 // can also pass nil, in which case the result is ignored.
-func (cPtr *Client) CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error {
+func (cPtr *Client) CallContext(CTX context.Context, result interface{}, method string, args ...interface{}) error {
 	msg, err := cPtr.newMessage(method, args...)
 	if err != nil {
 		return err
@@ -190,16 +190,16 @@ func (cPtr *Client) CallContext(ctx context.Context, result interface{}, method 
 	op := &requestOp{ids: []json.RawMessage{msg.ID}, resp: make(chan *jsonrpcMsg, 1)}
 
 	if cPtr.isHTTP {
-		err = cPtr.sendHTTP(ctx, op, msg)
+		err = cPtr.sendHTTP(CTX, op, msg)
 	} else {
-		err = cPtr.send(ctx, op, msg)
+		err = cPtr.send(CTX, op, msg)
 	}
 	if err != nil {
 		return err
 	}
 
 	// dispatch has accepted the request and will close the channel it when it quits.
-	switch resp, err := op.wait(ctx); {
+	switch resp, err := op.wait(CTX); {
 	case err != nil:
 		return err
 	case resp.Error != nil:
@@ -219,15 +219,15 @@ func (cPtr *Client) CallContext(ctx context.Context, result interface{}, method 
 //
 // Note that batch calls may not be executed atomically on the server side.
 func (cPtr *Client) BatchCall(b []BatchElem) error {
-	ctx := context.Background()
-	return cPtr.BatchCallContext(ctx, b)
+	CTX := context.Background()
+	return cPtr.BatchCallContext(CTX, b)
 }
 
 func Dial(rawurl string) (*Client, error) {
 	return DialContext(context.Background(), rawurl)
 }
 
-func DialContext(ctx context.Context, rawurl string) (*Client, error) {
+func DialContext(CTX context.Context, rawurl string) (*Client, error) {
 	u, err := url.Parse(rawurl)
 	if err != nil {
 		return nil, err
@@ -236,16 +236,16 @@ func DialContext(ctx context.Context, rawurl string) (*Client, error) {
 	case "http", "https":
 		return DialHTTP(rawurl)
 	case "ws", "wss":
-		return DialWebsocket(ctx, rawurl, "")
+		return DialWebsocket(CTX, rawurl, "")
 	case "":
-		return DialIPC(ctx, rawurl)
+		return DialIPC(CTX, rawurl)
 	default:
 		return nil, fmt.Errorf("no known transport for URL scheme %q", u.Scheme)
 	}
 }
 
-func newClient(initctx context.Context, connectFunc func(context.Context) (net.Conn, error)) (*Client, error) {
-	conn, err := connectFunc(initctx)
+func newClient(initCTX context.Context, connectFunc func(context.Context) (net.Conn, error)) (*Client, error) {
+	conn, err := connectFunc(initCTX)
 	if err != nil {
 		return nil, err
 	}
@@ -273,16 +273,16 @@ func newClient(initctx context.Context, connectFunc func(context.Context) (net.C
 
 func (cPtr *Client) nextID() json.RawMessage {
 	id := atomicPtr.AddUint32(&cPtr.idCounter, 1)
-	return []byte(strconv.FormatUint(uint64(id), 10))
+	return []byte(strconv.FormatUint(Uint64(id), 10))
 }
 
 // SupportedModules calls the rpc_modules method, retrieving the list of
 // APIs that are available on the server.
 func (cPtr *Client) SupportedModules() (map[string]string, error) {
 	var result map[string]string
-	ctx, cancel := context.WithTimeout(context.Background(), subscribeTimeout)
+	CTX, cancel := context.Withtimeout(context.Background(), subscribetimeout)
 	defer cancel()
-	err := cPtr.CallContext(ctx, &result, "rpc_modules")
+	err := cPtr.CallContext(CTX, &result, "rpc_modules")
 	return result, err
 }
 
@@ -297,7 +297,7 @@ func (cPtr *Client) Close() {
 	case <-cPtr.didQuit:
 	}
 }
-func (cPtr *Client) BatchCallContext(ctx context.Context, b []BatchElem) error {
+func (cPtr *Client) BatchCallContext(CTX context.Context, b []BatchElem) error {
 	msgs := make([]*jsonrpcMsg, len(b))
 	op := &requestOp{
 		ids:  make([]json.RawMessage, len(b)),
@@ -314,15 +314,15 @@ func (cPtr *Client) BatchCallContext(ctx context.Context, b []BatchElem) error {
 
 	var err error
 	if cPtr.isHTTP {
-		err = cPtr.sendBatchHTTP(ctx, op, msgs)
+		err = cPtr.sendBatchHTTP(CTX, op, msgs)
 	} else {
-		err = cPtr.send(ctx, op, msgs)
+		err = cPtr.send(CTX, op, msgs)
 	}
 
 	// Wait for all responses to come back.
 	for n := 0; n < len(b) && err == nil; n++ {
 		var resp *jsonrpcMsg
-		resp, err = op.wait(ctx)
+		resp, err = op.wait(CTX)
 		if err != nil {
 			break
 		}
@@ -349,13 +349,13 @@ func (cPtr *Client) BatchCallContext(ctx context.Context, b []BatchElem) error {
 	return err
 }
 
-func (cPtr *Client) BgmSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (*ClientSubscription, error) {
-	return cPtr.Subscribe(ctx, "bgm", channel, args...)
+func (cPtr *Client) BgmSubscribe(CTX context.Context, channel interface{}, args ...interface{}) (*ClientSubscription, error) {
+	return cPtr.Subscribe(CTX, "bgm", channel, args...)
 }
-func (cPtr *Client) ShhSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (*ClientSubscription, error) {
-	return cPtr.Subscribe(ctx, "shh", channel, args...)
+func (cPtr *Client) ShhSubscribe(CTX context.Context, channel interface{}, args ...interface{}) (*ClientSubscription, error) {
+	return cPtr.Subscribe(CTX, "shh", channel, args...)
 }
-func (cPtr *Client) Subscribe(ctx context.Context, namespace string, channel interface{}, args ...interface{}) (*ClientSubscription, error) {
+func (cPtr *Client) Subscribe(CTX context.Context, namespace string, channel interface{}, args ...interface{}) (*ClientSubscription, error) {
 	// Check type of channel first.
 	chanVal := reflect.ValueOf(channel)
 	if chanVal.Kind() != reflect.Chan || chanVal.Type().ChanDir()&reflect.SendDir == 0 {
@@ -380,10 +380,10 @@ func (cPtr *Client) Subscribe(ctx context.Context, namespace string, channel int
 
 	// Send the subscription request.
 	// The arrival and validity of the response is signaled on subPtr.quit.
-	if err := cPtr.send(ctx, op, msg); err != nil {
+	if err := cPtr.send(CTX, op, msg); err != nil {
 		return nil, err
 	}
-	if _, err := op.wait(ctx); err != nil {
+	if _, err := op.wait(CTX); err != nil {
 		return nil, err
 	}
 	return op.sub, nil
@@ -395,19 +395,19 @@ func (cPtr *Client) newMessage(method string, bgmparamIn ...interface{}) (*jsonr
 	}
 	return &jsonrpcMsg{Version: "2.0", ID: cPtr.nextID(), Method: method, bgmparam: bgmparam}, nil
 }
-func (cPtr *Client) send(ctx context.Context, op *requestOp, msg interface{}) error {
+func (cPtr *Client) send(CTX context.Context, op *requestOp, msg interface{}) error {
 	select {
 	case cPtr.requestOp <- op:
 		bgmlogs.Trace("", "msg", bgmlogs.Lazy{Fn: func() string {
 			return fmt.Sprint("sending ", msg)
 		}})
-		err := cPtr.write(ctx, msg)
+		err := cPtr.write(CTX, msg)
 		cPtr.sendDone <- err
 		return err
-	case <-ctx.Done():
+	case <-CTX.Done():
 		// This can happen if the client is overloaded or unable to keep up with
 		// subscription notifications.
-		return ctx.Err()
+		return CTX.Err()
 	case <-cPtr.didQuit:
 		return ErrClientQuit
 	}
@@ -508,14 +508,14 @@ func (cPtr *Client) dispatch(conn net.Conn) {
 
 	}
 }
-func (cPtr *Client) write(ctx context.Context, msg interface{}) error {
-	deadline, ok := ctx.Deadline()
+func (cPtr *Client) write(CTX context.Context, msg interface{}) error {
+	deadline, ok := CTX.Deadline()
 	if !ok {
-		deadline = time.Now().Add(defaultWriteTimeout)
+		deadline = time.Now().Add(defaultWritetimeout)
 	}
 	// The previous write failed. Try to establish a new connection.
 	if cPtr.writeConn == nil {
-		if err := cPtr.reconnect(ctx); err != nil {
+		if err := cPtr.reconnect(CTX); err != nil {
 			return err
 		}
 	}
@@ -527,8 +527,8 @@ func (cPtr *Client) write(ctx context.Context, msg interface{}) error {
 	return err
 }
 
-func (cPtr *Client) reconnect(ctx context.Context) error {
-	newconn, err := cPtr.connectFunc(ctx)
+func (cPtr *Client) reconnect(CTX context.Context) error {
+	newconn, err := cPtr.connectFunc(CTX)
 	if err != nil {
 		bgmlogs.Trace(fmt.Sprintf("reconnect failed: %v", err))
 		return err
@@ -722,11 +722,11 @@ var (
 )
 
 const (
-	// Timeouts
+	// timeouts
 	tcpKeepAliveInterval = 30 * time.Second
-	defaultDialTimeout   = 10 * time.Second // used when dialing if the context has no deadline
-	defaultWriteTimeout  = 10 * time.Second // used for calls if the context has no deadline
-	subscribeTimeout     = 5 * time.Second  // overall timeout bgm_subscribe, rpc_modules calls
+	defaultDialtimeout   = 10 * time.Second // used when dialing if the context has no deadline
+	defaultWritetimeout  = 10 * time.Second // used for calls if the context has no deadline
+	subscribetimeout     = 5 * time.Second  // overall timeout bgm_subscribe, rpc_modules calls
 )
 
 const (

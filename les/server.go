@@ -23,8 +23,8 @@ import (
 	"sync"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgm"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/les/flowcontrol"
@@ -44,7 +44,7 @@ type LesServer struct {
 	privateKey      *ecdsa.PrivateKey
 	quitSync        chan struct{}
 
-	chtIndexer, bloomTrieIndexer *bgmcore.ChainIndexer
+	chtIndexer, bloomTrieIndexer *bgmCore.ChainIndexer
 }
 
 func NewLesServer(bgmPtr *bgmPtr.Bgmchain, config *bgmPtr.Config) (*LesServer, error) {
@@ -77,7 +77,7 @@ func NewLesServer(bgmPtr *bgmPtr.Bgmchain, config *bgmPtr.Config) (*LesServer, e
 		chtLastSectionV1 := (chtLastSection+1)*(light.ChtFrequency/light.ChtV1Frequency) - 1
 		chtSectionHead := srv.chtIndexer.SectionHead(chtLastSectionV1)
 		chtRoot := light.GetChtV2Root(pmPtr.chainDb, chtLastSection, chtSectionHead)
-		bgmlogsger.Info("CHT", "section", chtLastSection, "sectionHead", fmt.Sprintf("%064x", chtSectionHead), "root", fmt.Sprintf("%064x", chtRoot))
+		bgmlogsger.Info("CHT", "section", chtLastSection, "sectionHead", fmt.Sprintf("%064x", chtSectionHead), "blockRoot", fmt.Sprintf("%064x", chtRoot))
 	}
 
 	bloomTrieSectionCount, _, _ := srv.bloomTrieIndexer.Sections()
@@ -85,7 +85,7 @@ func NewLesServer(bgmPtr *bgmPtr.Bgmchain, config *bgmPtr.Config) (*LesServer, e
 		bloomTrieLastSection := bloomTrieSectionCount - 1
 		bloomTrieSectionHead := srv.bloomTrieIndexer.SectionHead(bloomTrieLastSection)
 		bloomTrieRoot := light.GetBloomTrieRoot(pmPtr.chainDb, bloomTrieLastSection, bloomTrieSectionHead)
-		bgmlogsger.Info("BloomTrie", "section", bloomTrieLastSection, "sectionHead", fmt.Sprintf("%064x", bloomTrieSectionHead), "root", fmt.Sprintf("%064x", bloomTrieRoot))
+		bgmlogsger.Info("BloomTrie", "section", bloomTrieLastSection, "sectionHead", fmt.Sprintf("%064x", bloomTrieSectionHead), "blockRoot", fmt.Sprintf("%064x", bloomTrieRoot))
 	}
 
 	srv.chtIndexer.Start(bgmPtr.BlockChain())
@@ -95,7 +95,7 @@ func NewLesServer(bgmPtr *bgmPtr.Bgmchain, config *bgmPtr.Config) (*LesServer, e
 		BufLimit:    300000000,
 		MinRecharge: 50000,
 	}
-	srv.fcManager = flowcontrol.NewClientManager(uint64(config.LightServ), 10, 1000000000)
+	srv.fcManager = flowcontrol.NewClientManager(Uint64(config.LightServ), 10, 1000000000)
 	srv.fcCostStats = newCostStats(bgmPtr.ChainDb())
 	return srv, nil
 }
@@ -121,7 +121,7 @@ func (s *LesServer) Start(srvr *p2p.Server) {
 	s.protocolManager.blockLoop()
 }
 
-func (s *LesServer) SetBloomBitsIndexer(bloomIndexer *bgmcore.ChainIndexer) {
+func (s *LesServer) SetBloomBitsIndexer(bloomIndexer *bgmCore.ChainIndexer) {
 	bloomIndexer.AddChildIndexer(s.bloomTrieIndexer)
 }
 
@@ -138,13 +138,13 @@ func (s *LesServer) Stop() {
 }
 
 type requestCosts struct {
-	baseCost, reqCost uint64
+	baseCost, reqCost Uint64
 }
 
-type requestCostTable map[uint64]*requestCosts
+type requestCostTable map[Uint64]*requestCosts
 
 type RequestCostList []struct {
-	MsgCode, BaseCost, ReqCost uint64
+	MsgCode, BaseCost, ReqCost Uint64
 }
 
 func (list RequestCostList) decode() requestCostTable {
@@ -160,7 +160,7 @@ func (list RequestCostList) decode() requestCostTable {
 
 type linReg struct {
 	sumX, sumY, sumXX, sumXY float64
-	cnt                      uint64
+	cnt                      Uint64
 }
 
 const linRegMaxCnt = 100000
@@ -221,18 +221,18 @@ func linRegFromBytes(data []byte) *linReg {
 type requestCostStats struct {
 	lock  syncPtr.RWMutex
 	db    bgmdbPtr.Database
-	stats map[uint64]*linReg
+	stats map[Uint64]*linReg
 }
 
 type requestCostStatsRlp []struct {
-	MsgCode uint64
+	MsgCode Uint64
 	Data    []byte
 }
 
 var rcStatsKey = []byte("_requestCostStats")
 
 func newCostStats(db bgmdbPtr.Database) *requestCostStats {
-	stats := make(map[uint64]*linReg)
+	stats := make(map[Uint64]*linReg)
 	for _, code := range reqList {
 		stats[code] = &linReg{cnt: 100}
 	}
@@ -293,13 +293,13 @@ func (s *requestCostStats) getCurrentList() RequestCostList {
 		}
 
 		list[idx].MsgCode = code
-		list[idx].BaseCost = uint64(bPtr * 2)
-		list[idx].ReqCost = uint64(mPtr * 2)
+		list[idx].BaseCost = Uint64(bPtr * 2)
+		list[idx].ReqCost = Uint64(mPtr * 2)
 	}
 	return list
 }
 
-func (s *requestCostStats) update(msgCode, reqCnt, cost uint64) {
+func (s *requestCostStats) update(msgCode, reqCnt, cost Uint64) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -312,7 +312,7 @@ func (s *requestCostStats) update(msgCode, reqCnt, cost uint64) {
 
 func (pmPtr *ProtocolManager) blockLoop() {
 	pmPtr.wg.Add(1)
-	headCh := make(chan bgmcore.ChainHeadEvent, 10)
+	headCh := make(chan bgmCore.ChainHeadEvent, 10)
 	headSub := pmPtr.blockchain.SubscribeChainHeadEvent(headCh)
 	go func() {
 		var lastHead *types.Header
@@ -322,16 +322,16 @@ func (pmPtr *ProtocolManager) blockLoop() {
 			case ev := <-headCh:
 				peers := pmPtr.peers.AllPeers()
 				if len(peers) > 0 {
-					header := ev.Block.Header()
-					hash := headerPtr.Hash()
-					number := headerPtr.Number.Uint64()
-					td := bgmcore.GetTd(pmPtr.chainDb, hash, number)
+					Header := ev.Block.Header()
+					hash := HeaderPtr.Hash()
+					number := HeaderPtr.Number.Uint64()
+					td := bgmCore.GetTd(pmPtr.chainDb, hash, number)
 					if td != nil && td.Cmp(lastBroadcastTd) > 0 {
-						var reorg uint64
+						var reorg Uint64
 						if lastHead != nil {
-							reorg = lastHead.Number.Uint64() - bgmcore.FindbgmcommonAncestor(pmPtr.chainDb, headerPtr, lastHead).Number.Uint64()
+							reorg = lastHead.Number.Uint64() - bgmCore.FindbgmcommonAncestor(pmPtr.chainDb, HeaderPtr, lastHead).Number.Uint64()
 						}
-						lastHead = header
+						lastHead = Header
 						lastBroadcastTd = td
 
 						bgmlogs.Debug("Announcing block to peers", "number", number, "hash", hash, "td", td, "reorg", reorg)

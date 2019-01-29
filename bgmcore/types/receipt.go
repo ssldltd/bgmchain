@@ -50,7 +50,7 @@ type Receipt struct {
 	ContractAddress bgmcommon.Address `json:"contractAddress"`
 	GasUsed         *big.Int       `json:"gasUsed" gencodec:"required"`
 	// Consensus fields
-	PostState         []byte   `json:"root"`
+	PostState         []byte   `json:"blockRoot"`
 	Status            uint     `json:"status"`
 	CumulativeGasUsed *big.Int `json:"cumulativeGasUsed" gencodec:"required"`
 	Bloom             Bloom    `json:"bgmlogssBloom"         gencodec:"required"`
@@ -88,8 +88,8 @@ type receiptRLP struct {
 
 
 // NewReceipt creates a barebone transaction receipt, copying the init fields.
-func NewReceipt(root []byte, failed bool, cumulativeGasUsed *big.Int) *Receipt {
-	r := &Receipt{PostState: bgmcommon.CopyBytes(root), CumulativeGasUsed: new(big.Int).Set(cumulativeGasUsed)}
+func NewReceipt(blockRoot []byte, failed bool, cumulativeGasUsed *big.Int) *Receipt {
+	r := &Receipt{PostState: bgmcommon.CopyBytes(blockRoot), CumulativeGasUsed: new(big.Int).Set(cumulativeGasUsed)}
 	if failed {
 		r.Status = ReceiptStatusFailed
 	} else {

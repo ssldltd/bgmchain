@@ -52,7 +52,7 @@ func discoverPMP() Interface {
 	// return the one that responds first.
 	// discovery needs to be quick, so we stop caring about
 	// any responses after a very short timeout.
-	timeout := time.NewTimer(1 * time.Second)
+	timeout := time.Newtimer(1 * time.Second)
 	defer timeout.Stop()
 	for range gws {
 		select {

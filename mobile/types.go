@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/rlp"
 )
 
@@ -41,76 +41,76 @@ func (bPtr *Bloom) GetHex() string {
 	return fmt.Sprintf("0x%x", bPtr.bloom[:])
 }
 
-// NewHeaderFromRLP parses a header from an RLP data dump.
-func NewHeaderFromRLP(data []byte) (*headerPtr, error) {
+// NewHeaderFromRLP parses a Header from an RLP data dump.
+func NewHeaderFromRLP(data []byte) (*HeaderPtr, error) {
 	h := &Header{
-		header: new(types.Header),
+		Header: new(types.Header),
 	}
-	if err := rlp.DecodeBytes(bgmcommon.CopyBytes(data), hPtr.header); err != nil {
+	if err := rlp.DecodeBytes(bgmcommon.CopyBytes(data), hPtr.Header); err != nil {
 		return nil, err
 	}
 	return h, nil
 }
 
-// EncodeRLP encodes a header into an RLP data dump.
+// EncodeRLP encodes a Header into an RLP data dump.
 func (hPtr *Header) EncodeRLP() ([]byte, error) {
-	return rlp.EncodeToBytes(hPtr.header)
+	return rlp.EncodeToBytes(hPtr.Header)
 }
 
-// NewHeaderFromJSON parses a header from an JSON data dump.
-func NewHeaderFromJSON(data string) (*headerPtr, error) {
+// NewHeaderFromJSON parses a Header from an JSON data dump.
+func NewHeaderFromJSON(data string) (*HeaderPtr, error) {
 	h := &Header{
-		header: new(types.Header),
+		Header: new(types.Header),
 	}
-	if err := json.Unmarshal([]byte(data), hPtr.header); err != nil {
+	if err := json.Unmarshal([]byte(data), hPtr.Header); err != nil {
 		return nil, err
 	}
 	return h, nil
 }
 
-// EncodeJSON encodes a header into an JSON data dump.
+// EncodeJSON encodes a Header into an JSON data dump.
 func (hPtr *Header) EncodeJSON() (string, error) {
-	data, err := json.Marshal(hPtr.header)
+	data, err := json.Marshal(hPtr.Header)
 	return string(data), err
 }
 
 // String implement the fmt.Stringer interface to print some semi-meaningful
-// data dump of the header for debugging purposes.
+// data dump of the Header for debugging purposes.
 func (hPtr *Header) String() string {
-	return hPtr.headerPtr.String()
+	return hPtr.HeaderPtr.String()
 }
 
-func (hPtr *Header) GetParentHash() *Hash   { return &Hash{hPtr.headerPtr.ParentHash} }
-func (hPtr *Header) GetUncleHash() *Hash    { return &Hash{hPtr.headerPtr.UncleHash} }
-func (hPtr *Header) GetCoinbase() *Address  { return &Address{hPtr.headerPtr.Coinbase} }
-func (hPtr *Header) GetRoot() *Hash         { return &Hash{hPtr.headerPtr.Root} }
-func (hPtr *Header) GetTxHash() *Hash       { return &Hash{hPtr.headerPtr.TxHash} }
-func (hPtr *Header) GetRecChaintHash() *Hash  { return &Hash{hPtr.headerPtr.RecChaintHash} }
-func (hPtr *Header) GetBloom() *Bloom       { return &Bloom{hPtr.headerPtr.Bloom} }
-func (hPtr *Header) GetDifficulty() *BigInt { return &BigInt{hPtr.headerPtr.Difficulty} }
-func (hPtr *Header) GetNumber() int64       { return hPtr.headerPtr.Number.Int64() }
-func (hPtr *Header) GetGasLimit() int64     { return hPtr.headerPtr.GasLimit.Int64() }
-func (hPtr *Header) GetGasUsed() int64      { return hPtr.headerPtr.GasUsed.Int64() }
-func (hPtr *Header) GetTime() int64         { return hPtr.headerPtr.Time.Int64() }
-func (hPtr *Header) GetExtra() []byte       { return hPtr.headerPtr.Extra }
-func (hPtr *Header) GetMixDigest() *Hash    { return &Hash{hPtr.headerPtr.MixDigest} }
-func (hPtr *Header) GetNonce() *Nonce       { return &Nonce{hPtr.headerPtr.Nonce} }
-func (hPtr *Header) GetHash() *Hash         { return &Hash{hPtr.headerPtr.Hash()} }
+func (hPtr *Header) GetParentHash() *Hash   { return &Hash{hPtr.HeaderPtr.ParentHash} }
+func (hPtr *Header) GetUncleHash() *Hash    { return &Hash{hPtr.HeaderPtr.UncleHash} }
+func (hPtr *Header) GetCoinbase() *Address  { return &Address{hPtr.HeaderPtr.Coinbase} }
+func (hPtr *Header) GetRoot() *Hash         { return &Hash{hPtr.HeaderPtr.Root} }
+func (hPtr *Header) GetTxHash() *Hash       { return &Hash{hPtr.HeaderPtr.TxHash} }
+func (hPtr *Header) GetRecChaintHash() *Hash  { return &Hash{hPtr.HeaderPtr.RecChaintHash} }
+func (hPtr *Header) GetBloom() *Bloom       { return &Bloom{hPtr.HeaderPtr.Bloom} }
+func (hPtr *Header) GetDifficulty() *BigInt { return &BigInt{hPtr.HeaderPtr.Difficulty} }
+func (hPtr *Header) GetNumber() int64       { return hPtr.HeaderPtr.Number.Int64() }
+func (hPtr *Header) GetGasLimit() int64     { return hPtr.HeaderPtr.GasLimit.Int64() }
+func (hPtr *Header) GetGasUsed() int64      { return hPtr.HeaderPtr.GasUsed.Int64() }
+func (hPtr *Header) Gettime() int64         { return hPtr.HeaderPtr.time.Int64() }
+func (hPtr *Header) GetExtra() []byte       { return hPtr.HeaderPtr.Extra }
+func (hPtr *Header) GetMixDigest() *Hash    { return &Hash{hPtr.HeaderPtr.MixDigest} }
+func (hPtr *Header) GetNonce() *Nonce       { return &Nonce{hPtr.HeaderPtr.Nonce} }
+func (hPtr *Header) GetHash() *Hash         { return &Hash{hPtr.HeaderPtr.Hash()} }
 
-// Headers represents a slice of headers.
-type Headers struct{ headers []*types.Header }
+// Headers represents a slice of Headers.
+type Headers struct{ Headers []*types.Header }
 
-// Size returns the number of headers in the slice.
+// Size returns the number of Headers in the slice.
 func (hPtr *Headers) Size() int {
-	return len(hPtr.headers)
+	return len(hPtr.Headers)
 }
 
-// Get returns the header at the given index from the slice.
-func (hPtr *Headers) Get(index int) (headerPtr *headerPtr, _ error) {
-	if index < 0 || index >= len(hPtr.headers) {
+// Get returns the Header at the given index from the slice.
+func (hPtr *Headers) Get(index int) (HeaderPtr *HeaderPtr, _ error) {
+	if index < 0 || index >= len(hPtr.Headers) {
 		return nil, errors.New("index out of bounds")
 	}
-	return &Header{hPtr.headers[index]}, nil
+	return &Header{hPtr.Headers[index]}, nil
 }
 
 // Block represents an entire block in the Bgmchain blockchain.
@@ -168,7 +168,7 @@ func (bPtr *Block) GetDifficulty() *BigInt { return &BigInt{bPtr.block.Difficult
 func (bPtr *Block) GetNumber() int64       { return bPtr.block.Number().Int64() }
 func (bPtr *Block) GetGasLimit() int64     { return bPtr.block.GasLimit().Int64() }
 func (bPtr *Block) GetGasUsed() int64      { return bPtr.block.GasUsed().Int64() }
-func (bPtr *Block) GetTime() int64         { return bPtr.block.Time().Int64() }
+func (bPtr *Block) Gettime() int64         { return bPtr.block.time().Int64() }
 func (bPtr *Block) GetExtra() []byte       { return bPtr.block.Extra() }
 func (bPtr *Block) GetMixDigest() *Hash    { return &Hash{bPtr.block.MixDigest()} }
 func (bPtr *Block) GetNonce() int64        { return int64(bPtr.block.Nonce()) }
@@ -190,7 +190,7 @@ type Transaction struct {
 
 // NewTransaction creates a new transaction with the given properties.
 func NewTransaction(nonce int64, to *Address, amount, gasLimit, gasPrice *BigInt, data []byte) *Transaction {
-	return &Transaction{types.NewTransaction(types.Binary, uint64(nonce), to.address, amount.bigint, gasLimit.bigint, gasPrice.bigint, bgmcommon.CopyBytes(data))}
+	return &Transaction{types.NewTransaction(types.Binary, Uint64(nonce), to.address, amount.bigint, gasLimit.bigint, gasPrice.bigint, bgmcommon.CopyBytes(data))}
 }
 
 // NewTransactionFromRLP parses a transaction from an RLP data dump.
@@ -233,7 +233,7 @@ type Bloom struct {
 	bloom types.Bloom
 }
 type Header struct {
-	headerPtr *types.Header
+	HeaderPtr *types.Header
 }
 
 // Deprecated: use BgmchainClient.TransactionSender

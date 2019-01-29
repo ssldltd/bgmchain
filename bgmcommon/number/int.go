@@ -149,7 +149,7 @@ func (i *Number) Bytes() []byte {
 }
 
 // Uint64 returns the Uint64 representation of x. If x cannot be represented in an int64, the result is undefined.
-func (i *Number) Uint64() uint64 {
+func (i *Number) Uint64() Uint64 {
 	return i.numPtr.Uint64()
 }
 

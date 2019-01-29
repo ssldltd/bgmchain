@@ -49,7 +49,7 @@ type Contract struct {
 	CodeAddr *bgmcommon.Address
 	Input    []byte
 
-	Gas   uint64
+	Gas   Uint64
 	value *big.Int
 
 	Args []byte
@@ -58,7 +58,7 @@ type Contract struct {
 }
 
 // NewContract returns a new contract environment for the execution of EVmPtr.
-func NewContract(Called ContractRef, object ContractRef, value *big.Int, gas uint64) *Contract {
+func NewContract(Called ContractRef, object ContractRef, value *big.Int, gas Uint64) *Contract {
 	c := &Contract{CalledAddress: Called.Address(), Called: Called, self: object, Args: nil}
 
 	if parent, ok := Called.(*Contract); ok {
@@ -77,7 +77,7 @@ func NewContract(Called ContractRef, object ContractRef, value *big.Int, gas uin
 	return c
 }
 
-func (cPtr *Contract) GetOp(n uint64) OpCode {
+func (cPtr *Contract) GetOp(n Uint64) OpCode {
 	return OpCode(cPtr.GetByte(n))
 }
 // AsDelegate sets the contract to be a delegate call and returns the current
@@ -94,8 +94,8 @@ func (cPtr *Contract) AsDelegate() *Contract {
 
 
 // GetByte returns the n'th byte in the contract's byte array
-func (cPtr *Contract) GetByte(n uint64) byte {
-	if n < uint64(len(cPtr.Code)) {
+func (cPtr *Contract) GetByte(n Uint64) byte {
+	if n < Uint64(len(cPtr.Code)) {
 		return cPtr.Code[n]
 	}
 
@@ -129,7 +129,7 @@ func (cPtr *Contract) Value() *big.Int {
 	return cPtr.value
 }
 // UseGas attempts the use gas and subtracts it and returns true on success
-func (cPtr *Contract) UseGas(gas uint64) (ok bool) {
+func (cPtr *Contract) UseGas(gas Uint64) (ok bool) {
 	if cPtr.Gas < gas {
 		return false
 	}

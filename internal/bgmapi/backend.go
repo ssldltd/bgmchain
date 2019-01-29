@@ -21,10 +21,10 @@ import (
 
 	"github.com/ssldltd/bgmchain/account"
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/state"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
-	"github.com/ssldltd/bgmchain/bgmcore/vm"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/vm"
 	"github.com/ssldltd/bgmchain/bgm/downloader"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/event"
@@ -38,30 +38,30 @@ type Backend interface {
 	// general Bgmchain apiPtr
 	Downloader() *downloader.Downloader
 	ProtocolVersion() int
-	SuggestPrice(ctx context.Context) (*big.Int, error)
+	SuggestPrice(CTX context.Context) (*big.Int, error)
 	ChainDb() bgmdbPtr.Database
 	EventMux() *event.TypeMux
 	AccountManager() *accounts.Manager
 	// BlockChain apiPtr
-	SetHead(number uint64)
-	HeaderByNumber(ctx context.Context, blockNr rpcPtr.BlockNumber) (*types.headerPtr, error)
-	BlockByNumber(ctx context.Context, blockNr rpcPtr.BlockNumber) (*types.Block, error)
-	StateAndHeaderByNumber(ctx context.Context, blockNr rpcPtr.BlockNumber) (*state.StateDB, *types.headerPtr, error)
-	GetBlock(ctx context.Context, blockHash bgmcommon.Hash) (*types.Block, error)
-	GetRecChaints(ctx context.Context, blockHash bgmcommon.Hash) (types.RecChaints, error)
+	SetHead(number Uint64)
+	HeaderByNumber(CTX context.Context, blockNr rpcPtr.number) (*types.HeaderPtr, error)
+	BlockByNumber(CTX context.Context, blockNr rpcPtr.number) (*types.Block, error)
+	StateAndHeaderByNumber(CTX context.Context, blockNr rpcPtr.number) (*state.StateDB, *types.HeaderPtr, error)
+	GetBlock(CTX context.Context, blockHash bgmcommon.Hash) (*types.Block, error)
+	GetRecChaints(CTX context.Context, blockHash bgmcommon.Hash) (types.RecChaints, error)
 	GetTd(blockHash bgmcommon.Hash) *big.Int
-	GetEVM(ctx context.Context, msg bgmcore.Message, state *state.StateDB, headerPtr *types.headerPtr, vmCfg vmPtr.Config) (*vmPtr.EVM, func() error, error)
-	SubscribeChainEvent(ch chan<- bgmcore.ChainEvent) event.Subscription
-	SubscribeChainHeadEvent(ch chan<- bgmcore.ChainHeadEvent) event.Subscription
+	GetEVM(CTX context.Context, msg bgmCore.Message, state *state.StateDB, HeaderPtr *types.HeaderPtr, vmCfg vmPtr.Config) (*vmPtr.EVM, func() error, error)
+	SubscribeChainEvent(ch chan<- bgmCore.ChainEvent) event.Subscription
+	SubscribeChainHeadEvent(ch chan<- bgmCore.ChainHeadEvent) event.Subscription
 
 	// TxPool apiPtr
-	SendTx(ctx context.Context, signedTx *types.Transaction) error
+	SendTx(CTX context.Context, signedTx *types.Transaction) error
 	GetPoolTransactions() (types.Transactions, error)
 	GetPoolTransaction(txHash bgmcommon.Hash) *types.Transaction
-	GetPoolNonce(ctx context.Context, addr bgmcommon.Address) (uint64, error)
+	GetPoolNonce(CTX context.Context, addr bgmcommon.Address) (Uint64, error)
 	Stats() (pending int, queued int)
 	TxPoolContent() (map[bgmcommon.Address]types.Transactions, map[bgmcommon.Address]types.Transactions)
-	SubscribeTxPreEvent(chan<- bgmcore.TxPreEvent) event.Subscription
+	SubscribeTxPreEvent(chan<- bgmCore.TxPreEvent) event.Subscription
 
 	ChainConfig() *bgmparam.ChainConfig
 	CurrentBlock() *types.Block

@@ -12,7 +12,7 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with the BMG Chain project source. If not, you can see <http://www.gnu.org/licenses/> for detail.
-package bgmcore
+package bgmCore
 
 import (
 	"encoding/json"
@@ -51,7 +51,7 @@ func (g *GenesisAccount) UnmarshalJSON(input []byte) error {
 	}
 	g.Balance = (*big.Int)(decPtr.Balance)
 	if decPtr.Nonce != nil {
-		g.Nonce = uint64(*decPtr.Nonce)
+		g.Nonce = Uint64(*decPtr.Nonce)
 	}
 	if decPtr.PrivateKey != nil {
 		g.PrivateKey = decPtr.PrivateKey

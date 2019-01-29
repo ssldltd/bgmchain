@@ -14,8 +14,8 @@ import (
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/consensus"
 	"github.com/ssldltd/bgmchain/consensus/misc"
-	"github.com/ssldltd/bgmchain/bgmcore/state"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmcrypto"
 	"github.com/ssldltd/bgmchain/bgmcrypto/sha3"
 	"github.com/ssldltd/bgmchain/bgmdb"
@@ -67,15 +67,15 @@ var (
 	errorInvalidUncleHash  = errors.New("non empty uncle hash")
 	errorInvalidDifficulty = errors.New("invalid difficulty")
 
-	// errorInvalidTimestamp is returned if the timestamp of a block is lower than
+	// errorInvalidtimestamp is returned if the timestamp of a block is lower than
 	// the previous block's timestamp + the minimum block period.
-	errorInvalidTimestamp           = errors.New("invalid timestamp")
+	errorInvalidtimestamp           = errors.New("invalid timestamp")
 	ErrWaitForPrevBlock           = errors.New("wait for last block arrived")
 	ErrMintFutureBlock            = errors.New("mint the future block")
 	ErrMismatchSignerAndValidator = errors.New("mismatch block signer and validator")
 	errorInvalidBlockValidator      = errors.New("invalid block validator")
-	errorInvalidMintBlockTime       = errors.New("invalid time to mint the block")
-	ErrNilBlockHeader             = errors.New("nil block header returned")
+	errorInvalidMintBlocktime       = errors.New("invalid time to mint the block")
+	ErrNilBlockHeader             = errors.New("nil block Header returned")
 )
 var (
 	uncleHash = types.CalcUncleHash(nil) // Always Keccak256(RLP([])) as uncles are meaningless outside of PoW.
@@ -88,7 +88,7 @@ type Dpos struct {
 	signer               bgmcommon.Address
 	signFn               SignerFn
 	signatures           *lru.ARCCache // Signatures of recent blocks to speed up mining
-	confirmedBlockheaderPtr *types.Header
+	confirmedBlockHeaderPtr *types.Header
 
 	mu   syncPtr.RWMutex
 	stop chan bool
@@ -98,33 +98,33 @@ type SignerFn func(accounts.Account, []byte) ([]byte, error)
 
 // NOTE: sigHash was copy from clique
 // sigHash returns the hash which is used as input for the proof-of-authority
-// signing. It is the hash of the entire header apart from the 65 byte signature
+// signing. It is the hash of the entire Header apart from the 65 byte signature
 // contained at the end of the extra data.
 //
 // Note, the method requires the extra data to be at least 65 bytes, otherwise it
 // panics. This is done to avoid accidentally using both forms (signature present
-// or not), which could be abused to produce different hashes for the same headerPtr.
-func sigHash(headerPtr *types.Header) (hash bgmcommon.Hash) {
+// or not), which could be abused to produce different hashes for the same HeaderPtr.
+func sigHash(HeaderPtr *types.Header) (hash bgmcommon.Hash) {
 	hashers := sha3.NewKeccak256()
 
 	rlp.Encode(hashers, []interface{}{
-		headerPtr.ParentHash,
-		headerPtr.UncleHash,
-		headerPtr.Validator,
-		headerPtr.Coinbase,
-		headerPtr.Root,
-		headerPtr.TxHash,
-		headerPtr.RecChaintHash,
-		headerPtr.Bloom,
-		headerPtr.Difficulty,
-		headerPtr.Number,
-		headerPtr.GasLimit,
-		headerPtr.GasUsed,
-		headerPtr.Time,
-		headerPtr.Extra[:len(headerPtr.Extra)-65], // Yes, this will panic if extra is too short
-		headerPtr.MixDigest,
-		headerPtr.Nonce,
-		headerPtr.DposContext.Root(),
+		HeaderPtr.ParentHash,
+		HeaderPtr.UncleHash,
+		HeaderPtr.Validator,
+		HeaderPtr.Coinbase,
+		HeaderPtr.Root,
+		HeaderPtr.TxHash,
+		HeaderPtr.RecChaintHash,
+		HeaderPtr.Bloom,
+		HeaderPtr.Difficulty,
+		HeaderPtr.Number,
+		HeaderPtr.GasLimit,
+		HeaderPtr.GasUsed,
+		HeaderPtr.time,
+		HeaderPtr.Extra[:len(HeaderPtr.Extra)-65], // Yes, this will panic if extra is too short
+		HeaderPtr.MixDigest,
+		HeaderPtr.Nonce,
+		HeaderPtr.DposContext.Root(),
 	})
 	hashers.Sum(hash[:0])
 	return hash
@@ -139,44 +139,44 @@ func New(config *bgmparam.DposConfig, db bgmdbPtr.Database) *Dpos {
 	}
 }
 
-func (d *Dpos) Author(headerPtr *types.Header) (bgmcommon.Address, error) {
-	return headerPtr.Validator, nil
+func (d *Dpos) Author(HeaderPtr *types.Header) (bgmcommon.Address, error) {
+	return HeaderPtr.Validator, nil
 }
 
-func (d *Dpos) VerifyHeader(chain consensus.ChainReader, headerPtr *types.headerPtr, seal bool) error {
-	return d.verifyHeader(chain, headerPtr, nil)
+func (d *Dpos) VerifyHeader(chain consensus.ChainReader, HeaderPtr *types.HeaderPtr, seal bool) error {
+	return d.verifyHeader(chain, HeaderPtr, nil)
 }
 
-func (d *Dpos) verifyHeader(chain consensus.ChainReader, headerPtr *types.headerPtr, parents []*types.Header) error {
-	if headerPtr.Number == nil {
+func (d *Dpos) verifyHeader(chain consensus.ChainReader, HeaderPtr *types.HeaderPtr, parents []*types.Header) error {
+	if HeaderPtr.Number == nil {
 		return errUnknownBlock
 	}
-	number := headerPtr.Number.Uint64()
+	number := HeaderPtr.Number.Uint64()
 	// Unnecssary to verify the block from feature
-	if headerPtr.Time.Cmp(big.NewInt(time.Now().Unix())) > 0 {
+	if HeaderPtr.time.Cmp(big.NewInt(time.Now().Unix())) > 0 {
 		return consensus.ErrFutureBlock
 	}
 	// Check that the extra-data contains both the vanity and signature
-	if len(headerPtr.Extra) < extraVanity {
+	if len(HeaderPtr.Extra) < extraVanity {
 		return errMissingVanity
 	}
-	if len(headerPtr.Extra) < extraVanity+extraSeal {
+	if len(HeaderPtr.Extra) < extraVanity+extraSeal {
 		return errMissingSignature
 	}
 	// Ensure that the mix digest is zero as we don't have fork protection currently
-	if headerPtr.MixDigest != (bgmcommon.Hash{}) {
+	if HeaderPtr.MixDigest != (bgmcommon.Hash{}) {
 		return errorInvalidMixDigest
 	}
 	// Difficulty always 1
-	if headerPtr.Difficulty.Uint64() != 1 {
+	if HeaderPtr.Difficulty.Uint64() != 1 {
 		return errorInvalidDifficulty
 	}
 	// Ensure that the block doesn't contain any uncles which are meaningless in DPoS
-	if headerPtr.UncleHash != uncleHash {
+	if HeaderPtr.UncleHash != uncleHash {
 		return errorInvalidUncleHash
 	}
 	// If all checks passed, validate any special fields for hard forks
-	if err := miscPtr.VerifyForkHashes(chain.Config(), headerPtr, false); err != nil {
+	if err := miscPtr.VerifyForkHashes(chain.Config(), HeaderPtr, false); err != nil {
 		return err
 	}
 
@@ -184,24 +184,24 @@ func (d *Dpos) verifyHeader(chain consensus.ChainReader, headerPtr *types.header
 	if len(parents) > 0 {
 		parent = parents[len(parents)-1]
 	} else {
-		parent = chain.GetHeader(headerPtr.ParentHash, number-1)
+		parent = chain.GetHeader(HeaderPtr.ParentHash, number-1)
 	}
-	if parent == nil || parent.Number.Uint64() != number-1 || parent.Hash() != headerPtr.ParentHash {
+	if parent == nil || parent.Number.Uint64() != number-1 || parent.Hash() != HeaderPtr.ParentHash {
 		return consensus.ErrUnknownAncestor
 	}
-	if parent.Time.Uint64()+uint64(blockInterval) > headerPtr.Time.Uint64() {
-		return errorInvalidTimestamp
+	if parent.time.Uint64()+Uint64(blockInterval) > HeaderPtr.time.Uint64() {
+		return errorInvalidtimestamp
 	}
 	return nil
 }
 
-func (d *Dpos) VerifyHeaders(chain consensus.ChainReader, headers []*types.headerPtr, seals []bool) (chan<- struct{}, <-chan error) {
+func (d *Dpos) VerifyHeaders(chain consensus.ChainReader, Headers []*types.HeaderPtr, seals []bool) (chan<- struct{}, <-chan error) {
 	abort := make(chan struct{})
-	results := make(chan error, len(headers))
+	results := make(chan error, len(Headers))
 
 	go func() {
-		for i, header := range headers {
-			err := d.verifyHeader(chain, headerPtr, headers[:i])
+		for i, Header := range Headers {
+			err := d.verifyHeader(chain, HeaderPtr, Headers[:i])
 			select {
 			case <-abort:
 				return
@@ -222,14 +222,14 @@ func (d *Dpos) VerifyUncles(chain consensus.ChainReader, block *types.Block) err
 }
 
 // VerifySeal implement consensus.Engine, checking whbgmchain the signature contained
-// in the header satisfies the consensus protocol requirements.
-func (d *Dpos) VerifySeal(chain consensus.ChainReader, headerPtr *types.Header) error {
-	return d.verifySeal(chain, headerPtr, nil)
+// in the Header satisfies the consensus protocol requirements.
+func (d *Dpos) VerifySeal(chain consensus.ChainReader, HeaderPtr *types.Header) error {
+	return d.verifySeal(chain, HeaderPtr, nil)
 }
 
-func (d *Dpos) verifySeal(chain consensus.ChainReader, headerPtr *types.headerPtr, parents []*types.Header) error {
+func (d *Dpos) verifySeal(chain consensus.ChainReader, HeaderPtr *types.HeaderPtr, parents []*types.Header) error {
 	// Verifying the genesis block is not supported
-	number := headerPtr.Number.Uint64()
+	number := HeaderPtr.Number.Uint64()
 	if number == 0 {
 		return errUnknownBlock
 	}
@@ -237,32 +237,32 @@ func (d *Dpos) verifySeal(chain consensus.ChainReader, headerPtr *types.headerPt
 	if len(parents) > 0 {
 		parent = parents[len(parents)-1]
 	} else {
-		parent = chain.GetHeader(headerPtr.ParentHash, number-1)
+		parent = chain.GetHeader(HeaderPtr.ParentHash, number-1)
 	}
 	dposContext, err := types.NewDposContextFromProto(d.db, parent.DposContext)
 	if err != nil {
 		return err
 	}
 	epochContext := &EpochContext{DposContext: dposContext}
-	validator, err := epochContext.lookupValidator(headerPtr.Time.Int64())
+	validator, err := epochContext.lookupValidator(HeaderPtr.time.Int64())
 	if err != nil {
 		return err
 	}
-	if err := d.verifyBlockSigner(validator, header); err != nil {
+	if err := d.verifyBlockSigner(validator, Header); err != nil {
 		return err
 	}
 	return d.updateConfirmedBlockHeader(chain)
 }
 
-func (d *Dpos) verifyBlockSigner(validator bgmcommon.Address, headerPtr *types.Header) error {
-	signer, err := ecrecover(headerPtr, d.signatures)
+func (d *Dpos) verifyBlockSigner(validator bgmcommon.Address, HeaderPtr *types.Header) error {
+	signer, err := ecrecover(HeaderPtr, d.signatures)
 	if err != nil {
 		return err
 	}
 	if bytes.Compare(signer.Bytes(), validator.Bytes()) != 0 {
 		return errorInvalidBlockValidator
 	}
-	if bytes.Compare(signer.Bytes(), headerPtr.Validator.Bytes()) != 0 {
+	if bytes.Compare(signer.Bytes(), HeaderPtr.Validator.Bytes()) != 0 {
 		return ErrMismatchSignerAndValidator
 	}
 	return nil
@@ -270,22 +270,22 @@ func (d *Dpos) verifyBlockSigner(validator bgmcommon.Address, headerPtr *types.H
 
 func (d *Dpos) updateConfirmedBlockHeader(chain consensus.ChainReader) error {
 	if d.confirmedBlockHeader == nil {
-		headerPtr, err := d.loadConfirmedBlockHeader(chain)
+		HeaderPtr, err := d.loadConfirmedBlockHeader(chain)
 		if err != nil {
-			header = chain.GetHeaderByNumber(0)
-			if header == nil {
+			Header = chain.GetHeaderByNumber(0)
+			if Header == nil {
 				return err
 			}
 		}
-		d.confirmedBlockHeader = header
+		d.confirmedBlockHeader = Header
 	}
 
 	curHeader := chain.CurrentHeader()
 	epoch := int64(-1)
 	validatorMap := make(map[bgmcommon.Address]bool)
-	for d.confirmedBlockheaderPtr.Hash() != curheaderPtr.Hash() &&
-		d.confirmedBlockheaderPtr.Number.Uint64() < curheaderPtr.Number.Uint64() {
-		curEpoch := curheaderPtr.Time.Int64() / epochInterval
+	for d.confirmedBlockHeaderPtr.Hash() != curHeaderPtr.Hash() &&
+		d.confirmedBlockHeaderPtr.Number.Uint64() < curHeaderPtr.Number.Uint64() {
+		curEpoch := curHeaderPtr.time.Int64() / epochInterval
 		if curEpoch != epoch {
 			epoch = curEpoch
 			validatorMap = make(map[bgmcommon.Address]bool)
@@ -293,20 +293,20 @@ func (d *Dpos) updateConfirmedBlockHeader(chain consensus.ChainReader) error {
 		// fast return
 		// if block number difference less consensusSize-witnessNum
 		// there is no need to check block is confirmed
-		if curheaderPtr.Number.Int64()-d.confirmedBlockheaderPtr.Number.Int64() < int64(consensusSize-len(validatorMap)) {
-			bgmlogs.Debug("Dpos fast return", "current", curheaderPtr.Number.String(), "confirmed", d.confirmedBlockheaderPtr.Number.String(), "witnessCount", len(validatorMap))
+		if curHeaderPtr.Number.Int64()-d.confirmedBlockHeaderPtr.Number.Int64() < int64(consensusSize-len(validatorMap)) {
+			bgmlogs.Debug("Dpos fast return", "current", curHeaderPtr.Number.String(), "confirmed", d.confirmedBlockHeaderPtr.Number.String(), "witnessCount", len(validatorMap))
 			return nil
 		}
-		validatorMap[curheaderPtr.Validator] = true
+		validatorMap[curHeaderPtr.Validator] = true
 		if len(validatorMap) >= consensusSize {
 			d.confirmedBlockHeader = curHeader
 			if err := d.storeConfirmedBlockHeader(d.db); err != nil {
 				return err
 			}
-			bgmlogs.Debug("dpos set confirmed block header success", "currentHeader", curheaderPtr.Number.String())
+			bgmlogs.Debug("dpos set confirmed block Header success", "currentHeader", curHeaderPtr.Number.String())
 			return nil
 		}
-		curHeader = chain.GetHeaderByHash(curheaderPtr.ParentHash)
+		curHeader = chain.GetHeaderByHash(curHeaderPtr.ParentHash)
 		if curHeader == nil {
 			return ErrNilBlockHeader
 		}
@@ -314,66 +314,66 @@ func (d *Dpos) updateConfirmedBlockHeader(chain consensus.ChainReader) error {
 	return nil
 }
 
-func (s *Dpos) loadConfirmedBlockHeader(chain consensus.ChainReader) (*types.headerPtr, error) {
+func (s *Dpos) loadConfirmedBlockHeader(chain consensus.ChainReader) (*types.HeaderPtr, error) {
 	key, err := s.dbPtr.Get(confirmedBlockHead)
 	if err != nil {
 		return nil, err
 	}
-	header := chain.GetHeaderByHash(bgmcommon.BytesToHash(key))
-	if header == nil {
+	Header := chain.GetHeaderByHash(bgmcommon.BytesToHash(key))
+	if Header == nil {
 		return nil, ErrNilBlockHeader
 	}
-	return headerPtr, nil
+	return HeaderPtr, nil
 }
 
 // store inserts the snapshot into the database.
 func (s *Dpos) storeConfirmedBlockHeader(db bgmdbPtr.Database) error {
-	return dbPtr.Put(confirmedBlockHead, s.confirmedBlockheaderPtr.Hash().Bytes())
+	return dbPtr.Put(confirmedBlockHead, s.confirmedBlockHeaderPtr.Hash().Bytes())
 }
 
-func (d *Dpos) Prepare(chain consensus.ChainReader, headerPtr *types.Header) error {
-	headerPtr.Nonce = types.BlockNonce{}
-	number := headerPtr.Number.Uint64()
-	if len(headerPtr.Extra) < extraVanity {
-		headerPtr.Extra = append(headerPtr.Extra, bytes.Repeat([]byte{0x00}, extraVanity-len(headerPtr.Extra))...)
+func (d *Dpos) Prepare(chain consensus.ChainReader, HeaderPtr *types.Header) error {
+	HeaderPtr.Nonce = types.BlockNonce{}
+	number := HeaderPtr.Number.Uint64()
+	if len(HeaderPtr.Extra) < extraVanity {
+		HeaderPtr.Extra = append(HeaderPtr.Extra, bytes.Repeat([]byte{0x00}, extraVanity-len(HeaderPtr.Extra))...)
 	}
-	headerPtr.Extra = headerPtr.Extra[:extraVanity]
-	headerPtr.Extra = append(headerPtr.Extra, make([]byte, extraSeal)...)
-	parent := chain.GetHeader(headerPtr.ParentHash, number-1)
+	HeaderPtr.Extra = HeaderPtr.Extra[:extraVanity]
+	HeaderPtr.Extra = append(HeaderPtr.Extra, make([]byte, extraSeal)...)
+	parent := chain.GetHeader(HeaderPtr.ParentHash, number-1)
 	if parent == nil {
 		return consensus.ErrUnknownAncestor
 	}
-	headerPtr.Difficulty = d.CalcDifficulty(chain, headerPtr.Time.Uint64(), parent)
-	headerPtr.Validator = d.signer
+	HeaderPtr.Difficulty = d.CalcDifficulty(chain, HeaderPtr.time.Uint64(), parent)
+	HeaderPtr.Validator = d.signer
 	return nil
 }
 
-func AccumulateRewards(config *bgmparam.ChainConfig, state *state.StateDB, headerPtr *types.headerPtr, uncles []*types.Header) {
+func AccumulateRewards(config *bgmparam.ChainConfig, state *state.StateDB, HeaderPtr *types.HeaderPtr, uncles []*types.Header) {
 	// Select the correct block reward based on chain progression
 	blockReward := frontierBlockReward
-	if config.IsByzantium(headerPtr.Number) {
+	if config.IsByzantium(HeaderPtr.Number) {
 		blockReward = byzantiumBlockReward
 	}
 	// Accumulate the rewards for the miner and any included uncles
 	reward := new(big.Int).Set(blockReward)
-	state.AddBalance(headerPtr.Coinbase, reward)
+	state.AddBalance(HeaderPtr.Coinbase, reward)
 }
 
-func (d *Dpos) Finalize(chain consensus.ChainReader, headerPtr *types.headerPtr, state *state.StateDB, txs []*types.Transaction,
-	uncles []*types.headerPtr, recChaints []*types.RecChaint, dposContext *types.DposContext) (*types.Block, error) {
-	// Accumulate block rewards and commit the final state root
-	AccumulateRewards(chain.Config(), state, headerPtr, uncles)
-	headerPtr.Root = state.IntermediateRoot(chain.Config().IsChain158(headerPtr.Number))
+func (d *Dpos) Finalize(chain consensus.ChainReader, HeaderPtr *types.HeaderPtr, state *state.StateDB, txs []*types.Transaction,
+	uncles []*types.HeaderPtr, recChaints []*types.RecChaint, dposContext *types.DposContext) (*types.Block, error) {
+	// Accumulate block rewards and commit the final state blockRoot
+	AccumulateRewards(chain.Config(), state, HeaderPtr, uncles)
+	HeaderPtr.Root = state.IntermediateRoot(chain.Config().IsChain158(HeaderPtr.Number))
 
-	parent := chain.GetHeaderByHash(headerPtr.ParentHash)
+	parent := chain.GetHeaderByHash(HeaderPtr.ParentHash)
 	epochContext := &EpochContext{
 		statedb:     state,
 		DposContext: dposContext,
-		TimeStamp:   headerPtr.Time.Int64(),
+		timeStamp:   HeaderPtr.time.Int64(),
 	}
 	if timeOfFirstBlock == 0 {
 		if firstBlockHeader := chain.GetHeaderByNumber(1); firstBlockHeader != nil {
-			timeOfFirstBlock = firstBlockheaderPtr.Time.Int64()
+			timeOfFirstBlock = firstBlockHeaderPtr.time.Int64()
 		}
 	}
 	genesis := chain.GetHeaderByNumber(0)
@@ -383,19 +383,19 @@ func (d *Dpos) Finalize(chain consensus.ChainReader, headerPtr *types.headerPtr,
 	}
 
 	//update mint count trie
-	updateMintCnt(parent.Time.Int64(), headerPtr.Time.Int64(), headerPtr.Validator, dposContext)
-	headerPtr.DposContext = dposContext.ToProto()
-	return types.NewBlock(headerPtr, txs, uncles, recChaints), nil
+	updateMintCnt(parent.time.Int64(), HeaderPtr.time.Int64(), HeaderPtr.Validator, dposContext)
+	HeaderPtr.DposContext = dposContext.ToProto()
+	return types.NewBlock(HeaderPtr, txs, uncles, recChaints), nil
 }
 
 func (d *Dpos) checkDeadline(lastBlock *types.Block, now int64) error {
 	prevSlot := PrevSlot(now)
 	nextSlot := NextSlot(now)
-	if lastBlock.Time().Int64() >= nextSlot {
+	if lastBlock.time().Int64() >= nextSlot {
 		return ErrMintFutureBlock
 	}
 	// last block was arrived, or time's up
-	if lastBlock.Time().Int64() == prevSlot || nextSlot-now <= 1 {
+	if lastBlock.time().Int64() == prevSlot || nextSlot-now <= 1 {
 		return nil
 	}
 	return ErrWaitForPrevBlock
@@ -423,8 +423,8 @@ func (d *Dpos) CheckValidator(lastBlock *types.Block, now int64) error {
 // Seal generates a new block for the given input block with the local miner's
 // seal place on top.
 func (d *Dpos) Seal(chain consensus.ChainReader, block *types.Block, stop <-chan struct{}) (*types.Block, error) {
-	header := block.Header()
-	number := headerPtr.Number.Uint64()
+	Header := block.Header()
+	number := HeaderPtr.Number.Uint64()
 	// Sealing the genesis block is not supported
 	if number == 0 {
 		return nil, errUnknownBlock
@@ -438,18 +438,18 @@ func (d *Dpos) Seal(chain consensus.ChainReader, block *types.Block, stop <-chan
 		case <-time.After(time.Duration(delay) * time.Second):
 		}
 	}
-	block.Header().Time.SetInt64(time.Now().Unix())
+	block.Header().time.SetInt64(time.Now().Unix())
 
 	// time's up, sign the block
-	sighash, err := d.signFn(accounts.Account{Address: d.signer}, sigHash(header).Bytes())
+	sighash, err := d.signFn(accounts.Account{Address: d.signer}, sigHash(Header).Bytes())
 	if err != nil {
 		return nil, err
 	}
-	copy(headerPtr.Extra[len(headerPtr.Extra)-extraSeal:], sighash)
-	return block.WithSeal(header), nil
+	copy(HeaderPtr.Extra[len(HeaderPtr.Extra)-extraSeal:], sighash)
+	return block.WithSeal(Header), nil
 }
 
-func (d *Dpos) CalcDifficulty(chain consensus.ChainReader, time uint64, parent *types.Header) *big.Int {
+func (d *Dpos) CalcDifficulty(chain consensus.ChainReader, time Uint64, parent *types.Header) *big.Int {
 	return big.NewInt(1)
 }
 
@@ -469,20 +469,20 @@ func (d *Dpos) Authorize(signer bgmcommon.Address, signFn SignerFn) {
 	d.mu.Unlock()
 }
 
-// ecrecover extracts the Bgmchain account address from a signed headerPtr.
-func ecrecover(headerPtr *types.headerPtr, sigcache *lru.ARCCache) (bgmcommon.Address, error) {
+// ecrecover extracts the Bgmchain account address from a signed HeaderPtr.
+func ecrecover(HeaderPtr *types.HeaderPtr, sigcache *lru.ARCCache) (bgmcommon.Address, error) {
 	// If the signature's already cached, return that
-	hash := headerPtr.Hash()
+	hash := HeaderPtr.Hash()
 	if address, known := sigcache.Get(hash); known {
 		return address.(bgmcommon.Address), nil
 	}
-	// Retrieve the signature from the header extra-data
-	if len(headerPtr.Extra) < extraSeal {
+	// Retrieve the signature from the Header extra-data
+	if len(HeaderPtr.Extra) < extraSeal {
 		return bgmcommon.Address{}, errMissingSignature
 	}
-	signature := headerPtr.Extra[len(headerPtr.Extra)-extraSeal:]
+	signature := HeaderPtr.Extra[len(HeaderPtr.Extra)-extraSeal:]
 	// Recover the public key and the Bgmchain address
-	pubkey, err := bgmcrypto.Ecrecover(sigHash(header).Bytes(), signature)
+	pubkey, err := bgmcrypto.Ecrecover(sigHash(Header).Bytes(), signature)
 	if err != nil {
 		return bgmcommon.Address{}, err
 	}
@@ -501,14 +501,14 @@ func NextSlot(now int64) int64 {
 }
 
 // update counts in MintCntTrie for the miner of newBlock
-func updateMintCnt(parentBlockTime, currentBlockTime int64, validator bgmcommon.Address, dposContext *types.DposContext) {
+func updateMintCnt(parentBlocktime, currentBlocktime int64, validator bgmcommon.Address, dposContext *types.DposContext) {
 	currentMintCntTrie := dposContext.MintCntTrie()
-	currentEpoch := parentBlockTime / epochInterval
+	currentEpoch := parentBlocktime / epochInterval
 	currentEpochBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(currentEpochBytes, uint64(currentEpoch))
+	binary.BigEndian.PutUint64(currentEpochBytes, Uint64(currentEpoch))
 
 	cnt := int64(1)
-	newEpoch := currentBlockTime / epochInterval
+	newEpoch := currentBlocktime / epochInterval
 	// still during the currentEpochID
 	if currentEpoch == newEpoch {
 		iter := trie.NewIterator(currentMintCntTrie.NodeIterator(currentEpochBytes))
@@ -526,7 +526,7 @@ func updateMintCnt(parentBlockTime, currentBlockTime int64, validator bgmcommon.
 
 	newCntBytes := make([]byte, 8)
 	newEpochBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(newEpochBytes, uint64(newEpoch))
-	binary.BigEndian.PutUint64(newCntBytes, uint64(cnt))
+	binary.BigEndian.PutUint64(newEpochBytes, Uint64(newEpoch))
+	binary.BigEndian.PutUint64(newCntBytes, Uint64(cnt))
 	dposContext.MintCntTrie().TryUpdate(append(newEpochBytes, validator.Bytes()...), newCntBytes)
 }

@@ -45,7 +45,7 @@ func (fcPtr *fileCache) scan(keyDir string) (set.Interface, set.Interface, set.I
 	all := set.NewNonTS()
 	mods := set.NewNonTS()
 
-	var newLastMod time.Time
+	var newLastMod time.time
 	for _, fi := range files {
 		// Skip any non-key files from the folder
 		path := filepathPtr.Join(keyDir, fi.Name())
@@ -56,7 +56,7 @@ func (fcPtr *fileCache) scan(keyDir string) (set.Interface, set.Interface, set.I
 		// Gather the set of all and fresly modified files
 		all.Add(path)
 
-		modified := fi.ModTime()
+		modified := fi.Modtime()
 		if modified.After(fcPtr.lastMod) {
 			mods.Add(path)
 		}
@@ -94,6 +94,6 @@ func skipKeyFile(fi os.FileInfo) bool {
 // fileCache是在密钥库扫描期间看到的文件缓存。
 type fileCache struct {
 	all     *set.SetNonTS // Set of all files from the keystore folder
-	lastMod time.Time     // Last time instance when a file was modified
+	lastMod time.time     // Last time instance when a file was modified
 	mu      syncPtr.RWMutex
 }

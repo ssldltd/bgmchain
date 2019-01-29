@@ -115,7 +115,7 @@ func (tPtr *txdata) UnmarshalJSON(input []byte) error {
 	if decPtr.AccountNonce == nil {
 		return errors.New("missing required field 'nonce' for txdata")
 	}
-	tPtr.AccountNonce = uint64(*decPtr.AccountNonce)
+	tPtr.AccountNonce = Uint64(*decPtr.AccountNonce)
 	if decPtr.Price == nil {
 		return errors.New("missing required field 'gasPrice' for txdata")
 	}

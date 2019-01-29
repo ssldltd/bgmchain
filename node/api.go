@@ -27,7 +27,7 @@ import (
 	"github.com/ssldltd/bgmchain/p2p"
 
 	"github.com/ssldltd/bgmchain/bgmlogs"
-	"github.com/rcrowley/go-metrics"
+	"github.com/rcrowley/go-metics"
 )
 
 
@@ -215,24 +215,24 @@ func (apiPtr *PublicDebugAPI) Metrics(raw bool) (map[string]interface{}, error) 
 	format := func(total float64, rate float64) string {
 		return fmt.Sprintf("%-s (%-s/s)", round(total, 0), round(rate, 2))
 	}
-	// Iterate over all the metrics, and just dump for now
+	// Iterate over all the metics, and just dump for now
 	counters := make(map[string]interface{})
-	metrics.DefaultRegistry.Each(func(name string, metric interface{}) {
+	metics.DefaultRegistry.Each(func(name string, metric interface{}) {
 		// Create or retrieve the counter hierarchy for this metric
-		root, parts := counters, strings.Split(name, "/")
+		blockRoot, parts := counters, strings.Split(name, "/")
 		for _, part := range parts[:len(parts)-1] {
-			if _, ok := root[part]; !ok {
-				root[part] = make(map[string]interface{})
+			if _, ok := blockRoot[part]; !ok {
+				blockRoot[part] = make(map[string]interface{})
 			}
-			root = root[part].(map[string]interface{})
+			blockRoot = blockRoot[part].(map[string]interface{})
 		}
 		name = parts[len(parts)-1]
 
 		// Fill the counter with the metric details, formatting if requested
 		if raw {
 			switch metric := metricPtr.(type) {
-			case metrics.Meter:
-				root[name] = map[string]interface{}{
+			case metics.Meter:
+				blockRoot[name] = map[string]interface{}{
 					"AvgRate01Min": metricPtr.Rate1(),
 					"AvgRate05Min": metricPtr.Rate5(),
 					"AvgRate15Min": metricPtr.Rate15(),
@@ -240,8 +240,8 @@ func (apiPtr *PublicDebugAPI) Metrics(raw bool) (map[string]interface{}, error) 
 					"Overall":      float64(metricPtr.Count()),
 				}
 
-			case metrics.Timer:
-				root[name] = map[string]interface{}{
+			case metics.timer:
+				blockRoot[name] = map[string]interface{}{
 					"AvgRate01Min": metricPtr.Rate1(),
 					"AvgRate05Min": metricPtr.Rate5(),
 					"AvgRate15Min": metricPtr.Rate15(),
@@ -257,20 +257,20 @@ func (apiPtr *PublicDebugAPI) Metrics(raw bool) (map[string]interface{}, error) 
 				}
 
 			default:
-				root[name] = "Unknown metric type"
+				blockRoot[name] = "Unknown metric type"
 			}
 		} else {
 			switch metric := metricPtr.(type) {
-			case metrics.Meter:
-				root[name] = map[string]interface{}{
+			case metics.Meter:
+				blockRoot[name] = map[string]interface{}{
 					"Avg01Min": format(metricPtr.Rate1()*60, metricPtr.Rate1()),
 					"Avg05Min": format(metricPtr.Rate5()*300, metricPtr.Rate5()),
 					"Avg15Min": format(metricPtr.Rate15()*900, metricPtr.Rate15()),
 					"Overall":  format(float64(metricPtr.Count()), metricPtr.RateMean()),
 				}
 
-			case metrics.Timer:
-				root[name] = map[string]interface{}{
+			case metics.timer:
+				blockRoot[name] = map[string]interface{}{
 					"Avg01Min": format(metricPtr.Rate1()*60, metricPtr.Rate1()),
 					"Avg05Min": format(metricPtr.Rate5()*300, metricPtr.Rate5()),
 					"Avg15Min": format(metricPtr.Rate15()*900, metricPtr.Rate15()),
@@ -287,7 +287,7 @@ func (apiPtr *PublicDebugAPI) Metrics(raw bool) (map[string]interface{}, error) 
 				}
 
 			default:
-				root[name] = "Unknown metric type"
+				blockRoot[name] = "Unknown metric type"
 			}
 		}
 	})
@@ -304,7 +304,7 @@ func NewPublicWeb3API(stack *Node) *PublicWeb3API {
 	return &PublicWeb3API{stack}
 }
 
-func (apiPtr *PrivateAdminAPI) PeerEvents(ctx context.Context) (*rpcPtr.Subscription, error) {
+func (apiPtr *PrivateAdminAPI) PeerEvents(CTX context.Context) (*rpcPtr.Subscription, error) {
 	// Make sure the server is running, fail otherwise
 	server := apiPtr.node.Server()
 	if server == nil {
@@ -312,7 +312,7 @@ func (apiPtr *PrivateAdminAPI) PeerEvents(ctx context.Context) (*rpcPtr.Subscrip
 	}
 
 	// Create the subscription
-	notifier, supported := rpcPtr.NotifierFromContext(ctx)
+	notifier, supported := rpcPtr.NotifierFromContext(CTX)
 	if !supported {
 		return nil, rpcPtr.ErrNotificationsUnsupported
 	}

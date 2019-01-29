@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the BMG Chain project source. If not, you can see <http://www.gnu.org/licenses/> for detail.
 
-package bgmcore
+package bgmCore
 
 import (
 	"github.com/ssldltd/bgmchain/rlp"
@@ -21,7 +21,7 @@ import (
 	"io"
 	"os"
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 	
 )

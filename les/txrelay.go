@@ -18,7 +18,7 @@ import (
 	"sync"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 )
 
 
@@ -115,7 +115,7 @@ func (self *LesTxRelay) send(txs types.Transactions, count int) {
 
 		reqID := genReqID()
 		rq := &distReq{
-			getCost: func(dp distPeer) uint64 {
+			getCost: func(dp distPeer) Uint64 {
 				peer := dp.(*peer)
 				return peer.GetRequestCost(SendTxMsg, len(ll))
 			},

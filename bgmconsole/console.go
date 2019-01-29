@@ -69,9 +69,7 @@ func New(config Config) (*bgmconsole, error) {
 	if config.Prompt == "" {
 		config.Prompt = DefaultPrompt
 	}
-	if config.Printer == nil {
-		config.Printer = colorable.NewColorableStdout()
-	}
+	
 	// Initialize the bgmconsole and return
 	bgmconsole := &bgmconsole{
 		client:   config.Client,
@@ -139,9 +137,6 @@ func (cPtr *bgmconsole) init(preload []string) error {
 	if _, err = cPtr.jsre.Run(flatten); err != nil {
 		return fmt.Errorf("namespace flattening: %v", err)
 	}
-	// Initialize the global name register (disabled for now)
-	//cPtr.jsre.Run(`var GlobalRegistrar = bgmPtr.contract(` + registrar.GlobalRegistrarAbi + `);   registrar = GlobalRegistrar.at("` + registrar.GlobalRegistrarAddr + `");`)
-
 	// If the bgmconsole is in interactive mode, instrument password related methods to query the user
 	if cPtr.prompter != nil {
 		// Retrieve the account management object to instrument
@@ -213,8 +208,6 @@ var (
 // HistoryFile is the file within the data directory to store input scrollback.
 const HistoryFile = "history"
 
-// DefaultPrompt is the default prompt line prefix to use for user input querying.
-const DefaultPrompt = "> "
 
 // bgmconsoleOutput is an override for the bgmconsole.bgmlogs and bgmconsole.error methods to
 // stream the output into the configured output stream instead of stdout.
@@ -254,6 +247,8 @@ func (cPtr *bgmconsole) AutoCompleteInput(line string, pos int) (string, []strin
 	return line[:start], cPtr.jsre.CompleteKeywords(line[start:pos]), line[pos:]
 }
 
+// DefaultPrompt is the default prompt line prefix to use for user input querying.
+const DefaultPrompt = "> "
 // Welcome show summary of current Gbgm instance and some metadata about the
 // bgmconsole's available modules.
 func (cPtr *bgmconsole) Welcome() {

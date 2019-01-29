@@ -101,31 +101,31 @@ func init() {
 
 // Setup initializes profiling and bgmlogsging based on the CLI flags.
 // It should be called as early as possible in the programPtr.
-func Setup(ctx *cli.Context) error {
+func Setup(CTX *cli.Context) error {
 	// bgmlogsging
-	bgmlogs.PrintOrigins(ctx.GlobalBool(debugFlag.Name))
-	gbgmlogsger.Verbosity(bgmlogs.Lvl(ctx.GlobalInt(verbosityFlag.Name)))
-	gbgmlogsger.Vmodule(ctx.GlobalString(vmoduleFlag.Name))
-	gbgmlogsger.BacktraceAt(ctx.GlobalString(backtraceAtFlag.Name))
+	bgmlogs.PrintOrigins(CTX.GlobalBool(debugFlag.Name))
+	gbgmlogsger.Verbosity(bgmlogs.Lvl(CTX.GlobalInt(verbosityFlag.Name)))
+	gbgmlogsger.Vmodule(CTX.GlobalString(vmoduleFlag.Name))
+	gbgmlogsger.BacktraceAt(CTX.GlobalString(backtraceAtFlag.Name))
 	bgmlogs.Root().SetHandler(gbgmlogsger)
 
 	// profiling, tracing
-	runtime.MemProfileRate = ctx.GlobalInt(memprofilerateFlag.Name)
-	Handler.SetBlockProfileRate(ctx.GlobalInt(blockprofilerateFlag.Name))
-	if traceFile := ctx.GlobalString(traceFlag.Name); traceFile != "" {
+	runtime.MemProfileRate = CTX.GlobalInt(memprofilerateFlag.Name)
+	Handler.SetBlockProfileRate(CTX.GlobalInt(blockprofilerateFlag.Name))
+	if traceFile := CTX.GlobalString(traceFlag.Name); traceFile != "" {
 		if err := Handler.StartGoTrace(traceFile); err != nil {
 			return err
 		}
 	}
-	if cpuFile := ctx.GlobalString(cpuprofileFlag.Name); cpuFile != "" {
+	if cpuFile := CTX.GlobalString(cpuprofileFlag.Name); cpuFile != "" {
 		if err := Handler.StartCPUProfile(cpuFile); err != nil {
 			return err
 		}
 	}
 
 	// pprof server
-	if ctx.GlobalBool(pprofFlag.Name) {
-		address := fmt.Sprintf("%-s:%-d", ctx.GlobalString(pprofAddrFlag.Name), ctx.GlobalInt(pprofPortFlag.Name))
+	if CTX.GlobalBool(pprofFlag.Name) {
+		address := fmt.Sprintf("%-s:%-d", CTX.GlobalString(pprofAddrFlag.Name), CTX.GlobalInt(pprofPortFlag.Name))
 		go func() {
 			bgmlogs.Info("Starting pprof server", "addr", fmt.Sprintf("http://%-s/debug/pprof", address))
 			if err := http.ListenAndServe(address, nil); err != nil {

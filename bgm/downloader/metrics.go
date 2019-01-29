@@ -17,29 +17,29 @@
 package downloader
 
 import (
-	"github.com/ssldltd/bgmchain/bgmmetrics"
+	"github.com/ssldltd/bgmchain/bgmmetics"
 	
 )
 
 var (
-	stateInMeter   = bgmmetrics.NewMeter("bgm/downloader/states/in")
-	stateDropMeter = bgmmetrics.NewMeter("bgm/downloader/states/drop")
+	stateInMeter   = bgmmetics.NewMeter("bgm/downloader/states/in")
+	stateDropMeter = bgmmetics.NewMeter("bgm/downloader/states/drop")
 	
-	headerInMeter      = bgmmetrics.NewMeter("bgm/downloader/headers/in")
-	headerReqTimer     = bgmmetrics.NewTimer("bgm/downloader/headers/req")
-	receiptReqTimer     = bgmmetrics.NewTimer("bgm/downloader/receipts/req")
+	HeaderInMeter      = bgmmetics.NewMeter("bgm/downloader/Headers/in")
+	HeaderReqtimer     = bgmmetics.Newtimer("bgm/downloader/Headers/req")
+	receiptReqtimer     = bgmmetics.Newtimer("bgm/downloader/receipts/req")
 	
-	headerTimeoutMeter = bgmmetrics.NewMeter("bgm/downloader/headers/timeout")
+	HeadertimeoutMeter = bgmmetics.NewMeter("bgm/downloader/Headers/timeout")
 
-	receiptInMeter      = bgmmetrics.NewMeter("bgm/downloader/receipts/in")
-	receiptDropMeter    = bgmmetrics.NewMeter("bgm/downloader/receipts/drop")
-	receiptTimeoutMeter = bgmmetrics.NewMeter("bgm/downloader/receipts/timeout")
+	receiptInMeter      = bgmmetics.NewMeter("bgm/downloader/receipts/in")
+	receiptDropMeter    = bgmmetics.NewMeter("bgm/downloader/receipts/drop")
+	receipttimeoutMeter = bgmmetics.NewMeter("bgm/downloader/receipts/timeout")
 	
-	bodyInMeter      = bgmmetrics.NewMeter("bgm/downloader/bodies/in")
-	bodyReqTimer     = bgmmetrics.NewTimer("bgm/downloader/bodies/req")
-	bodyDropMeter    = bgmmetrics.NewMeter("bgm/downloader/bodies/drop")
-	headerDropMeter    = bgmmetrics.NewMeter("bgm/downloader/headers/drop")
-	bodyTimeoutMeter = bgmmetrics.NewMeter("bgm/downloader/bodies/timeout")
+	bodyInMeter      = bgmmetics.NewMeter("bgm/downloader/bodies/in")
+	bodyReqtimer     = bgmmetics.Newtimer("bgm/downloader/bodies/req")
+	bodyDropMeter    = bgmmetics.NewMeter("bgm/downloader/bodies/drop")
+	HeaderDropMeter    = bgmmetics.NewMeter("bgm/downloader/Headers/drop")
+	bodytimeoutMeter = bgmmetics.NewMeter("bgm/downloader/bodies/timeout")
 
 
 )

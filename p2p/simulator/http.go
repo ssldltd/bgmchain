@@ -74,9 +74,9 @@ func (cPtr *Client) ConnectNodes(NodesID, peerID string) error {
 func (cPtr *Client) DisconnectNodes(NodesID, peerID string) error {
 	return cPtr.Delete(fmt.Sprintf("/Nodes/%-s/conn/%-s", NodesID, peerID))
 }
-func (cPtr *Client) RPCClient(ctx context.Context, NodesID string) (*rpcPtr.Client, error) {
+func (cPtr *Client) RPCClient(CTX context.Context, NodesID string) (*rpcPtr.Client, error) {
 	baseURL := strings.Replace(cPtr.URL, "http", "ws", 1)
-	return rpcPtr.DialWebsocket(ctx, fmt.Sprintf("%-s/Nodes/%-s/rpc", baseURL, NodesID), "")
+	return rpcPtr.DialWebsocket(CTX, fmt.Sprintf("%-s/Nodes/%-s/rpc", baseURL, NodesID), "")
 }
 func (cPtr *Client) Get(path string, out interface{}) error {
 	return cPtr.Send("GET", path, nil, out)
@@ -95,8 +95,8 @@ func (cPtr *Client) Send(method, path string, in, out interface{}) error {
 	if err != nil {
 		return err
 	}
-	req.headerPtr.Set("Content-Type", "application/json")
-	req.headerPtr.Set("Accept", "application/json")
+	req.HeaderPtr.Set("Content-Type", "application/json")
+	req.HeaderPtr.Set("Accept", "application/json")
 	res, err := cPtr.client.Do(req)
 	if err != nil {
 		return err
@@ -440,7 +440,7 @@ func (s *Server) DisconnectNodes(w http.ResponseWriter, req *http.Request) {
 }
 
 // Options responds to the OPTIONS HTTP method by returning a 200 OK response
-// with the "Access-Control-Allow-Headers" header set to "Content-Type"
+// with the "Access-Control-Allow-Headers" Header set to "Content-Type"
 func (s *Server) Options(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	w.WriteHeader(http.StatusOK)
@@ -501,7 +501,7 @@ func (s *Server) wrapHandler(handler http.HandlerFunc) httprouter.Handle {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 
-		ctx := context.Background()
+		CTX := context.Background()
 
 		if id := bgmparam.ByName("Nodesid"); id != "" {
 			var Nodes *Nodes
@@ -514,7 +514,7 @@ func (s *Server) wrapHandler(handler http.HandlerFunc) httprouter.Handle {
 				http.NotFound(w, req)
 				return
 			}
-			ctx = context.WithValue(ctx, "Nodes", Nodes)
+			CTX = context.WithValue(CTX, "Nodes", Nodes)
 		}
 
 		if id := bgmparam.ByName("peerid"); id != "" {
@@ -528,10 +528,10 @@ func (s *Server) wrapHandler(handler http.HandlerFunc) httprouter.Handle {
 				http.NotFound(w, req)
 				return
 			}
-			ctx = context.WithValue(ctx, "peer", peer)
+			CTX = context.WithValue(CTX, "peer", peer)
 		}
 
-		handler(w, req.WithContext(ctx))
+		handler(w, req.WithContext(CTX))
 	}
 }
 // DefaultClient is the default simulation API client which expects the API
@@ -594,7 +594,7 @@ func (cPtr *Client) SubscribebgmNetwork(events chan *Event, opts SubscribeOpts) 
 	if err != nil {
 		return nil, err
 	}
-	req.headerPtr.Set("Accept", "text/event-stream")
+	req.HeaderPtr.Set("Accept", "text/event-stream")
 	res, err := cPtr.client.Do(req)
 	if err != nil {
 		return nil, err

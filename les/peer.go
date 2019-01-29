@@ -26,7 +26,7 @@ import (
 	"io"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgm"
 	"github.com/ssldltd/bgmchain/les/flowcontrol"
 	"github.com/ssldltd/bgmchain/light"
@@ -55,9 +55,9 @@ type peer struct {
 	rw p2p.MsgReadWriter
 
 	version int    // Protocol version negotiated
-	network uint64 // Network ID being on
+	network Uint64 // Network ID being on
 
-	announceType, requestAnnounceType uint64
+	announceType, requestAnnounceType Uint64
 
 	id string
 
@@ -68,7 +68,7 @@ type peer struct {
 	sendQueue   *execQueue
 
 	poolEntry      *poolEntry
-	hasBlock       func(bgmcommon.Hash, uint64) bool
+	hasBlock       func(bgmcommon.Hash, Uint64) bool
 	responseErrors int
 
 	fcClient       *flowcontrol.ClientNode // nil if the peer is server only
@@ -77,7 +77,7 @@ type peer struct {
 	fcCosts        requestCostTable
 }
 
-func newPeer(version int, network uint64, p *p2p.Peer, rw p2p.MsgReadWriter) *peer {
+func newPeer(version int, network Uint64, p *p2p.Peer, rw p2p.MsgReadWriter) *peer {
 	id := p.ID()
 	pubKey, _ := id.Pubkey()
 
@@ -142,31 +142,31 @@ func (p *peer) Td() *big.Int {
 }
 
 // waitBefore implement distPeer interface
-func (p *peer) waitBefore(maxCost uint64) (time.Duration, float64) {
+func (p *peer) waitBefore(maxCost Uint64) (time.Duration, float64) {
 	return p.fcServer.CanSend(maxCost)
 }
 
-func sendRequest(w p2p.MsgWriter, msgcode, reqID, cost uint64, data interface{}) error {
+func sendRequest(w p2p.MsgWriter, msgcode, reqID, cost Uint64, data interface{}) error {
 	type req struct {
-		ReqID uint64
+		ReqID Uint64
 		Data  interface{}
 	}
 	return p2p.Send(w, msgcode, req{reqID, data})
 }
 
-func sendResponse(w p2p.MsgWriter, msgcode, reqID, bv uint64, data interface{}) error {
+func sendResponse(w p2p.MsgWriter, msgcode, reqID, bv Uint64, data interface{}) error {
 	type resp struct {
-		ReqID, BV uint64
+		ReqID, BV Uint64
 		Data      interface{}
 	}
 	return p2p.Send(w, msgcode, resp{reqID, bv, data})
 }
 
-func (p *peer) GetRequestCost(msgcode uint64, amount int) uint64 {
+func (p *peer) GetRequestCost(msgcode Uint64, amount int) Uint64 {
 	p.lock.RLock()
 	defer p.lock.RUnlock()
 
-	cost := p.fcCosts[msgcode].baseCost + p.fcCosts[msgcode].reqCost*uint64(amount)
+	cost := p.fcCosts[msgcode].baseCost + p.fcCosts[msgcode].reqCost*Uint64(amount)
 	if cost > p.fcServerbgmparam.BufLimit {
 		cost = p.fcServerbgmparam.BufLimit
 	}
@@ -174,7 +174,7 @@ func (p *peer) GetRequestCost(msgcode uint64, amount int) uint64 {
 }
 
 // HasBlock checks if the peer has a given block
-func (p *peer) HasBlock(hash bgmcommon.Hash, number uint64) bool {
+func (p *peer) HasBlock(hash bgmcommon.Hash, number Uint64) bool {
 	p.lock.RLock()
 	hasBlock := p.hasBlock
 	p.lock.RUnlock()
@@ -183,9 +183,9 @@ func (p *peer) HasBlock(hash bgmcommon.Hash, number uint64) bool {
 
 
 
-// SendBlockHeaders sends a batch of block headers to the remote peer.
-func (p *peer) SendBlockHeaders(reqID, bv uint64, headers []*types.Header) error {
-	return sendResponse(p.rw, BlockHeadersMsg, reqID, bv, headers)
+// SendBlockHeaders sends a batch of block Headers to the remote peer.
+func (p *peer) SendBlockHeaders(reqID, bv Uint64, Headers []*types.Header) error {
+	return sendResponse(p.rw, BlockHeadersMsg, reqID, bv, Headers)
 }
 
 // SendAnnounce announces the availability of a number of blocks through
@@ -196,83 +196,83 @@ func (p *peer) SendAnnounce(request announceData) error {
 
 // SendBlockBodiesRLP sends a batch of block contents to the remote peer from
 // an already RLP encoded format.
-func (p *peer) SendBlockBodiesRLP(reqID, bv uint64, bodies []rlp.RawValue) error {
+func (p *peer) SendBlockBodiesRLP(reqID, bv Uint64, bodies []rlp.RawValue) error {
 	return sendResponse(p.rw, BlockBodiesMsg, reqID, bv, bodies)
 }
 
 // SendCodeRLP sends a batch of arbitrary internal data, corresponding to the
 // hashes requested.
-func (p *peer) SendCode(reqID, bv uint64, data [][]byte) error {
+func (p *peer) SendCode(reqID, bv Uint64, data [][]byte) error {
 	return sendResponse(p.rw, CodeMsg, reqID, bv, data)
 }
 
 // SendRecChaintsRLP sends a batch of transaction recChaints, corresponding to the
 // ones requested from an already RLP encoded format.
-func (p *peer) SendRecChaintsRLP(reqID, bv uint64, recChaints []rlp.RawValue) error {
+func (p *peer) SendRecChaintsRLP(reqID, bv Uint64, recChaints []rlp.RawValue) error {
 	return sendResponse(p.rw, RecChaintsMsg, reqID, bv, recChaints)
 }
 
 // SendProofs sends a batch of legacy LES/1 merkle proofs, corresponding to the ones requested.
-func (p *peer) SendProofs(reqID, bv uint64, proofs proofsData) error {
+func (p *peer) SendProofs(reqID, bv Uint64, proofs proofsData) error {
 	return sendResponse(p.rw, ProofsV1Msg, reqID, bv, proofs)
 }
 
 // SendProofsV2 sends a batch of merkle proofs, corresponding to the ones requested.
-func (p *peer) SendProofsV2(reqID, bv uint64, proofs light.NodeList) error {
+func (p *peer) SendProofsV2(reqID, bv Uint64, proofs light.NodeList) error {
 	return sendResponse(p.rw, ProofsV2Msg, reqID, bv, proofs)
 }
 
-// SendHeaderProofs sends a batch of legacy LES/1 header proofs, corresponding to the ones requested.
-func (p *peer) SendHeaderProofs(reqID, bv uint64, proofs []ChtResp) error {
+// SendHeaderProofs sends a batch of legacy LES/1 Header proofs, corresponding to the ones requested.
+func (p *peer) SendHeaderProofs(reqID, bv Uint64, proofs []ChtResp) error {
 	return sendResponse(p.rw, HeaderProofsMsg, reqID, bv, proofs)
 }
 
 // SendHelperTrieProofs sends a batch of HelperTrie proofs, corresponding to the ones requested.
-func (p *peer) SendHelperTrieProofs(reqID, bv uint64, resp HelperTrieResps) error {
+func (p *peer) SendHelperTrieProofs(reqID, bv Uint64, resp HelperTrieResps) error {
 	return sendResponse(p.rw, HelperTrieProofsMsg, reqID, bv, resp)
 }
 
 // SendTxStatus sends a batch of transaction status records, corresponding to the ones requested.
-func (p *peer) SendTxStatus(reqID, bv uint64, stats []txStatus) error {
+func (p *peer) SendTxStatus(reqID, bv Uint64, stats []txStatus) error {
 	return sendResponse(p.rw, TxStatusMsg, reqID, bv, stats)
 }
 
-// RequestHeadersByHash fetches a batch of blocks' headers corresponding to the
-// specified header query, based on the hash of an origin block.
-func (p *peer) RequestHeadersByHash(reqID, cost uint64, origin bgmcommon.Hash, amount int, skip int, reverse bool) error {
-	p.bgmlogs().Debug("Fetching batch of headers", "count", amount, "fromhash", origin, "skip", skip, "reverse", reverse)
-	return sendRequest(p.rw, GetBlockHeadersMsg, reqID, cost, &getBlockHeadersData{Origin: hashOrNumber{Hash: origin}, Amount: uint64(amount), Skip: uint64(skip), Reverse: reverse})
+// RequestHeadersByHash fetches a batch of blocks' Headers corresponding to the
+// specified Header query, based on the hash of an origin block.
+func (p *peer) RequestHeadersByHash(reqID, cost Uint64, origin bgmcommon.Hash, amount int, skip int, reverse bool) error {
+	p.bgmlogs().Debug("Fetching batch of Headers", "count", amount, "fromhash", origin, "skip", skip, "reverse", reverse)
+	return sendRequest(p.rw, GetBlockHeadersMsg, reqID, cost, &getBlockHeadersData{Origin: hashOrNumber{Hash: origin}, Amount: Uint64(amount), Skip: Uint64(skip), Reverse: reverse})
 }
 
-// RequestHeadersByNumber fetches a batch of blocks' headers corresponding to the
-// specified header query, based on the number of an origin block.
-func (p *peer) RequestHeadersByNumber(reqID, cost, origin uint64, amount int, skip int, reverse bool) error {
-	p.bgmlogs().Debug("Fetching batch of headers", "count", amount, "fromnum", origin, "skip", skip, "reverse", reverse)
-	return sendRequest(p.rw, GetBlockHeadersMsg, reqID, cost, &getBlockHeadersData{Origin: hashOrNumber{Number: origin}, Amount: uint64(amount), Skip: uint64(skip), Reverse: reverse})
+// RequestHeadersByNumber fetches a batch of blocks' Headers corresponding to the
+// specified Header query, based on the number of an origin block.
+func (p *peer) RequestHeadersByNumber(reqID, cost, origin Uint64, amount int, skip int, reverse bool) error {
+	p.bgmlogs().Debug("Fetching batch of Headers", "count", amount, "fromnum", origin, "skip", skip, "reverse", reverse)
+	return sendRequest(p.rw, GetBlockHeadersMsg, reqID, cost, &getBlockHeadersData{Origin: hashOrNumber{Number: origin}, Amount: Uint64(amount), Skip: Uint64(skip), Reverse: reverse})
 }
 
 // RequestBodies fetches a batch of blocks' bodies corresponding to the hashes
 // specified.
-func (p *peer) RequestBodies(reqID, cost uint64, hashes []bgmcommon.Hash) error {
+func (p *peer) RequestBodies(reqID, cost Uint64, hashes []bgmcommon.Hash) error {
 	p.bgmlogs().Debug("Fetching batch of block bodies", "count", len(hashes))
 	return sendRequest(p.rw, GetBlockBodiesMsg, reqID, cost, hashes)
 }
 
 // RequestCode fetches a batch of arbitrary data from a node's known state
 // data, corresponding to the specified hashes.
-func (p *peer) RequestCode(reqID, cost uint64, reqs []CodeReq) error {
+func (p *peer) RequestCode(reqID, cost Uint64, reqs []CodeReq) error {
 	p.bgmlogs().Debug("Fetching batch of codes", "count", len(reqs))
 	return sendRequest(p.rw, GetCodeMsg, reqID, cost, reqs)
 }
 
 // RequestRecChaints fetches a batch of transaction recChaints from a remote node.
-func (p *peer) RequestRecChaints(reqID, cost uint64, hashes []bgmcommon.Hash) error {
+func (p *peer) RequestRecChaints(reqID, cost Uint64, hashes []bgmcommon.Hash) error {
 	p.bgmlogs().Debug("Fetching batch of recChaints", "count", len(hashes))
 	return sendRequest(p.rw, GetRecChaintsMsg, reqID, cost, hashes)
 }
 
 // RequestProofs fetches a batch of merkle proofs from a remote node.
-func (p *peer) RequestProofs(reqID, cost uint64, reqs []ProofReq) error {
+func (p *peer) RequestProofs(reqID, cost Uint64, reqs []ProofReq) error {
 	p.bgmlogs().Debug("Fetching batch of proofs", "count", len(reqs))
 	switch p.version {
 	case lpv1:
@@ -286,7 +286,7 @@ func (p *peer) RequestProofs(reqID, cost uint64, reqs []ProofReq) error {
 }
 
 // RequestHelperTrieProofs fetches a batch of HelperTrie merkle proofs from a remote node.
-func (p *peer) RequestHelperTrieProofs(reqID, cost uint64, reqs []HelperTrieReq) error {
+func (p *peer) RequestHelperTrieProofs(reqID, cost Uint64, reqs []HelperTrieReq) error {
 	p.bgmlogs().Debug("Fetching batch of HelperTrie proofs", "count", len(reqs))
 	switch p.version {
 	case lpv1:
@@ -308,13 +308,13 @@ func (p *peer) RequestHelperTrieProofs(reqID, cost uint64, reqs []HelperTrieReq)
 }
 
 // RequestTxStatus fetches a batch of transaction status records from a remote node.
-func (p *peer) RequestTxStatus(reqID, cost uint64, txHashes []bgmcommon.Hash) error {
+func (p *peer) RequestTxStatus(reqID, cost Uint64, txHashes []bgmcommon.Hash) error {
 	p.bgmlogs().Debug("Requesting transaction status", "count", len(txHashes))
 	return sendRequest(p.rw, GetTxStatusMsg, reqID, cost, txHashes)
 }
 
 // SendTxStatus sends a batch of transactions to be added to the remote transaction pool.
-func (p *peer) SendTxs(reqID, cost uint64, txs types.Transactions) error {
+func (p *peer) SendTxs(reqID, cost Uint64, txs types.Transactions) error {
 	p.bgmlogs().Debug("Fetching batch of transactions", "count", len(txs))
 	switch p.version {
 	case lpv1:
@@ -337,7 +337,7 @@ func (l keyValueList) add(key string, val interface{}) keyValueList {
 	var entry keyValueEntry
 	entry.Key = key
 	if val == nil {
-		val = uint64(0)
+		val = Uint64(0)
 	}
 	enc, err := rlp.EncodeToBytes(val)
 	if err == nil {
@@ -395,12 +395,12 @@ func (p *peer) sendReceiveHandshake(sendList keyValueList) (keyValueList, error)
 
 // Handshake executes the les protocol handshake, negotiating version number,
 // network IDs, difficulties, head and genesis blocks.
-func (p *peer) Handshake(td *big.Int, head bgmcommon.Hash, headNum uint64, genesis bgmcommon.Hash, server *LesServer) error {
+func (p *peer) Handshake(td *big.Int, head bgmcommon.Hash, headNum Uint64, genesis bgmcommon.Hash, server *LesServer) error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
 	var send keyValueList
-	send = send.add("protocolVersion", uint64(p.version))
+	send = send.add("protocolVersion", Uint64(p.version))
 	send = send.add("networkId", p.network)
 	send = send.add("headTd", td)
 	send = send.add("headHash", head)
@@ -408,8 +408,8 @@ func (p *peer) Handshake(td *big.Int, head bgmcommon.Hash, headNum uint64, genes
 	send = send.add("genesisHash", genesis)
 	if server != nil {
 		send = send.add("serveHeaders", nil)
-		send = send.add("serveChainSince", uint64(0))
-		send = send.add("serveStateSince", uint64(0))
+		send = send.add("serveChainSince", Uint64(0))
+		send = send.add("serveStateSince", Uint64(0))
 		send = send.add("txRelay", nil)
 		send = send.add("flowControl/BL", server.defbgmparam.BufLimit)
 		send = send.add("flowControl/MRR", server.defbgmparam.MinRecharge)
@@ -427,7 +427,7 @@ func (p *peer) Handshake(td *big.Int, head bgmcommon.Hash, headNum uint64, genes
 	recv := recvList.decode()
 
 	var rGenesis, rHash bgmcommon.Hash
-	var rVersion, rNetwork, rNum uint64
+	var rVersion, rNetwork, rNum Uint64
 	var rTd *big.Int
 
 	if err := recv.get("protocolVersion", &rVersion); err != nil {

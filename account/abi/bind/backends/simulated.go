@@ -27,10 +27,10 @@ import (
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmcommon/math"
 	"github.com/ssldltd/bgmchain/consensus/bgmash"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/state"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
-	"github.com/ssldltd/bgmchain/bgmcore/vm"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/vm"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/bgmparam"
 )
@@ -40,7 +40,7 @@ import (
 // 的背景。 其主要目的是允许轻松测试合同绑定。
 type BackendSimulated struct {
 	database   bgmdbPtr.Database   // In memory database to store our testing data
-	blockchain *bgmcore.BlockChain // Bgmchain blockchain to handle the consensus
+	blockchain *bgmCore.BlockChain // Bgmchain blockchain to handle the consensus
 
 	mu           syncPtr.Mutex
 	pendingBlock *types.Block   // Currently pending block that will be imported on request
@@ -51,11 +51,11 @@ type BackendSimulated struct {
 
 // NewBackendSimulated使用模拟区块链创建新的绑定后端
 //用于测试目的。
-func NewBackendSimulated(alloc bgmcore.GenesisAlloc) *BackendSimulated {
+func NewBackendSimulated(alloc bgmCore.GenesisAlloc) *BackendSimulated {
 	database, _ := bgmdbPtr.NewMemDatabase()
-	genesis := bgmcore.Genesis{Config: bgmparam.DposChainConfig, Alloc: alloc}
+	genesis := bgmCore.Genesis{Config: bgmparam.DposChainConfig, Alloc: alloc}
 	genesis.MustCommit(database)
-	blockchain, _ := bgmcore.NewBlockChain(database, genesis.Config, bgmashPtr.NewFaker(), vmPtr.Config{})
+	blockchain, _ := bgmCore.NewBlockChain(database, genesis.Config, bgmashPtr.NewFaker(), vmPtr.Config{})
 	backend := &BackendSimulated{database: database, blockchain: blockchain, config: genesis.Config}
 	backend.rollback()
 	return backend
@@ -81,53 +81,53 @@ func (bPtr *BackendSimulated) Rollback() {
 }
 
 func (bPtr *BackendSimulated) rollback() {
-	blocks, _ := bgmcore.GenerateChain(bPtr.config, bPtr.blockchain.CurrentBlock(), bPtr.database, 1, func(int, *bgmcore.BlockGen) {})
+	blocks, _ := bgmCore.GenerateChain(bPtr.config, bPtr.blockchain.CurrentBlock(), bPtr.database, 1, func(int, *bgmCore.BlockGen) {})
 	bPtr.pendingBlock = blocks[0]
 	bPtr.pendingState, _ = state.New(bPtr.pendingBlock.Root(), state.NewDatabase(bPtr.database))
 }
 // CodeAt返回与区块链中某个帐户关联的代码。
-func (bPtr *BackendSimulated) CodeAt(ctx context.Context, contract bgmcommon.Address, blockNumber *big.Int) ([]byte, error) {
+func (bPtr *BackendSimulated) CodeAt(CTX context.Context, contract bgmcommon.Address, blockNumber *big.Int) ([]byte, error) {
 	bPtr.mu.Lock()
 	defer bPtr.mu.Unlock()
 
 	if blockNumber != nil && blockNumber.Cmp(bPtr.blockchain.CurrentBlock().Number()) != 0 {
-		return nil, errBlockNumberUnsupported
+		return nil, errnumberUnsupported
 	}
 	statedb, _ := bPtr.blockchain.State()
 	return statedbPtr.GetCode(contract), nil
 }
 
 // BalanceAt返回区块链中某个帐户的wei余额。
-func (bPtr *BackendSimulated) BalanceAt(ctx context.Context, contract bgmcommon.Address, blockNumber *big.Int) (*big.Int, error) {
+func (bPtr *BackendSimulated) BalanceAt(CTX context.Context, contract bgmcommon.Address, blockNumber *big.Int) (*big.Int, error) {
 	bPtr.mu.Lock()
 	defer bPtr.mu.Unlock()
 
 	if blockNumber != nil && blockNumber.Cmp(bPtr.blockchain.CurrentBlock().Number()) != 0 {
-		return nil, errBlockNumberUnsupported
+		return nil, errnumberUnsupported
 	}
 	statedb, _ := bPtr.blockchain.State()
 	return statedbPtr.GetBalance(contract), nil
 }
 
 // NonceAt返回区块链中某个帐户的nonce。
-func (bPtr *BackendSimulated) NonceAt(ctx context.Context, contract bgmcommon.Address, blockNumber *big.Int) (uint64, error) {
+func (bPtr *BackendSimulated) NonceAt(CTX context.Context, contract bgmcommon.Address, blockNumber *big.Int) (Uint64, error) {
 	bPtr.mu.Lock()
 	defer bPtr.mu.Unlock()
 
 	if blockNumber != nil && blockNumber.Cmp(bPtr.blockchain.CurrentBlock().Number()) != 0 {
-		return 0, errBlockNumberUnsupported
+		return 0, errnumberUnsupported
 	}
 	statedb, _ := bPtr.blockchain.State()
 	return statedbPtr.GetNonce(contract), nil
 }
 
 // StorageAt返回区块链中帐户存储的密钥值。
-func (bPtr *BackendSimulated) StorageAt(ctx context.Context, contract bgmcommon.Address, key bgmcommon.Hash, blockNumber *big.Int) ([]byte, error) {
+func (bPtr *BackendSimulated) StorageAt(CTX context.Context, contract bgmcommon.Address, key bgmcommon.Hash, blockNumber *big.Int) ([]byte, error) {
 	bPtr.mu.Lock()
 	defer bPtr.mu.Unlock()
 
 	if blockNumber != nil && blockNumber.Cmp(bPtr.blockchain.CurrentBlock().Number()) != 0 {
-		return nil, errBlockNumberUnsupported
+		return nil, errnumberUnsupported
 	}
 	statedb, _ := bPtr.blockchain.State()
 	val := statedbPtr.GetState(contract, key)
@@ -135,13 +135,13 @@ func (bPtr *BackendSimulated) StorageAt(ctx context.Context, contract bgmcommon.
 }
 
 // TransactionReceipt返回事务的接收。
-func (bPtr *BackendSimulated) TransactionReceipt(ctx context.Context, txHash bgmcommon.Hash) (*types.Receipt, error) {
-	receipt, _, _, _ := bgmcore.GetReceipt(bPtr.database, txHash)
+func (bPtr *BackendSimulated) TransactionReceipt(CTX context.Context, txHash bgmcommon.Hash) (*types.Receipt, error) {
+	receipt, _, _, _ := bgmCore.GetReceipt(bPtr.database, txHash)
 	return receipt, nil
 }
 
 // PendingCodeAt返回与处于暂挂状态的帐户关联的代码。
-func (bPtr *BackendSimulated) PendingCodeAt(ctx context.Context, contract bgmcommon.Address) ([]byte, error) {
+func (bPtr *BackendSimulated) PendingCodeAt(CTX context.Context, contract bgmcommon.Address) ([]byte, error) {
 	bPtr.mu.Lock()
 	defer bPtr.mu.Unlock()
 
@@ -149,33 +149,33 @@ func (bPtr *BackendSimulated) PendingCodeAt(ctx context.Context, contract bgmcom
 }
 
 // CallContract执行合同调用。
-func (bPtr *BackendSimulated) CallContract(ctx context.Context, call bgmchain.CallMsg, blockNumber *big.Int) ([]byte, error) {
+func (bPtr *BackendSimulated) CallContract(CTX context.Context, call bgmchain.CallMsg, blockNumber *big.Int) ([]byte, error) {
 	bPtr.mu.Lock()
 	defer bPtr.mu.Unlock()
 
 	if blockNumber != nil && blockNumber.Cmp(bPtr.blockchain.CurrentBlock().Number()) != 0 {
-		return nil, errBlockNumberUnsupported
+		return nil, errnumberUnsupported
 	}
 	state, err := bPtr.blockchain.State()
 	if err != nil {
 		return nil, err
 	}
-	rval, _, _, err := bPtr.callContract(ctx, call, bPtr.blockchain.CurrentBlock(), state)
+	rval, _, _, err := bPtr.callContract(CTX, call, bPtr.blockchain.CurrentBlock(), state)
 	return rval, err
 }
 // PendingCallContract在挂起状态下执行合同调用。
-func (bPtr *BackendSimulated) PendingCallContract(ctx context.Context, call bgmchain.CallMsg) ([]byte, error) {
+func (bPtr *BackendSimulated) PendingCallContract(CTX context.Context, call bgmchain.CallMsg) ([]byte, error) {
 	bPtr.mu.Lock()
 	defer bPtr.mu.Unlock()
 	defer bPtr.pendingState.RevertToSnapshot(bPtr.pendingState.Snapshot())
 
-	rval, _, _, err := bPtr.callContract(ctx, call, bPtr.pendingBlock, bPtr.pendingState)
+	rval, _, _, err := bPtr.callContract(CTX, call, bPtr.pendingBlock, bPtr.pendingState)
 	return rval, err
 }
 
 // PendingNonceAt实现PendingStateReader.PendingNonceAt，检索
 //当前为帐户挂起的nonce。
-func (bPtr *BackendSimulated) PendingNonceAt(ctx context.Context, account bgmcommon.Address) (uint64, error) {
+func (bPtr *BackendSimulated) PendingNonceAt(CTX context.Context, account bgmcommon.Address) (Uint64, error) {
 	bPtr.mu.Lock()
 	defer bPtr.mu.Unlock()
 
@@ -184,13 +184,13 @@ func (bPtr *BackendSimulated) PendingNonceAt(ctx context.Context, account bgmcom
 
 // SuggestGasPrice实现了ContractTransactor.SuggestGasPrice。 自模拟
 //链条没有矿工，我们只需要为任何通话返回1的汽油价格。
-func (bPtr *BackendSimulated) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
+func (bPtr *BackendSimulated) SuggestGasPrice(CTX context.Context) (*big.Int, error) {
 	return big.NewInt(1), nil
 }
 
 // SendTransaction更新挂起块以包含给定事务。
 //如果交易无效，就会发生恐慌。
-func (bPtr *BackendSimulated) SendTransaction(ctx context.Context, tx *types.Transaction) error {
+func (bPtr *BackendSimulated) SendTransaction(CTX context.Context, tx *types.Transaction) error {
 	bPtr.mu.Lock()
 	defer bPtr.mu.Unlock()
 
@@ -203,7 +203,7 @@ func (bPtr *BackendSimulated) SendTransaction(ctx context.Context, tx *types.Tra
 		panic(fmt.Errorf("invalid transaction nonce: got %-d, want %-d", tx.Nonce(), nonce))
 	}
 
-	blocks, _ := bgmcore.GenerateChain(bPtr.config, bPtr.blockchain.CurrentBlock(), bPtr.database, 1, func(number int, block *bgmcore.BlockGen) {
+	blocks, _ := bgmCore.GenerateChain(bPtr.config, bPtr.blockchain.CurrentBlock(), bPtr.database, 1, func(number int, block *bgmCore.BlockGen) {
 		for _, tx := range bPtr.pendingBlock.Transactions() {
 			block.AddTx(tx)
 		}
@@ -214,15 +214,15 @@ func (bPtr *BackendSimulated) SendTransaction(ctx context.Context, tx *types.Tra
 	return nil
 }
 
-// JumpTimeInSeconds为时钟添加跳过秒
-func (bPtr *BackendSimulated) AdjustTime(adjustment time.Duration) error {
+// JumptimeInSeconds为时钟添加跳过秒
+func (bPtr *BackendSimulated) Adjusttime(adjustment time.Duration) error {
 	bPtr.mu.Lock()
 	defer bPtr.mu.Unlock()
-	blocks, _ := bgmcore.GenerateChain(bPtr.config, bPtr.blockchain.CurrentBlock(), bPtr.database, 1, func(number int, block *bgmcore.BlockGen) {
+	blocks, _ := bgmCore.GenerateChain(bPtr.config, bPtr.blockchain.CurrentBlock(), bPtr.database, 1, func(number int, block *bgmCore.BlockGen) {
 		for _, tx := range bPtr.pendingBlock.Transactions() {
 			block.AddTx(tx)
 		}
-		block.OffsetTime(int64(adjustment.Seconds()))
+		block.Offsettime(int64(adjustment.Seconds()))
 	})
 	bPtr.pendingBlock = blocks[0]
 	bPtr.pendingState, _ = state.New(bPtr.pendingBlock.Root(), state.NewDatabase(bPtr.database))
@@ -232,15 +232,15 @@ func (bPtr *BackendSimulated) AdjustTime(adjustment time.Duration) error {
 
 // EstimateGas针对当前挂起的块/状态执行请求的代码
 //返回使用的气体量。
-func (bPtr *BackendSimulated) EstimateGas(ctx context.Context, call bgmchain.CallMsg) (*big.Int, error) {
+func (bPtr *BackendSimulated) EstimateGas(CTX context.Context, call bgmchain.CallMsg) (*big.Int, error) {
 	bPtr.mu.Lock()
 	defer bPtr.mu.Unlock()
 
 	//确定二进制搜索的最低和最高可能的气体限制
 	var (
-		lo  uint64 = bgmparam.TxGas - 1
-		hi  uint64
-		cap uint64
+		lo  Uint64 = bgmparam.TxGas - 1
+		hi  Uint64
+		cap Uint64
 	)
 	if call.Gas != nil && call.Gas.Uint64() >= bgmparam.TxGas {
 		hi = call.Gas.Uint64()
@@ -250,11 +250,11 @@ func (bPtr *BackendSimulated) EstimateGas(ctx context.Context, call bgmchain.Cal
 	cap = hi
 
 	//创建一个帮助程序来检查气体容量是否会导致可执行事务
-	executable := func(gas uint64) bool {
+	executable := func(gas Uint64) bool {
 		call.Gas = new(big.Int).SetUint64(gas)
 
 		snapshot := bPtr.pendingState.Snapshot()
-		_, _, failed, err := bPtr.callContract(ctx, call, bPtr.pendingBlock, bPtr.pendingState)
+		_, _, failed, err := bPtr.callContract(CTX, call, bPtr.pendingBlock, bPtr.pendingState)
 		bPtr.pendingState.RevertToSnapshot(snapshot)
 
 		if err != nil || failed {
@@ -282,7 +282,7 @@ func (bPtr *BackendSimulated) EstimateGas(ctx context.Context, call bgmchain.Cal
 
 // callContract实现正常和挂起合同调用之间的公共代码。
 //状态在执行期间被修改，请确保在必要时复制它。
-func (bPtr *BackendSimulated) callContract(ctx context.Context, call bgmchain.CallMsg, block *types.Block, statedbPtr *state.StateDB) ([]byte, *big.Int, bool, error) {
+func (bPtr *BackendSimulated) callContract(CTX context.Context, call bgmchain.CallMsg, block *types.Block, statedbPtr *state.StateDB) ([]byte, *big.Int, bool, error) {
 	// Ensure message is initialized properly.
 	if call.GasPrice == nil {
 		call.GasPrice = big.NewInt(1)
@@ -299,22 +299,22 @@ func (bPtr *BackendSimulated) callContract(ctx context.Context, call bgmchain.Ca
 	// Execute the call.
 	msg := callmsg{call}
 
-	evmContext := bgmcore.NewEVMContext(msg, block.Header(), bPtr.blockchain, nil)
+	evmContext := bgmCore.NewEVMContext(msg, block.Header(), bPtr.blockchain, nil)
 	//创建一个包含所有相关信息的新环境
 	//关于事务和调用机制。
 	vmenv := vmPtr.NewEVM(evmContext, statedb, bPtr.config, vmPtr.Config{})
-	gaspool := new(bgmcore.GasPool).AddGas(mathPtr.MaxBig256)
-	ret, gasUsed, _, failed, err := bgmcore.NewStateTransition(vmenv, msg, gaspool).TransitionDb()
+	gaspool := new(bgmCore.GasPool).AddGas(mathPtr.MaxBig256)
+	ret, gasUsed, _, failed, err := bgmCore.NewStateTransition(vmenv, msg, gaspool).TransitionDb()
 	return ret, gasUsed, failed, err
 }
 
-// callmsg实现bgmcore.Message以允许将其作为事务模拟器传递。
+// callmsg实现bgmCore.Message以允许将其作为事务模拟器传递。
 type callmsg struct {
 	bgmchain.CallMsg
 }
 
 func (m callmsg) From() bgmcommon.Address { return mPtr.CallMsg.From }
-func (m callmsg) Nonce() uint64        { return 0 }
+func (m callmsg) Nonce() Uint64        { return 0 }
 func (m callmsg) CheckNonce() bool     { return false }
 func (m callmsg) To() *bgmcommon.Address  { return mPtr.CallMsg.To }
 func (m callmsg) GasPrice() *big.Int   { return mPtr.CallMsg.GasPrice }
@@ -323,5 +323,5 @@ func (m callmsg) Value() *big.Int      { return mPtr.CallMsg.Value }
 func (m callmsg) Data() []byte         { return mPtr.CallMsg.Data }
 //这个nil赋值确保了BackendSimulated实现bind.ContractBackended的编译时间。
 var _ bind.ContractBackended = (*BackendSimulated)(nil)
-var errBlockNumberUnsupported = errors.New("BackendSimulated cannot access blocks other than the latest block")
+var errnumberUnsupported = errors.New("BackendSimulated cannot access blocks other than the latest block")
 var errGasEstimationFailed = errors.New("gas required exceeds allowance or always failing transaction")

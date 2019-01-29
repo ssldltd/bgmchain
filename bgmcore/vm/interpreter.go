@@ -69,9 +69,9 @@ func NewInterpreter(evmPtr *EVM, cfg Config) *Interpreter {
 	// we'll set the default jump table.
 	if !cfg.JumpTable[STOP].valid {
 		switch {
-		case evmPtr.ChainConfig().IsByzantium(evmPtr.BlockNumber):
+		case evmPtr.ChainConfig().IsByzantium(evmPtr.number):
 			cfg.JumpTable = byzantiumInstructionSet
-		case evmPtr.ChainConfig().IsHomestead(evmPtr.BlockNumber):
+		case evmPtr.ChainConfig().IsHomestead(evmPtr.number):
 			cfg.JumpTable = homesteadInstructionSet
 		default:
 			cfg.JumpTable = frontierInstructionSet
@@ -81,7 +81,7 @@ func NewInterpreter(evmPtr *EVM, cfg Config) *Interpreter {
 	return &Interpreter{
 		evm:      evm,
 		cfg:      cfg,
-		gasTable: evmPtr.ChainConfig().GasTable(evmPtr.BlockNumber),
+		gasTable: evmPtr.ChainConfig().GasTable(evmPtr.number),
 		intPool:  newIntPool(),
 	}
 }
@@ -131,15 +131,15 @@ func (in *Interpreter) Run(snapshot int, contract *Contract, input []byte) (ret 
 		op    OpCode        // current opcode
 		mem   = NewMemory() // bound memory
 		stack = newstack()  // local stack
-		// For optimisation reason we're using uint64 as the program counter.
+		// For optimisation reason we're using Uint64 as the program counter.
 		// It's theoretically possible to go above 2^64. The YP defines the PC
 		// to be uint256. Practically much less so feasible.
-		pc   = uint64(0) // program counter
-		cost uint64
+		pc   = Uint64(0) // program counter
+		cost Uint64
 		// copies used by tracer
 		stackCopy = newstack() // stackCopy needed for Tracer since stack is mutated by 63/64 gas rule
-		pcCopy    uint64       // needed for the deferred Tracer
-		gasCopy   uint64       // for Tracer to bgmlogs gas remaining before execution
+		pcCopy    Uint64       // needed for the deferred Tracer
+		gasCopy   Uint64       // for Tracer to bgmlogs gas remaining before execution
 		bgmlogsged    bool         // deferred Tracer should ignore already bgmlogsged steps
 	)
 	contract.Input = input
@@ -182,7 +182,7 @@ func (in *Interpreter) Run(snapshot int, contract *Contract, input []byte) (ret 
 			return nil, err
 		}
 
-		var memorySize uint64
+		var memorySize Uint64
 		// calculate the new memory size and expand the memory to fit
 		// the operation
 		if operation.memorySize != nil {

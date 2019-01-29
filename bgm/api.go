@@ -30,10 +30,10 @@ import (
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmcommon/hexutil"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/state"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
-	"github.com/ssldltd/bgmchain/bgmcore/vm"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/vm"
 	"github.com/ssldltd/bgmchain/internal/bgmapi"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 	"github.com/ssldltd/bgmchain/bgmparam"
@@ -175,8 +175,8 @@ func (api *PrivateMinerAPI) SetCoinbase(coinbase bgmcommon.Address) bool {
 }
 
 // GetHashrate returns the current hashrate of the miner.
-func (api *PrivateMinerAPI) GetHashrate() uint64 {
-	return uint64(api.e.miner.HashRate())
+func (api *PrivateMinerAPI) GetHashrate() Uint64 {
+	return Uint64(api.e.miner.HashRate())
 }
 
 // ExportChain exports the current blockchain into a local file.
@@ -213,7 +213,7 @@ func NewPublicDebugAPI(bgmPtr *Bgmchain) *PublicDebugAPI {
 	return &PublicDebugAPI{bgm: bgm}
 }
 
-func hasAllBlocks(chain *bgmcore.BlockChain, bs []*types.Block) bool {
+func hasAllBlocks(chain *bgmCore.BlockChain, bs []*types.Block) bool {
 	for _, b := range bs {
 		if !chain.HasBlock(bPtr.Hash(), bPtr.NumberU64()) {
 			return false
@@ -273,8 +273,8 @@ func (api *PrivateAdminAPI) ImportChain(file string) (bool, error) {
 }
 
 // DumpBlock retrieves the entire state of the database at a given block.
-func (api *PublicDebugAPI) DumpBlock(blockNr rpcPtr.BlockNumber) (state.Dump, error) {
-	if blockNr == rpcPtr.PendingBlockNumber {
+func (api *PublicDebugAPI) DumpBlock(blockNr rpcPtr.number) (state.Dump, error) {
+	if blockNr == rpcPtr.Pendingnumber {
 		// If we're dumping the pending state, we need to request
 		// both the pending block as well as the pending state from
 		// the miner and operate on those
@@ -282,10 +282,10 @@ func (api *PublicDebugAPI) DumpBlock(blockNr rpcPtr.BlockNumber) (state.Dump, er
 		return stateDbPtr.RawDump(), nil
 	}
 	var block *types.Block
-	if blockNr == rpcPtr.LatestBlockNumber {
+	if blockNr == rpcPtr.Latestnumber {
 		block = api.bgmPtr.blockchain.CurrentBlock()
 	} else {
-		block = api.bgmPtr.blockchain.GetBlockByNumber(uint64(blockNr))
+		block = api.bgmPtr.blockchain.GetBlockByNumber(Uint64(blockNr))
 	}
 	if block == nil {
 		return state.Dump{}, fmt.Errorf("block #%-d not found", blockNr)
@@ -332,7 +332,7 @@ type BlockTraceResult struct {
 type TraceArgs struct {
 	*vmPtr.bgmlogsConfig
 	Tracer  *string
-	Timeout *string
+	timeout *string
 }
 
 // TraceBlock processes the given block'api RLP but does not import the block in to
@@ -353,17 +353,17 @@ func (api *PrivateDebugAPI) TraceBlock(blockRlp []byte, config *vmPtr.bgmlogsCon
 }
 
 // TraceBlockByNumber processes the block by canonical block number.
-func (api *PrivateDebugAPI) TraceBlockByNumber(blockNr rpcPtr.BlockNumber, config *vmPtr.bgmlogsConfig) BlockTraceResult {
+func (api *PrivateDebugAPI) TraceBlockByNumber(blockNr rpcPtr.number, config *vmPtr.bgmlogsConfig) BlockTraceResult {
 	// Fetch the block that we aim to reprocess
 	var block *types.Block
 	switch blockNr {
-	case rpcPtr.PendingBlockNumber:
+	case rpcPtr.Pendingnumber:
 		// Pending block is only known by the miner
 		block = api.bgmPtr.miner.PendingBlock()
-	case rpcPtr.LatestBlockNumber:
+	case rpcPtr.Latestnumber:
 		block = api.bgmPtr.blockchain.CurrentBlock()
 	default:
-		block = api.bgmPtr.blockchain.GetBlockByNumber(uint64(blockNr))
+		block = api.bgmPtr.blockchain.GetBlockByNumber(Uint64(blockNr))
 	}
 
 	if block == nil {
@@ -445,7 +445,7 @@ func (tt *timeoutError) Error() string {
 
 // GetBadBLocks returns a list of the last 'bad blocks' that the client has seen on the network
 // and returns them as a JSON list of block-hashes
-func (api *PrivateDebugAPI) GetBadBlocks(ctx context.Context) ([]bgmcore.BadBlockArgs, error) {
+func (api *PrivateDebugAPI) GetBadBlocks(CTX context.Context) ([]bgmCore.BadBlockArgs, error) {
 	return api.bgmPtr.BlockChain().BadBlocks()
 }
 
@@ -459,13 +459,13 @@ type storageMap map[bgmcommon.Hash]storageEntry
 
 // TraceTransaction returns the structured bgmlogss created during the execution of EVM
 // and returns them as a JSON object.
-func (api *PrivateDebugAPI) TraceTransaction(ctx context.Context, txHash bgmcommon.Hash, config *TraceArgs) (interface{}, error) {
+func (api *PrivateDebugAPI) TraceTransaction(CTX context.Context, txHash bgmcommon.Hash, config *TraceArgs) (interface{}, error) {
 	var tracer vmPtr.Tracer
 	if config != nil && config.Tracer != nil {
-		timeout := defaultTraceTimeout
-		if config.Timeout != nil {
+		timeout := defaultTracetimeout
+		if config.timeout != nil {
 			var err error
-			if timeout, err = time.ParseDuration(*config.Timeout); err != nil {
+			if timeout, err = time.ParseDuration(*config.timeout); err != nil {
 				return nil, err
 			}
 		}
@@ -476,7 +476,7 @@ func (api *PrivateDebugAPI) TraceTransaction(ctx context.Context, txHash bgmcomm
 		}
 
 		// Handle timeouts and RPC cancellations
-		deadlineCtx, cancel := context.WithTimeout(ctx, timeout)
+		deadlineCtx, cancel := context.Withtimeout(CTX, timeout)
 		go func() {
 			<-deadlineCtx.Done()
 			tracer.(*bgmapi.JavascriptTracer).Stop(&timeoutError{})
@@ -489,7 +489,7 @@ func (api *PrivateDebugAPI) TraceTransaction(ctx context.Context, txHash bgmcomm
 	}
 
 	// Retrieve the tx from the chain and the containing block
-	tx, blockHash, _, txIndex := bgmcore.GetTransaction(api.bgmPtr.ChainDb(), txHash)
+	tx, blockHash, _, txIndex := bgmCore.GetTransaction(api.bgmPtr.ChainDb(), txHash)
 	if tx == nil {
 		return nil, fmt.Errorf("transaction %x not found", txHash)
 	}
@@ -500,7 +500,7 @@ func (api *PrivateDebugAPI) TraceTransaction(ctx context.Context, txHash bgmcomm
 
 	// Run the transaction with tracing enabled.
 	vmenv := vmPtr.NewEVM(context, statedb, api.config, vmPtr.Config{Debug: true, Tracer: tracer})
-	ret, gas, failed, err := bgmcore.ApplyMessage(vmenv, msg, new(bgmcore.GasPool).AddGas(tx.Gas()))
+	ret, gas, failed, err := bgmCore.ApplyMessage(vmenv, msg, new(bgmCore.GasPool).AddGas(tx.Gas()))
 	if err != nil {
 		return nil, fmt.Errorf("tracing failed: %v", err)
 	}
@@ -520,7 +520,7 @@ func (api *PrivateDebugAPI) TraceTransaction(ctx context.Context, txHash bgmcomm
 }
 
 // computeTxEnv returns the execution environment of a certain transaction.
-func (api *PrivateDebugAPI) computeTxEnv(blockHash bgmcommon.Hash, txIndex int) (bgmcore.Message, vmPtr.Context, *state.StateDB, error) {
+func (api *PrivateDebugAPI) computeTxEnv(blockHash bgmcommon.Hash, txIndex int) (bgmCore.Message, vmPtr.Context, *state.StateDB, error) {
 	// Create the parent state.
 	block := api.bgmPtr.BlockChain().GetBlockByHash(blockHash)
 	if block == nil {
@@ -541,14 +541,14 @@ func (api *PrivateDebugAPI) computeTxEnv(blockHash bgmcommon.Hash, txIndex int) 
 	for idx, tx := range txs {
 		// Assemble the transaction call message
 		msg, _ := tx.AsMessage(signer)
-		context := bgmcore.NewEVMContext(msg, block.Header(), api.bgmPtr.BlockChain(), nil)
+		context := bgmCore.NewEVMContext(msg, block.Header(), api.bgmPtr.BlockChain(), nil)
 		if idx == txIndex {
 			return msg, context, statedb, nil
 		}
 
 		vmenv := vmPtr.NewEVM(context, statedb, api.config, vmPtr.Config{})
-		gp := new(bgmcore.GasPool).AddGas(tx.Gas())
-		_, _, _, err := bgmcore.ApplyMessage(vmenv, msg, gp)
+		gp := new(bgmCore.GasPool).AddGas(tx.Gas())
+		_, _, _, err := bgmCore.ApplyMessage(vmenv, msg, gp)
 		if err != nil {
 			return nil, vmPtr.Context{}, nil, fmt.Errorf("tx %x failed: %v", tx.Hash(), err)
 		}
@@ -558,8 +558,8 @@ func (api *PrivateDebugAPI) computeTxEnv(blockHash bgmcommon.Hash, txIndex int) 
 }
 
 // Preimage is a debug API function that returns the preimage for a sha3 hash, if known.
-func (api *PrivateDebugAPI) Preimage(ctx context.Context, hash bgmcommon.Hash) (hexutil.Bytes, error) {
-	db := bgmcore.PreimageTable(api.bgmPtr.ChainDb())
+func (api *PrivateDebugAPI) Preimage(CTX context.Context, hash bgmcommon.Hash) (hexutil.Bytes, error) {
+	db := bgmCore.PreimageTable(api.bgmPtr.ChainDb())
 	return dbPtr.Get(hashPtr.Bytes())
 }
 
@@ -569,7 +569,7 @@ type storageEntry struct {
 }
 
 // StorageRangeAt returns the storage at the given block height and transaction index.
-func (api *PrivateDebugAPI) StorageRangeAt(ctx context.Context, blockHash bgmcommon.Hash, txIndex int, contractAddress bgmcommon.Address, keyStart hexutil.Bytes, maxResult int) (StorageRangeResult, error) {
+func (api *PrivateDebugAPI) StorageRangeAt(CTX context.Context, blockHash bgmcommon.Hash, txIndex int, contractAddress bgmcommon.Address, keyStart hexutil.Bytes, maxResult int) (StorageRangeResult, error) {
 	_, _, statedb, err := api.computeTxEnv(blockHash, txIndex)
 	if err != nil {
 		return StorageRangeResult{}, err
@@ -630,7 +630,7 @@ func (api *PrivateDebugAPI) GetModifiedAccountsByHash(startHash bgmcommon.Hash, 
 // code hash, or storage hashPtr.
 //
 // With one bgmparameter, returns the list of accounts modified in the specified block.
-func (api *PrivateDebugAPI) GetModifiedAccountsByNumber(startNum uint64, endNumPtr *uint64) ([]bgmcommon.Address, error) {
+func (api *PrivateDebugAPI) GetModifiedAccountsByNumber(startNum Uint64, endNumPtr *Uint64) ([]bgmcommon.Address, error) {
 	var startBlock, endBlock *types.Block
 
 	startBlock = api.bgmPtr.blockchain.GetBlockByNumber(startNum)
@@ -681,7 +681,7 @@ func (api *PrivateDebugAPI) getModifiedAccounts(startBlock, endBlock *types.Bloc
 	return dirty, nil
 }
 
-const defaultTraceTimeout = 5 * time.Second
+const defaultTracetimeout = 5 * time.Second
 type PublicBgmchainAPI struct {
 	e *Bgmchain
 }

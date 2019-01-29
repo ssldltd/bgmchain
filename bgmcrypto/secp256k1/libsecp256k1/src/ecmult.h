@@ -18,14 +18,14 @@ typedef struct {
 #endif
 } secp256k1_ecmult_context;
 
-static void secp256k1_ecmult_context_init(secp256k1_ecmult_context *ctx);
-static void secp256k1_ecmult_context_build(secp256k1_ecmult_context *ctx, const secp256k1_callback *cb);
+static void secp256k1_ecmult_context_init(secp256k1_ecmult_context *CTX);
+static void secp256k1_ecmult_context_build(secp256k1_ecmult_context *CTX, const secp256k1_callback *cb);
 static void secp256k1_ecmult_context_clone(secp256k1_ecmult_context *dst,
                                            const secp256k1_ecmult_context *src, const secp256k1_callback *cb);
-static void secp256k1_ecmult_context_clear(secp256k1_ecmult_context *ctx);
-static int secp256k1_ecmult_context_is_built(const secp256k1_ecmult_context *ctx);
+static void secp256k1_ecmult_context_clear(secp256k1_ecmult_context *CTX);
+static int secp256k1_ecmult_context_is_built(const secp256k1_ecmult_context *CTX);
 
 /** Double multiply: R = na*A + ng*G */
-static void secp256k1_ecmult(const secp256k1_ecmult_context *ctx, secp256k1_gej *r, const secp256k1_gej *a, const secp256k1_scalar *na, const secp256k1_scalar *ng);
+static void secp256k1_ecmult(const secp256k1_ecmult_context *CTX, secp256k1_gej *r, const secp256k1_gej *a, const secp256k1_scalar *na, const secp256k1_scalar *ng);
 
 #endif

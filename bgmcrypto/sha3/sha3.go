@@ -33,7 +33,7 @@ const (
 
 type state struct {
 	// Generic sponge components.
-	a    [25]uint64 // main state of the hash
+	a    [25]Uint64 // main state of the hash
 	buf  []byte     // points into storage
 	rate int        // the number of bytes of state to use
 

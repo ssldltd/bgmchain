@@ -29,7 +29,7 @@ func (i NodesEvent) String() string {
 }
 const (
 	_NodesEvent_name_0 = "invalidEventpingPacketpongPacketfindNodesPacketneighborsPacketfindNodesHashPackettopicRegisterPackettopicQueryPackettopicNodessPacket"
-	_NodesEvent_name_1 = "pongTimeoutpingTimeoutneighboursTimeout"
+	_NodesEvent_name_1 = "pongtimeoutpingtimeoutneighbourstimeout"
 )
 
 var (

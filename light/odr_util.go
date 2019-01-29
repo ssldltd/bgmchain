@@ -19,40 +19,40 @@ import (
 	"context"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmcrypto"
 	"github.com/ssldltd/bgmchain/rlp"
 )
 
 var sha3_nil = bgmcrypto.Keccak256Hash(nil)
 
-func GetHeaderByNumber(ctx context.Context, odr OdrBackend, number uint64) (*types.headerPtr, error) {
+func GetHeaderByNumber(CTX context.Context, odr OdrBackend, number Uint64) (*types.HeaderPtr, error) {
 	db := odr.Database()
-	hash := bgmcore.GetCanonicalHash(db, number)
+	hash := bgmCore.GetCanonicalHash(db, number)
 	if (hash != bgmcommon.Hash{}) {
-		// if there is a canonical hash, there is a header too
-		header := bgmcore.GetHeader(db, hash, number)
-		if header == nil {
-			panic("Fatal: Canonical hash present but header not found")
+		// if there is a canonical hash, there is a Header too
+		Header := bgmCore.GetHeader(db, hash, number)
+		if Header == nil {
+			panic("Fatal: Canonical hash present but Header not found")
 		}
-		return headerPtr, nil
+		return HeaderPtr, nil
 	}
 
 	var (
-		chtCount, sectionHeadNum uint64
+		chtCount, sectionHeadNum Uint64
 		sectionHead              bgmcommon.Hash
 	)
 	if odr.ChtIndexer() != nil {
 		chtCount, sectionHeadNum, sectionHead = odr.ChtIndexer().Sections()
-		canonicalHash := bgmcore.GetCanonicalHash(db, sectionHeadNum)
+		canonicalHash := bgmCore.GetCanonicalHash(db, sectionHeadNum)
 		// if the CHT was injected as a trusted checkpoint, we have no canonical hash yet so we accept zero hash too
 		for chtCount > 0 && canonicalHash != sectionHead && canonicalHash != (bgmcommon.Hash{}) {
 			chtCount--
 			if chtCount > 0 {
 				sectionHeadNum = chtCount*ChtFrequency - 1
 				sectionHead = odr.ChtIndexer().SectionHead(chtCount - 1)
-				canonicalHash = bgmcore.GetCanonicalHash(db, sectionHeadNum)
+				canonicalHash = bgmCore.GetCanonicalHash(db, sectionHeadNum)
 			}
 		}
 	}
@@ -62,32 +62,32 @@ func GetHeaderByNumber(ctx context.Context, odr OdrBackend, number uint64) (*typ
 	}
 
 	r := &ChtRequest{ChtRoot: GetChtRoot(db, chtCount-1, sectionHead), ChtNum: chtCount - 1, BlockNum: number}
-	if err := odr.Retrieve(ctx, r); err != nil {
+	if err := odr.Retrieve(CTX, r); err != nil {
 		return nil, err
 	} else {
-		return r.headerPtr, nil
+		return r.HeaderPtr, nil
 	}
 }
 
-func GetCanonicalHash(ctx context.Context, odr OdrBackend, number uint64) (bgmcommon.Hash, error) {
-	hash := bgmcore.GetCanonicalHash(odr.Database(), number)
+func GetCanonicalHash(CTX context.Context, odr OdrBackend, number Uint64) (bgmcommon.Hash, error) {
+	hash := bgmCore.GetCanonicalHash(odr.Database(), number)
 	if (hash != bgmcommon.Hash{}) {
 		return hash, nil
 	}
-	headerPtr, err := GetHeaderByNumber(ctx, odr, number)
-	if header != nil {
-		return headerPtr.Hash(), nil
+	HeaderPtr, err := GetHeaderByNumber(CTX, odr, number)
+	if Header != nil {
+		return HeaderPtr.Hash(), nil
 	}
 	return bgmcommon.Hash{}, err
 }
 
 // GetBodyRLP retrieves the block body (transactions and uncles) in RLP encoding.
-func GetBodyRLP(ctx context.Context, odr OdrBackend, hash bgmcommon.Hash, number uint64) (rlp.RawValue, error) {
-	if data := bgmcore.GetBodyRLP(odr.Database(), hash, number); data != nil {
+func GetBodyRLP(CTX context.Context, odr OdrBackend, hash bgmcommon.Hash, number Uint64) (rlp.RawValue, error) {
+	if data := bgmCore.GetBodyRLP(odr.Database(), hash, number); data != nil {
 		return data, nil
 	}
 	r := &BlockRequest{Hash: hash, Number: number}
-	if err := odr.Retrieve(ctx, r); err != nil {
+	if err := odr.Retrieve(CTX, r); err != nil {
 		return nil, err
 	} else {
 		return r.Rlp, nil
@@ -96,8 +96,8 @@ func GetBodyRLP(ctx context.Context, odr OdrBackend, hash bgmcommon.Hash, number
 
 // GetBody retrieves the block body (transactons, uncles) corresponding to the
 // hashPtr.
-func GetBody(ctx context.Context, odr OdrBackend, hash bgmcommon.Hash, number uint64) (*types.Body, error) {
-	data, err := GetBodyRLP(ctx, odr, hash, number)
+func GetBody(CTX context.Context, odr OdrBackend, hash bgmcommon.Hash, number Uint64) (*types.Body, error) {
+	data, err := GetBodyRLP(CTX, odr, hash, number)
 	if err != nil {
 		return nil, err
 	}
@@ -109,68 +109,68 @@ func GetBody(ctx context.Context, odr OdrBackend, hash bgmcommon.Hash, number ui
 }
 
 // GetBlock retrieves an entire block corresponding to the hash, assembling it
-// back from the stored header and body.
-func GetBlock(ctx context.Context, odr OdrBackend, hash bgmcommon.Hash, number uint64) (*types.Block, error) {
-	// Retrieve the block header and body contents
-	header := bgmcore.GetHeader(odr.Database(), hash, number)
-	if header == nil {
+// back from the stored Header and body.
+func GetBlock(CTX context.Context, odr OdrBackend, hash bgmcommon.Hash, number Uint64) (*types.Block, error) {
+	// Retrieve the block Header and body contents
+	Header := bgmCore.GetHeader(odr.Database(), hash, number)
+	if Header == nil {
 		return nil, ErrNoHeader
 	}
-	body, err := GetBody(ctx, odr, hash, number)
+	body, err := GetBody(CTX, odr, hash, number)
 	if err != nil {
 		return nil, err
 	}
 	// Reassemble the block and return
-	return types.NewBlockWithHeader(header).WithBody(body.Transactions, body.Uncles), nil
+	return types.NewBlockWithHeader(Header).WithBody(body.Transactions, body.Uncles), nil
 }
 
 // GetBlockRecChaints retrieves the recChaints generated by the transactions included
 // in a block given by its hashPtr.
-func GetBlockRecChaints(ctx context.Context, odr OdrBackend, hash bgmcommon.Hash, number uint64) (types.RecChaints, error) {
-	recChaints := bgmcore.GetBlockRecChaints(odr.Database(), hash, number)
+func GetBlockRecChaints(CTX context.Context, odr OdrBackend, hash bgmcommon.Hash, number Uint64) (types.RecChaints, error) {
+	recChaints := bgmCore.GetBlockRecChaints(odr.Database(), hash, number)
 	if recChaints != nil {
 		return recChaints, nil
 	}
 	r := &RecChaintsRequest{Hash: hash, Number: number}
-	if err := odr.Retrieve(ctx, r); err != nil {
+	if err := odr.Retrieve(CTX, r); err != nil {
 		return nil, err
 	}
 	return r.RecChaints, nil
 }
 
 // GetBloomBits retrieves a batch of compressed bloomBits vectors belonging to the given bit index and section indexes
-func GetBloomBits(ctx context.Context, odr OdrBackend, bitIdx uint, sectionIdxList []uint64) ([][]byte, error) {
+func GetBloomBits(CTX context.Context, odr OdrBackend, bitIdx uint, sectionIdxList []Uint64) ([][]byte, error) {
 	db := odr.Database()
 	result := make([][]byte, len(sectionIdxList))
 	var (
-		reqList []uint64
+		reqList []Uint64
 		reqIdx  []int
 	)
 
 	var (
-		bloomTrieCount, sectionHeadNum uint64
+		bloomTrieCount, sectionHeadNum Uint64
 		sectionHead                    bgmcommon.Hash
 	)
 	if odr.BloomTrieIndexer() != nil {
 		bloomTrieCount, sectionHeadNum, sectionHead = odr.BloomTrieIndexer().Sections()
-		canonicalHash := bgmcore.GetCanonicalHash(db, sectionHeadNum)
+		canonicalHash := bgmCore.GetCanonicalHash(db, sectionHeadNum)
 		// if the BloomTrie was injected as a trusted checkpoint, we have no canonical hash yet so we accept zero hash too
 		for bloomTrieCount > 0 && canonicalHash != sectionHead && canonicalHash != (bgmcommon.Hash{}) {
 			bloomTrieCount--
 			if bloomTrieCount > 0 {
 				sectionHeadNum = bloomTrieCount*BloomTrieFrequency - 1
 				sectionHead = odr.BloomTrieIndexer().SectionHead(bloomTrieCount - 1)
-				canonicalHash = bgmcore.GetCanonicalHash(db, sectionHeadNum)
+				canonicalHash = bgmCore.GetCanonicalHash(db, sectionHeadNum)
 			}
 		}
 	}
 
 	for i, sectionIdx := range sectionIdxList {
-		sectionHead := bgmcore.GetCanonicalHash(db, (sectionIdx+1)*BloomTrieFrequency-1)
+		sectionHead := bgmCore.GetCanonicalHash(db, (sectionIdx+1)*BloomTrieFrequency-1)
 		// if we don't have the canonical hash stored for this section head number, we'll still look for
 		// an entry with a zero sectionHead (we store it with zero section head too if we don't know it
 		// at the time of the retrieval)
-		bloomBits, err := bgmcore.GetBloomBits(db, bitIdx, sectionIdx, sectionHead)
+		bloomBits, err := bgmCore.GetBloomBits(db, bitIdx, sectionIdx, sectionHead)
 		if err == nil {
 			result[i] = bloomBits
 		} else {
@@ -186,7 +186,7 @@ func GetBloomBits(ctx context.Context, odr OdrBackend, bitIdx uint, sectionIdxLi
 	}
 
 	r := &BloomRequest{BloomTrieRoot: GetBloomTrieRoot(db, bloomTrieCount-1, sectionHead), BloomTrieNum: bloomTrieCount - 1, BitIdx: bitIdx, SectionIdxList: reqList}
-	if err := odr.Retrieve(ctx, r); err != nil {
+	if err := odr.Retrieve(CTX, r); err != nil {
 		return nil, err
 	} else {
 		for i, idx := range reqIdx {

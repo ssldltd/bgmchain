@@ -454,9 +454,9 @@ type CoinsType struct {
 	CoinName            *string `protobuf:"bytes,1,opt,name=coin_name,json=coinName" json:"coin_name,omitempty"`
 	CoinShortcut        *string `protobuf:"bytes,2,opt,name=coin_shortcut,json=coinShortcut" json:"coin_shortcut,omitempty"`
 	AddressType         *uint32 `protobuf:"varint,3,opt,name=address_type,json=addressType,def=0" json:"address_type,omitempty"`
-	MaxfeeKb            *uint64 `protobuf:"varint,4,opt,name=maxfee_kb,json=maxfeeKb" json:"maxfee_kb,omitempty"`
+	MaxfeeKb            *Uint64 `protobuf:"varint,4,opt,name=maxfee_kb,json=maxfeeKb" json:"maxfee_kb,omitempty"`
 	AddressTypeP2Sh     *uint32 `protobuf:"varint,5,opt,name=address_type_p2sh,json=addressTypeP2sh,def=5" json:"address_type_p2sh,omitempty"`
-	SignedMessageheaderPtr *string `protobuf:"bytes,8,opt,name=signed_message_headerPtr,json=signedMessageHeader" json:"signed_message_headerPtr,omitempty"`
+	SignedMessageHeaderPtr *string `protobuf:"bytes,8,opt,name=signed_message_HeaderPtr,json=signedMessageHeader" json:"signed_message_HeaderPtr,omitempty"`
 	XpubMagic           *uint32 `protobuf:"varint,9,opt,name=xpub_magic,json=xpubMagic,def=76067358" json:"xpub_magic,omitempty"`
 	XprvMagic           *uint32 `protobuf:"varint,10,opt,name=xprv_magic,json=xprvMagic,def=76066276" json:"xprv_magic,omitempty"`
 	Segwit              *bool   `protobuf:"varint,11,opt,name=segwit" json:"segwit,omitempty"`
@@ -495,7 +495,7 @@ func (mPtr *CoinsType) GetAddressType() uint32 {
 	return Default_CoinsType_AddressType
 }
 
-func (mPtr *CoinsType) GetMaxfeeKb() uint64 {
+func (mPtr *CoinsType) GetMaxfeeKb() Uint64 {
 	if m != nil && mPtr.MaxfeeKb != nil {
 		return *mPtr.MaxfeeKb
 	}
@@ -592,7 +592,7 @@ type TxInputType struct {
 	Sequence         *uint32                   `protobuf:"varint,5,opt,name=sequence,def=4294967295" json:"sequence,omitempty"`
 	ScriptType       *InputScriptType          `protobuf:"varint,6,opt,name=script_type,json=scriptType,enum=InputScriptType,def=0" json:"script_type,omitempty"`
 	Multisig         *MultisigRedeemScriptTypes `protobuf:"bytes,7,opt,name=multisig" json:"multisig,omitempty"`
-	Amount           *uint64                   `protobuf:"varint,8,opt,name=amount" json:"amount,omitempty"`
+	Amount           *Uint64                   `protobuf:"varint,8,opt,name=amount" json:"amount,omitempty"`
 	XXX_unrecognized []byte                    `json:"-"`
 }
 
@@ -653,7 +653,7 @@ func (mPtr *TxInputType) GetMultisig() *MultisigRedeemScriptTypes {
 	return nil
 }
 
-func (mPtr *TxInputType) GetAmount() uint64 {
+func (mPtr *TxInputType) GetAmount() Uint64 {
 	if m != nil && mPtr.Amount != nil {
 		return *mPtr.Amount
 	}
@@ -667,7 +667,7 @@ func (mPtr *TxInputType) GetAmount() uint64 {
 type TxOutputType struct {
 	Address          *string                   `protobuf:"bytes,1,opt,name=address" json:"address,omitempty"`
 	AddressN         []uint32                  `protobuf:"varint,2,rep,name=address_n,json=addressN" json:"address_n,omitempty"`
-	Amount           *uint64                   `protobuf:"varint,3,req,name=amount" json:"amount,omitempty"`
+	Amount           *Uint64                   `protobuf:"varint,3,req,name=amount" json:"amount,omitempty"`
 	ScriptType       *OutputScriptType         `protobuf:"varint,4,req,name=script_type,json=scriptType,enum=OutputScriptType" json:"script_type,omitempty"`
 	Multisig         *MultisigRedeemScriptTypes `protobuf:"bytes,5,opt,name=multisig" json:"multisig,omitempty"`
 	OpReturnData     []byte                    `protobuf:"bytes,6,opt,name=op_return_data,json=opReturnData" json:"op_return_data,omitempty"`
@@ -693,7 +693,7 @@ func (mPtr *TxOutputType) GetAddressN() []uint32 {
 	return nil
 }
 
-func (mPtr *TxOutputType) GetAmount() uint64 {
+func (mPtr *TxOutputType) GetAmount() Uint64 {
 	if m != nil && mPtr.Amount != nil {
 		return *mPtr.Amount
 	}
@@ -725,7 +725,7 @@ func (mPtr *TxOutputType) GetOpReturnData() []byte {
 // Structure representing compiled transaction output
 // @used_in TransactionType
 type TxOutputBinType struct {
-	Amount           *uint64 `protobuf:"varint,1,req,name=amount" json:"amount,omitempty"`
+	Amount           *Uint64 `protobuf:"varint,1,req,name=amount" json:"amount,omitempty"`
 	ScriptPubkey     []byte  `protobuf:"bytes,2,req,name=script_pubkey,json=scriptPubkey" json:"script_pubkey,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
@@ -735,7 +735,7 @@ func (mPtr *TxOutputBinType) String() string            { return proto.CompactTe
 func (*TxOutputBinType) ProtoMessage()               {}
 func (*TxOutputBinType) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
 
-func (mPtr *TxOutputBinType) GetAmount() uint64 {
+func (mPtr *TxOutputBinType) GetAmount() Uint64 {
 	if m != nil && mPtr.Amount != nil {
 		return *mPtr.Amount
 	}
@@ -757,7 +757,7 @@ type TransactionType struct {
 	Inputs           []*TxInputType     `protobuf:"bytes,2,rep,name=inputs" json:"inputs,omitempty"`
 	BinOutputs       []*TxOutputBinType `protobuf:"bytes,3,rep,name=bin_outputs,json=binOutputs" json:"bin_outputs,omitempty"`
 	Outputs          []*TxOutputType    `protobuf:"bytes,5,rep,name=outputs" json:"outputs,omitempty"`
-	LockTime         *uint32            `protobuf:"varint,4,opt,name=lock_time,json=lockTime" json:"lock_time,omitempty"`
+	Locktime         *uint32            `protobuf:"varint,4,opt,name=lock_time,json=locktime" json:"lock_time,omitempty"`
 	InputsCnt        *uint32            `protobuf:"varint,6,opt,name=inputs_cnt,json=inputsCnt" json:"inputs_cnt,omitempty"`
 	OutputsCnt       *uint32            `protobuf:"varint,7,opt,name=outputs_cnt,json=outputsCnt" json:"outputs_cnt,omitempty"`
 	ExtraData        []byte             `protobuf:"bytes,8,opt,name=extra_data,json=extraData" json:"extra_data,omitempty"`
@@ -798,9 +798,9 @@ func (mPtr *TransactionType) GetOutputs() []*TxOutputType {
 	return nil
 }
 
-func (mPtr *TransactionType) GetLockTime() uint32 {
-	if m != nil && mPtr.LockTime != nil {
-		return *mPtr.LockTime
+func (mPtr *TransactionType) GetLocktime() uint32 {
+	if m != nil && mPtr.Locktime != nil {
+		return *mPtr.Locktime
 	}
 	return 0
 }

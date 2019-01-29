@@ -41,7 +41,7 @@ var (
 	uint8_t    = reflect.TypeOf(uint8(0))
 	uint16_t   = reflect.TypeOf(uint16(0))
 	uint32_t   = reflect.TypeOf(uint32(0))
-	uint64_t   = reflect.TypeOf(uint64(0))
+	Uint64_t   = reflect.TypeOf(Uint64(0))
 	int_t      = reflect.TypeOf(int(0))
 	int8_t     = reflect.TypeOf(int8(0))
 	int16_t    = reflect.TypeOf(int16(0))

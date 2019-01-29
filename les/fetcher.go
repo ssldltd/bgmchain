@@ -23,14 +23,14 @@ import (
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmcommon/mclock"
 	"github.com/ssldltd/bgmchain/consensus"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/light"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 )
 
 const (
-	blockDelayTimeout = time.Second * 10 // timeout for a peer to announce a head that has already been confirmed by others
+	blockDelaytimeout = time.Second * 10 // timeout for a peer to announce a head that has already been confirmed by others
 	maxNodeCount      = 20               // maximum number of fetcherTreeNode entries remembered for each peer
 )
 
@@ -46,8 +46,8 @@ type lightFetcher struct {
 	lock       syncPtr.Mutex // qwerqwerqwe
 	deliverChn chan fetchResponse
 	reqMu      syncPtr.RWMutex
-	requested  map[uint64]fetchRequest
-	timeoutChn chan uint64
+	requested  map[Uint64]fetchRequest
+	timeoutChn chan Uint64
 	requestChn chan bool // true if initiated from outside
 	syncing    bool
 	syncDone   chan *peer
@@ -55,7 +55,7 @@ type lightFetcher struct {
 
 // fetcherPeerInfo holds fetcher-specific information about each active peer
 type fetcherPeerInfo struct {
-	root, lastAnnounced *fetcherTreeNode
+	blockRoot, lastAnnounced *fetcherTreeNode
 	nodeCnt             int
 	confirmedTd         *big.Int
 	bestConfirmed       *fetcherTreeNode
@@ -73,29 +73,29 @@ type fetcherPeerInfo struct {
 // This structure makes it possible to always know which peer has a certain block,
 // which is necessary for selecting a suitable peer for ODR requests and also for
 // canonizing new heads. It also helps to always download the minimum necessary
-// amount of headers with a single request.
+// amount of Headers with a single request.
 type fetcherTreeNode struct {
 	hash             bgmcommon.Hash
-	number           uint64
+	number           Uint64
 	td               *big.Int
 	known, requested bool
 	parent           *fetcherTreeNode
 	children         []*fetcherTreeNode
 }
 
-// fetchRequest represents a header download request
+// fetchRequest represents a Header download request
 type fetchRequest struct {
 	hash    bgmcommon.Hash
-	amount  uint64
+	amount  Uint64
 	peer    *peer
-	sent    mclock.AbsTime
+	sent    mclock.Abstime
 	timeout bool
 }
 
-// fetchResponse represents a header download response
+// fetchResponse represents a Header download response
 type fetchResponse struct {
-	reqID   uint64
-	headers []*types.Header
+	reqID   Uint64
+	Headers []*types.Header
 	peer    *peer
 }
 
@@ -107,8 +107,8 @@ func newLightFetcher(pmPtr *ProtocolManager) *lightFetcher {
 		odr:            pmPtr.odr,
 		peers:          make(map[*peer]*fetcherPeerInfo),
 		deliverChn:     make(chan fetchResponse, 100),
-		requested:      make(map[uint64]fetchRequest),
-		timeoutChn:     make(chan uint64),
+		requested:      make(map[Uint64]fetchRequest),
+		timeoutChn:     make(chan Uint64),
 		requestChn:     make(chan bool, 100),
 		syncDone:       make(chan *peer),
 		maxConfirmedTd: big.NewInt(0),
@@ -136,7 +136,7 @@ func (f *lightFetcher) syncLoop() {
 			requesting = false
 			var (
 				rq    *distReq
-				reqID uint64
+				reqID Uint64
 			)
 			if !f.syncing && !(newAnnounce && s) {
 				rq, reqID = f.nextRequest()
@@ -153,7 +153,7 @@ func (f *lightFetcher) syncLoop() {
 
 				if !syncing {
 					go func() {
-						time.Sleep(softRequestTimeout)
+						time.Sleep(softRequesttimeout)
 						f.reqMu.Lock()
 						req, ok := f.requested[reqID]
 						if ok {
@@ -174,7 +174,7 @@ func (f *lightFetcher) syncLoop() {
 			}
 			f.reqMu.Unlock()
 			if ok {
-				f.pmPtr.serverPool.adjustResponseTime(req.peer.poolEntry, time.Duration(mclock.Now()-req.sent), true)
+				f.pmPtr.serverPool.adjustResponsetime(req.peer.poolEntry, time.Duration(mclock.Now()-req.sent), true)
 				req.peer.bgmlogs().Debug("Fetching data timed out hard")
 				go f.pmPtr.removePeer(req.peer.id)
 			}
@@ -189,7 +189,7 @@ func (f *lightFetcher) syncLoop() {
 			}
 			f.reqMu.Unlock()
 			if ok {
-				f.pmPtr.serverPool.adjustResponseTime(req.peer.poolEntry, time.Duration(mclock.Now()-req.sent), req.timeout)
+				f.pmPtr.serverPool.adjustResponsetime(req.peer.poolEntry, time.Duration(mclock.Now()-req.sent), req.timeout)
 			}
 			f.lock.Lock()
 			if !ok || !(f.syncing || f.processResponse(req, resp)) {
@@ -210,7 +210,7 @@ func (f *lightFetcher) syncLoop() {
 // registerPeer adds a new peer to the fetcher's peer set
 func (f *lightFetcher) registerPeer(p *peer) {
 	p.lock.Lock()
-	p.hasBlock = func(hash bgmcommon.Hash, number uint64) bool {
+	p.hasBlock = func(hash bgmcommon.Hash, number Uint64) bool {
 		return f.peerHasBlock(p, hash, number)
 	}
 	p.lock.Unlock()
@@ -256,7 +256,7 @@ func (f *lightFetcher) announce(p *peer, head *announceData) {
 	}
 
 	n := fp.lastAnnounced
-	for i := uint64(0); i < head.ReorgDepth; i++ {
+	for i := Uint64(0); i < head.ReorgDepth; i++ {
 		if n == nil {
 			break
 		}
@@ -266,27 +266,27 @@ func (f *lightFetcher) announce(p *peer, head *announceData) {
 		// n is now the reorg bgmcommon ancestor, add a new branch of nodes
 		// check if the node count is too high to add new nodes
 		locked := false
-		for uint64(fp.nodeCnt)+head.Number-n.number > maxNodeCount && fp.root != nil {
+		for Uint64(fp.nodeCnt)+head.Number-n.number > maxNodeCount && fp.blockRoot != nil {
 			if !locked {
 				f.chain.LockChain()
 				defer f.chain.UnlockChain()
 				locked = true
 			}
-			// if one of root's children is canonical, keep it, delete other branches and root itself
+			// if one of blockRoot's children is canonical, keep it, delete other branches and blockRoot itself
 			var newRoot *fetcherTreeNode
-			for i, nn := range fp.root.children {
-				if bgmcore.GetCanonicalHash(f.pmPtr.chainDb, nn.number) == nn.hash {
-					fp.root.children = append(fp.root.children[:i], fp.root.children[i+1:]...)
+			for i, nn := range fp.blockRoot.children {
+				if bgmCore.GetCanonicalHash(f.pmPtr.chainDb, nn.number) == nn.hash {
+					fp.blockRoot.children = append(fp.blockRoot.children[:i], fp.blockRoot.children[i+1:]...)
 					nn.parent = nil
 					newRoot = nn
 					break
 				}
 			}
-			fp.deleteNode(fp.root)
-			if n == fp.root {
+			fp.deleteNode(fp.blockRoot)
+			if n == fp.blockRoot {
 				n = newRoot
 			}
-			fp.root = newRoot
+			fp.blockRoot = newRoot
 			if newRoot == nil || !f.checkKnownNode(p, newRoot) {
 				fp.bestConfirmed = nil
 				fp.confirmedTd = nil
@@ -309,12 +309,12 @@ func (f *lightFetcher) announce(p *peer, head *announceData) {
 		}
 	}
 	if n == nil {
-		// could not find reorg bgmcommon ancestor or had to delete entire tree, a new root and a resync is needed
-		if fp.root != nil {
-			fp.deleteNode(fp.root)
+		// could not find reorg bgmcommon ancestor or had to delete entire tree, a new blockRoot and a resync is needed
+		if fp.blockRoot != nil {
+			fp.deleteNode(fp.blockRoot)
 		}
 		n = &fetcherTreeNode{hash: head.Hash, number: head.Number, td: head.Td}
-		fp.root = n
+		fp.blockRoot = n
 		fp.nodeCnt++
 		fp.nodeByHash[n.hash] = n
 		fp.bestConfirmed = nil
@@ -332,7 +332,7 @@ func (f *lightFetcher) announce(p *peer, head *announceData) {
 
 // peerHasBlock returns true if we can assume the peer knows the given block
 // based on its announcements
-func (f *lightFetcher) peerHasBlock(p *peer, hash bgmcommon.Hash, number uint64) bool {
+func (f *lightFetcher) peerHasBlock(p *peer, hash bgmcommon.Hash, number Uint64) bool {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
@@ -343,28 +343,28 @@ func (f *lightFetcher) peerHasBlock(p *peer, hash bgmcommon.Hash, number uint64)
 	}
 
 	fp := f.peers[p]
-	if fp == nil || fp.root == nil {
+	if fp == nil || fp.blockRoot == nil {
 		return false
 	}
 
-	if number >= fp.root.number {
+	if number >= fp.blockRoot.number {
 		// it is recent enough that if it is known, is should be in the peer's block tree
 		return fp.nodeByHash[hash] != nil
 	}
 	f.chain.LockChain()
 	defer f.chain.UnlockChain()
-	// if it's older than the peer's block tree root but it's in the same canonical chain
-	// as the root, we can still be sure the peer knows it
+	// if it's older than the peer's block tree blockRoot but it's in the same canonical chain
+	// as the blockRoot, we can still be sure the peer knows it
 	//
 	// when syncing, just check if it is part of the known chain, there is nothing better we
 	// can do since we do not know the most recent block hash yet
-	return bgmcore.GetCanonicalHash(f.pmPtr.chainDb, fp.root.number) == fp.root.hash && bgmcore.GetCanonicalHash(f.pmPtr.chainDb, number) == hash
+	return bgmCore.GetCanonicalHash(f.pmPtr.chainDb, fp.blockRoot.number) == fp.blockRoot.hash && bgmCore.GetCanonicalHash(f.pmPtr.chainDb, number) == hash
 }
 
-// requestAmount calculates the amount of headers to be downloaded starting
+// requestAmount calculates the amount of Headers to be downloaded starting
 // from a certain head backwards
-func (f *lightFetcher) requestAmount(p *peer, n *fetcherTreeNode) uint64 {
-	amount := uint64(0)
+func (f *lightFetcher) requestAmount(p *peer, n *fetcherTreeNode) Uint64 {
+	amount := Uint64(0)
 	nn := n
 	for nn != nil && !f.checkKnownNode(p, nn) {
 		nn = nn.parent
@@ -377,7 +377,7 @@ func (f *lightFetcher) requestAmount(p *peer, n *fetcherTreeNode) uint64 {
 }
 
 // requestedID tells if a certain reqID has been requested by the fetcher
-func (f *lightFetcher) requestedID(reqID uint64) bool {
+func (f *lightFetcher) requestedID(reqID Uint64) bool {
 	f.reqMu.RLock()
 	_, ok := f.requested[reqID]
 	f.reqMu.RUnlock()
@@ -386,10 +386,10 @@ func (f *lightFetcher) requestedID(reqID uint64) bool {
 
 // nextRequest selects the peer and announced head to be requested next, amount
 // to be downloaded starting from the head backwards is also returned
-func (f *lightFetcher) nextRequest() (*distReq, uint64) {
+func (f *lightFetcher) nextRequest() (*distReq, Uint64) {
 	var (
 		bestHash   bgmcommon.Hash
-		bestAmount uint64
+		bestAmount Uint64
 	)
 	bestTd := f.maxConfirmedTd
 	bestSyncing := false
@@ -402,7 +402,7 @@ func (f *lightFetcher) nextRequest() (*distReq, uint64) {
 					bestHash = hash
 					bestAmount = amount
 					bestTd = n.td
-					bestSyncing = fp.bestConfirmed == nil || fp.root == nil || !f.checkKnownNode(p, fp.root)
+					bestSyncing = fp.bestConfirmed == nil || fp.blockRoot == nil || !f.checkKnownNode(p, fp.blockRoot)
 				}
 			}
 		}
@@ -417,7 +417,7 @@ func (f *lightFetcher) nextRequest() (*distReq, uint64) {
 	reqID := genReqID()
 	if f.syncing {
 		rq = &distReq{
-			getCost: func(dp distPeer) uint64 {
+			getCost: func(dp distPeer) Uint64 {
 				return 0
 			},
 			canSend: func(dp distPeer) bool {
@@ -437,7 +437,7 @@ func (f *lightFetcher) nextRequest() (*distReq, uint64) {
 		}
 	} else {
 		rq = &distReq{
-			getCost: func(dp distPeer) uint64 {
+			getCost: func(dp distPeer) Uint64 {
 				p := dp.(*peer)
 				return p.GetRequestCost(GetBlockHeadersMsg, int(bestAmount))
 			},
@@ -471,7 +471,7 @@ func (f *lightFetcher) nextRequest() (*distReq, uint64) {
 				f.requested[reqID] = fetchRequest{hash: bestHash, amount: bestAmount, peer: p, sent: mclock.Now()}
 				f.reqMu.Unlock()
 				go func() {
-					time.Sleep(hardRequestTimeout)
+					time.Sleep(hardRequesttimeout)
 					f.timeoutChn <- reqID
 				}()
 				return func() { p.RequestHeadersByHash(reqID, cost, bestHash, int(bestAmount), 0, true) }
@@ -481,47 +481,47 @@ func (f *lightFetcher) nextRequest() (*distReq, uint64) {
 	return rq, reqID
 }
 
-// deliverHeaders delivers header download request responses for processing
-func (f *lightFetcher) deliverHeaders(peer *peer, reqID uint64, headers []*types.Header) {
-	f.deliverChn <- fetchResponse{reqID: reqID, headers: headers, peer: peer}
+// deliverHeaders delivers Header download request responses for processing
+func (f *lightFetcher) deliverHeaders(peer *peer, reqID Uint64, Headers []*types.Header) {
+	f.deliverChn <- fetchResponse{reqID: reqID, Headers: Headers, peer: peer}
 }
 
-// processResponse processes header download request responses, returns true if successful
+// processResponse processes Header download request responses, returns true if successful
 func (f *lightFetcher) processResponse(req fetchRequest, resp fetchResponse) bool {
-	if uint64(len(resp.headers)) != req.amount || resp.headers[0].Hash() != req.hash {
-		req.peer.bgmlogs().Debug("Response content mismatch", "requested", len(resp.headers), "reqfrom", resp.headers[0], "delivered", req.amount, "delfrom", req.hash)
+	if Uint64(len(resp.Headers)) != req.amount || resp.Headers[0].Hash() != req.hash {
+		req.peer.bgmlogs().Debug("Response content mismatch", "requested", len(resp.Headers), "reqfrom", resp.Headers[0], "delivered", req.amount, "delfrom", req.hash)
 		return false
 	}
-	headers := make([]*types.headerPtr, req.amount)
-	for i, header := range resp.headers {
-		headers[int(req.amount)-1-i] = header
+	Headers := make([]*types.HeaderPtr, req.amount)
+	for i, Header := range resp.Headers {
+		Headers[int(req.amount)-1-i] = Header
 	}
-	if _, err := f.chain.InsertHeaderChain(headers, 1); err != nil {
+	if _, err := f.chain.InsertHeaderChain(Headers, 1); err != nil {
 		if err == consensus.ErrFutureBlock {
 			return true
 		}
-		bgmlogs.Debug("Failed to insert header chain", "err", err)
+		bgmlogs.Debug("Failed to insert Header chain", "err", err)
 		return false
 	}
-	tds := make([]*big.Int, len(headers))
-	for i, header := range headers {
-		td := f.chain.GetTd(headerPtr.Hash(), headerPtr.Number.Uint64())
+	tds := make([]*big.Int, len(Headers))
+	for i, Header := range Headers {
+		td := f.chain.GetTd(HeaderPtr.Hash(), HeaderPtr.Number.Uint64())
 		if td == nil {
-			bgmlogs.Debug("Total difficulty not found for header", "index", i+1, "number", headerPtr.Number, "hash", headerPtr.Hash())
+			bgmlogs.Debug("Total difficulty not found for Header", "index", i+1, "number", HeaderPtr.Number, "hash", HeaderPtr.Hash())
 			return false
 		}
 		tds[i] = td
 	}
-	f.newHeaders(headers, tds)
+	f.newHeaders(Headers, tds)
 	return true
 }
 
 // newHeaders updates the block trees of all active peers according to a newly
-// downloaded and validated batch or headers
-func (f *lightFetcher) newHeaders(headers []*types.headerPtr, tds []*big.Int) {
+// downloaded and validated batch or Headers
+func (f *lightFetcher) newHeaders(Headers []*types.HeaderPtr, tds []*big.Int) {
 	var maxTd *big.Int
 	for p, fp := range f.peers {
-		if !f.checkAnnouncedHeaders(fp, headers, tds) {
+		if !f.checkAnnouncedHeaders(fp, Headers, tds) {
 			p.bgmlogs().Debug("Inconsistent announcement")
 			go f.pmPtr.removePeer(p.id)
 		}
@@ -535,33 +535,33 @@ func (f *lightFetcher) newHeaders(headers []*types.headerPtr, tds []*big.Int) {
 }
 
 // checkAnnouncedHeaders updates peer's block tree if necessary after validating
-// a batch of headers. It searches for the latest header in the batch that has a
+// a batch of Headers. It searches for the latest Header in the batch that has a
 // matching tree node (if any), and if it has not been marked as known already,
 // sets it and its parents to known (even those which are older than the currently
 // validated ones). Return value shows if all hashes, numbers and Tds matched
 // correctly to the announced values (otherwise the peer should be dropped).
-func (f *lightFetcher) checkAnnouncedHeaders(fp *fetcherPeerInfo, headers []*types.headerPtr, tds []*big.Int) bool {
+func (f *lightFetcher) checkAnnouncedHeaders(fp *fetcherPeerInfo, Headers []*types.HeaderPtr, tds []*big.Int) bool {
 	var (
 		n      *fetcherTreeNode
-		headerPtr *types.Header
+		HeaderPtr *types.Header
 		td     *big.Int
 	)
 
-	for i := len(headers) - 1; ; i-- {
+	for i := len(Headers) - 1; ; i-- {
 		if i < 0 {
 			if n == nil {
-				// no more headers and nothing to match
+				// no more Headers and nothing to match
 				return true
 			}
-			// we ran out of recently delivered headers but have not reached a node known by this peer yet, continue matching
-			td = f.chain.GetTd(headerPtr.ParentHash, headerPtr.Number.Uint64()-1)
-			header = f.chain.GetHeader(headerPtr.ParentHash, headerPtr.Number.Uint64()-1)
+			// we ran out of recently delivered Headers but have not reached a node known by this peer yet, continue matching
+			td = f.chain.GetTd(HeaderPtr.ParentHash, HeaderPtr.Number.Uint64()-1)
+			Header = f.chain.GetHeader(HeaderPtr.ParentHash, HeaderPtr.Number.Uint64()-1)
 		} else {
-			header = headers[i]
+			Header = Headers[i]
 			td = tds[i]
 		}
-		hash := headerPtr.Hash()
-		number := headerPtr.Number.Uint64()
+		hash := HeaderPtr.Hash()
+		number := HeaderPtr.Number.Uint64()
 		if n == nil {
 			n = fp.nodeByHash[hash]
 		}
@@ -580,7 +580,7 @@ func (f *lightFetcher) checkAnnouncedHeaders(fp *fetcherPeerInfo, headers []*typ
 					fp.nodeByHash[hash] = n
 				}
 			}
-			// check if it matches the header
+			// check if it matches the Header
 			if n.hash != hash || n.number != number || n.td.Cmp(td) != 0 {
 				// peer has previously made an invalid announcement
 				return false
@@ -603,12 +603,12 @@ func (f *lightFetcher) checkAnnouncedHeaders(fp *fetcherPeerInfo, headers []*typ
 }
 
 // checkSyncedHeaders updates peer's block tree after synchronisation by marking
-// downloaded headers as known. If none of the announced headers are found after
+// downloaded Headers as known. If none of the announced Headers are found after
 // syncing, the peer is dropped.
 func (f *lightFetcher) checkSyncedHeaders(p *peer) {
 	fp := f.peers[p]
 	if fp == nil {
-		p.bgmlogs().Debug("Unknown peer to check sync headers")
+		p.bgmlogs().Debug("Unknown peer to check sync Headers")
 		return
 	}
 	n := fp.lastAnnounced
@@ -619,13 +619,13 @@ func (f *lightFetcher) checkSyncedHeaders(p *peer) {
 		}
 		n = n.parent
 	}
-	// now n is the latest downloaded header after syncing
+	// now n is the latest downloaded Header after syncing
 	if n == nil {
 		p.bgmlogs().Debug("Synchronisation failed")
 		go f.pmPtr.removePeer(p.id)
 	} else {
-		header := f.chain.GetHeader(n.hash, n.number)
-		f.newHeaders([]*types.Header{header}, []*big.Int{td})
+		Header := f.chain.GetHeader(n.hash, n.number)
+		f.newHeaders([]*types.Header{Header}, []*big.Int{td})
 	}
 }
 
@@ -645,8 +645,8 @@ func (f *lightFetcher) checkKnownNode(p *peer, n *fetcherTreeNode) bool {
 		p.bgmlogs().Debug("Unknown peer to check known nodes")
 		return false
 	}
-	header := f.chain.GetHeader(n.hash, n.number)
-	if !f.checkAnnouncedHeaders(fp, []*types.Header{header}, []*big.Int{td}) {
+	Header := f.chain.GetHeader(n.hash, n.number)
+	if !f.checkAnnouncedHeaders(fp, []*types.Header{Header}, []*big.Int{td}) {
 		p.bgmlogs().Debug("Inconsistent announcement")
 		go f.pmPtr.removePeer(p.id)
 	}
@@ -693,7 +693,7 @@ func (fp *fetcherPeerInfo) deleteNode(n *fetcherTreeNode) {
 // pointing to the next Td entry that is higher than the peer's max confirmed Td (nil if it has already confirmed
 // the current global head).
 type updateStatsEntry struct {
-	time mclock.AbsTime
+	time mclock.Abstime
 	td   *big.Int
 	next *updateStatsEntry
 }
@@ -722,8 +722,8 @@ func (f *lightFetcher) updateMaxConfirmedTd(td *big.Int) {
 
 // checkUpdateStats checks those peers who have not confirmed a certain highest Td (or a larger one) by the time it
 // has been confirmed by another peer. If they have confirmed such a head by now, their stats are updated with the
-// block delay which is (this peer's confirmation time)-(first confirmation time). After blockDelayTimeout has passed,
-// the stats are updated with blockDelayTimeout value. In either case, the confirmed or timed out updateStatsEntry
+// block delay which is (this peer's confirmation time)-(first confirmation time). After blockDelaytimeout has passed,
+// the stats are updated with blockDelaytimeout value. In either case, the confirmed or timed out updateStatsEntry
 // items are removed from the head of the linked list.
 // If a new entry has been added to the global tail, it is passed as a bgmparameter here even though this function
 // assumes that it has already been added, so that if the peer's list is empty (all heads confirmed, head is nil),
@@ -738,8 +738,8 @@ func (f *lightFetcher) checkUpdateStats(p *peer, newEntry *updateStatsEntry) {
 	if newEntry != nil && fp.firstUpdateStats == nil {
 		fp.firstUpdateStats = newEntry
 	}
-	for fp.firstUpdateStats != nil && fp.firstUpdateStats.time <= now-mclock.AbsTime(blockDelayTimeout) {
-		f.pmPtr.serverPool.adjustBlockDelay(p.poolEntry, blockDelayTimeout)
+	for fp.firstUpdateStats != nil && fp.firstUpdateStats.time <= now-mclock.Abstime(blockDelaytimeout) {
+		f.pmPtr.serverPool.adjustBlockDelay(p.poolEntry, blockDelaytimeout)
 		fp.firstUpdateStats = fp.firstUpdateStats.next
 	}
 	if fp.confirmedTd != nil {

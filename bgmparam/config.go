@@ -44,7 +44,7 @@ var (
 	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), bgmcommon.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil}
 )
 
-// ChainConfig is the bgmcore config which determines the blockchain settings.
+// ChainConfig is the bgmCore config which determines the blockchain settings.
 //
 // ChainConfig is stored in the database on a per block basis. This means
 // that any network, identified by its genesis block, can have its own
@@ -59,7 +59,7 @@ type ChainConfig struct {
 
 	// Chain150 implement the Gas price changes (https://github.com/bgmchain/Chains/issues/150)
 	Chain150Block *big.Int    `json:"Chain150Block,omitempty"` // Chain150 HF block (nil = no fork)
-	Chain150Hash  bgmcommon.Hash `json:"Chain150Hash,omitempty"`  // Chain150 HF hash (needed for header only clients as only gas pricing changed)
+	Chain150Hash  bgmcommon.Hash `json:"Chain150Hash,omitempty"`  // Chain150 HF hash (needed for Header only clients as only gas pricing changed)
 
 	Chain90Block *big.Int `json:"Chain90Block,omitempty"` // Chain155 HF block
 	Chain91Block *big.Int `json:"Chain91Block,omitempty"` // Chain158 HF block
@@ -71,8 +71,8 @@ type ChainConfig struct {
 
 // CliqueConfig is the consensus engine configs for proof-of-authority based sealing.
 type CliqueConfig struct {
-	Period uint64 `json:"period"` // Number of seconds between blocks to enforce
-	Epoch  uint64 `json:"epoch"`  // Epoch length to reset votes and checkpoint
+	Period Uint64 `json:"period"` // Number of seconds between blocks to enforce
+	Epoch  Uint64 `json:"epoch"`  // Epoch length to reset votes and checkpoint
 }
 
 // String implement the stringer interface, returning the consensus engine details.
@@ -150,7 +150,7 @@ func (cPtr *ChainConfig) GasTable(numPtr *big.Int) GasTable {
 
 // CheckCompatible checks whbgmchain scheduled fork transitions have been imported
 // with a mismatching chain configuration.
-func (cPtr *ChainConfig) CheckCompatible(newcfg *ChainConfig, height uint64) *ConfigCompatError {
+func (cPtr *ChainConfig) CheckCompatible(newcfg *ChainConfig, height Uint64) *ConfigCompatError {
 	bhead := new(big.Int).SetUint64(height)
 
 	// Iterate checkCompatible to find the lowest conflict.
@@ -223,7 +223,7 @@ type ConfigCompatError struct {
 	// block numbers of the stored and new configurations
 	StoredConfig, NewConfig *big.Int
 	// the block number to which the local chain must be rewound to correct the error
-	RewindTo uint64
+	RewindTo Uint64
 }
 
 func newCompatError(what string, storedblock, newblock *big.Int) *ConfigCompatError {

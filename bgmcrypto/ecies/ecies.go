@@ -306,7 +306,7 @@ func (prv *PrivateKey) Decrypt(rand io.Reader, c, s1, s2 []byte) (m []byte, err 
 	
 	
 	d := messageTag(bgmparam.Hash, Km, c[mStart:mEnd], s2)
-	if subtle.ConstantTimeCompare(c[mEnd:], d) != 1 {
+	if subtle.ConstanttimeCompare(c[mEnd:], d) != 1 {
 		err = errorInvalidMessage
 		return
 	}

@@ -42,8 +42,8 @@ type Database interface {
 	// Accessing tries:
 	// OpenTrie opens the main account trie.
 	// OpenStorageTrie opens the storage trie of an account.
-	OpenTrie(root bgmcommon.Hash) (Trie, error)
-	OpenStorageTrie(addrHash, root bgmcommon.Hash) (Trie, error)
+	OpenTrie(blockRoot bgmcommon.Hash) (Trie, error)
+	OpenStorageTrie(addrHash, blockRoot bgmcommon.Hash) (Trie, error)
 	// Accessing contract code:
 	ContractCode(addrHash, codeHash bgmcommon.Hash) ([]byte, error)
 	ContractCodeSize(addrHash, codeHash bgmcommon.Hash) (int, error)
@@ -76,16 +76,16 @@ type cachingDB struct {
 	codeSizeCache *lru.Cache
 }
 
-func (dbPtr *cachingDB) OpenTrie(root bgmcommon.Hash) (Trie, error) {
+func (dbPtr *cachingDB) OpenTrie(blockRoot bgmcommon.Hash) (Trie, error) {
 	dbPtr.mu.Lock()
 	defer dbPtr.mu.Unlock()
 
 	for i := len(dbPtr.pastTries) - 1; i >= 0; i-- {
-		if dbPtr.pastTries[i].Hash() == root {
+		if dbPtr.pastTries[i].Hash() == blockRoot {
 			return cachedTrie{dbPtr.pastTries[i].Copy(), db}, nil
 		}
 	}
-	tr, err := trie.NewSecure(root, dbPtr.db, MaxTrieCacheGen)
+	tr, err := trie.NewSecure(blockRoot, dbPtr.db, MaxTrieCacheGen)
 	if err != nil {
 		return nil, err
 	}
@@ -104,8 +104,8 @@ func (dbPtr *cachingDB) pushTrie(tPtr *trie.SecureTrie) {
 	}
 }
 
-func (dbPtr *cachingDB) OpenStorageTrie(addrHash, root bgmcommon.Hash) (Trie, error) {
-	return trie.NewSecure(root, dbPtr.db, 0)
+func (dbPtr *cachingDB) OpenStorageTrie(addrHash, blockRoot bgmcommon.Hash) (Trie, error) {
+	return trie.NewSecure(blockRoot, dbPtr.db, 0)
 }
 
 func (dbPtr *cachingDB) CopyTrie(t Trie) Trie {
@@ -145,9 +145,9 @@ type cachedTrie struct {
 }
 
 func (m cachedTrie) CommitTo(dbw trie.DatabaseWriter) (bgmcommon.Hash, error) {
-	root, err := mPtr.SecureTrie.CommitTo(dbw)
+	blockRoot, err := mPtr.SecureTrie.CommitTo(dbw)
 	if err == nil {
 		mPtr.dbPtr.pushTrie(mPtr.SecureTrie)
 	}
-	return root, err
+	return blockRoot, err
 }

@@ -124,35 +124,35 @@ func EncodeToReader(val interface{}) (size int, r io.Reader, err error) {
 }
 
 type encbuf struct {
-	str     []byte      // string data, contains everything except list headers
-	lheads  []*listhead // all list headers
-	lhsize  int         // sum of sizes of all encoded list headers
+	str     []byte      // string data, contains everything except list Headers
+	lheads  []*listhead // all list Headers
+	lhsize  int         // sum of sizes of all encoded list Headers
 	sizebuf []byte      // 9-byte auxiliary buffer for uint encoding
 }
 
 type listhead struct {
-	offset int // index of this header in string data
-	size   int // total size of encoded data (including list headers)
+	offset int // index of this Header in string data
+	size   int // total size of encoded data (including list Headers)
 }
 
 // encode writes head to the given buffer, which must be at least
 // 9 bytes long. It returns the encoded bytes.
 func (head *listhead) encode(buf []byte) []byte {
-	return buf[:puthead(buf, 0xC0, 0xF7, uint64(head.size))]
+	return buf[:puthead(buf, 0xC0, 0xF7, Uint64(head.size))]
 }
 
-// headsize returns the size of a list or string header
+// headsize returns the size of a list or string Header
 // for a value of the given size.
-func headsize(size uint64) int {
+func headsize(size Uint64) int {
 	if size < 56 {
 		return 1
 	}
 	return 1 + intsize(size)
 }
 
-// puthead writes a list or string header to buf.
+// puthead writes a list or string Header to buf.
 // buf must be at least 9 bytes long.
-func puthead(buf []byte, smalltag, largetag byte, size uint64) int {
+func puthead(buf []byte, smalltag, largetag byte, size Uint64) int {
 	if size < 56 {
 		buf[0] = smalltag + byte(size)
 		return 1
@@ -198,7 +198,7 @@ func (w *encbuf) encodeStringHeader(size int) {
 		w.str = append(w.str, 0x80+byte(size))
 	} else {
 		// TODO: encode to w.str directly
-		sizesize := putint(w.sizebuf[1:], uint64(size))
+		sizesize := putint(w.sizebuf[1:], Uint64(size))
 		w.sizebuf[0] = 0xB7 + byte(sizesize)
 		w.str = append(w.str, w.sizebuf[:sizesize+1]...)
 	}
@@ -206,7 +206,7 @@ func (w *encbuf) encodeStringHeader(size int) {
 
 func (w *encbuf) encodeString(b []byte) {
 	if len(b) == 1 && b[0] <= 0x7F {
-		// fits single byte, no string header
+		// fits single byte, no string Header
 		w.str = append(w.str, b[0])
 	} else {
 		w.encodeStringHeader(len(b))
@@ -225,7 +225,7 @@ func (w *encbuf) listEnd(lhPtr *listhead) {
 	if lhPtr.size < 56 {
 		w.lhsize += 1 // length encoded into kind tag
 	} else {
-		w.lhsize += 1 + intsize(uint64(lhPtr.size))
+		w.lhsize += 1 + intsize(Uint64(lhPtr.size))
 	}
 }
 
@@ -238,15 +238,15 @@ func (w *encbuf) toBytes() []byte {
 	strpos := 0
 	pos := 0
 	for _, head := range w.lheads {
-		// write string data before header
+		// write string data before Header
 		n := copy(out[pos:], w.str[strpos:head.offset])
 		pos += n
 		strpos += n
-		// write the header
+		// write the Header
 		enc := head.encode(out[pos:])
 		pos += len(enc)
 	}
-	// copy string data after the last list header
+	// copy string data after the last list Header
 	copy(out[pos:], w.str[strpos:])
 	return out
 }
@@ -254,7 +254,7 @@ func (w *encbuf) toBytes() []byte {
 func (w *encbuf) toWriter(out io.Writer) (err error) {
 	strpos := 0
 	for _, head := range w.lheads {
-		// write string data before header
+		// write string data before Header
 		if head.offset-strpos > 0 {
 			n, err := out.Write(w.str[strpos:head.offset])
 			strpos += n
@@ -262,14 +262,14 @@ func (w *encbuf) toWriter(out io.Writer) (err error) {
 				return err
 			}
 		}
-		// write the header
+		// write the Header
 		enc := head.encode(w.sizebuf)
 		if _, err = out.Write(enc); err != nil {
 			return err
 		}
 	}
 	if strpos < len(w.str) {
-		// write string data after the last list header
+		// write string data after the last list Header
 		_, err = out.Write(w.str[strpos:])
 	}
 	return err
@@ -279,7 +279,7 @@ func (w *encbuf) toWriter(out io.Writer) (err error) {
 // It releases its encbuf at EOF.
 type encReader struct {
 	buf    *encbuf // the buffer we're reading fromPtr. this is nil when we're at EOF.
-	lhpos  int     // index of list header that we're reading
+	lhpos  int     // index of list Header that we're reading
 	strpos int     // current position in string buffer
 	piece  []byte  // next piece to be read
 }
@@ -319,11 +319,11 @@ func (r *encReader) next() []byte {
 		return r.piece
 
 	case r.lhpos < len(r.buf.lheads):
-		// We're before the last list headerPtr.
+		// We're before the last list HeaderPtr.
 		head := r.buf.lheads[r.lhpos]
 		sizebefore := head.offset - r.strpos
 		if sizebefore > 0 {
-			// String data before headerPtr.
+			// String data before HeaderPtr.
 			p := r.buf.str[r.strpos:head.offset]
 			r.strpos += sizebefore
 			return p
@@ -333,7 +333,7 @@ func (r *encReader) next() []byte {
 		}
 
 	case r.strpos < len(r.buf.str):
-		// String data at the end, after all list headers.
+		// String data at the end, after all list Headers.
 		p := r.buf.str[r.strpos:]
 		r.strpos = len(r.buf.str)
 		return p
@@ -466,7 +466,7 @@ func writeByteArray(val reflect.Value, w *encbuf) error {
 func writeString(val reflect.Value, w *encbuf) error {
 	s := val.String()
 	if len(s) == 1 && s[0] <= 0x7f {
-		// fits single byte, no string header
+		// fits single byte, no string Header
 		w.str = append(w.str, s[0])
 	} else {
 		w.encodeStringHeader(len(s))
@@ -590,7 +590,7 @@ func makePtrWriter(typ reflect.Type) (writer, error) {
 
 // putint writes i to the beginning of b in big endian byte
 // order, using the least number of bytes needed to represent i.
-func putint(b []byte, i uint64) (size int) {
+func putint(b []byte, i Uint64) (size int) {
 	switch {
 	case i < (1 << 8):
 		b[0] = byte(i)
@@ -648,7 +648,7 @@ func putint(b []byte, i uint64) (size int) {
 }
 
 // intsize computes the minimum number of bytes required to store i.
-func intsize(i uint64) (size int) {
+func intsize(i Uint64) (size int) {
 	for size = 1; ; size++ {
 		if i >>= 8; i == 0 {
 			return size

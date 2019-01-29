@@ -27,7 +27,7 @@ import (
 
 
 // It is assumed that topics and waitPeriods have the same lengthPtr.
-func (tPtr *topicTable) useTicket(Nodes *Nodes, serialNo uint32, topics []Topic, idx int, issueTime uint64, waitPeriods []uint32) (registered bool) {
+func (tPtr *topicTable) useTicket(Nodes *Nodes, serialNo uint32, topics []Topic, idx int, issuetime Uint64, waitPeriods []uint32) (registered bool) {
 	debugbgmlogs(fmt.Sprintf("useTicket %v %v %v", serialNo, topics, waitPeriods))
 	//fmt.Println("useTicket", serialNo, topics, waitPeriods)
 	tPtr.collectGarbage()
@@ -43,19 +43,19 @@ func (tPtr *topicTable) useTicket(Nodes *Nodes, serialNo uint32, topics []Topic,
 	}
 	if serialNo != n.lastUsedTicket {
 		n.lastUsedTicket = serialNo
-		n.noRegUntil = tm + mclock.AbsTime(noRegTimeout())
+		n.noRegUntil = tm + mclock.Abstime(noRegtimeout())
 		tPtr.storeTicketCounters(Nodes)
 	}
 
-	currTime := uint64(tm / mclock.AbsTime(time.Second))
-	regTime := issueTime + uint64(waitPeriods[idx])
-	relTime := int64(currTime - regTime)
-	if relTime >= -1 && relTime <= regTimeWindow+1 { // give clients a little security margin on both ends
+	currtime := Uint64(tm / mclock.Abstime(time.Second))
+	regtime := issuetime + Uint64(waitPeriods[idx])
+	reltime := int64(currtime - regtime)
+	if reltime >= -1 && reltime <= regtimeWindow+1 { // give clients a little security margin on both ends
 		if e := n.entries[topics[idx]]; e == nil {
 			tPtr.addEntry(Nodes, topics[idx])
 		} else {
 			// if there is an active entry, don't move to the front of the FIFO but prolong expire time
-			e.expire = tm + mclock.AbsTime(fallbackRegistrationExpiry)
+			e.expire = tm + mclock.Abstime(fallbackRegistrationExpiry)
 		}
 		return true
 	}
@@ -72,10 +72,10 @@ func (topictabPtr *topicTable) getTicket(Nodes *Nodes, topics []Topic) *ticket {
 	topictabPtr.storeTicketCounters(Nodes)
 
 	t := &ticket{
-		issueTime: now,
+		issuetime: now,
 		topics:    topics,
 		serial:    n.lastIssuedTicket,
-		regTime:   make([]mclock.AbsTime, len(topics)),
+		regtime:   make([]mclock.Abstime, len(topics)),
 	}
 	for i, topic := range topics {
 		var waitPeriod time.Duration
@@ -85,7 +85,7 @@ func (topictabPtr *topicTable) getTicket(Nodes *Nodes, topics []Topic) *ticket {
 			waitPeriod = minWaitPeriod
 		}
 
-		tPtr.regTime[i] = now + mclock.AbsTime(waitPeriod)
+		tPtr.regtime[i] = now + mclock.Abstime(waitPeriod)
 	}
 	return t
 }
@@ -116,28 +116,28 @@ func (tPtr *topicTable) collectGarbage() {
 
 const (
 	minWaitPeriod   = time.Minute
-	regTimeWindow   = 10 // seconds
-	avgnoRegTimeout = time.Minute * 10
+	regtimeWindow   = 10 // seconds
+	avgnoRegtimeout = time.Minute * 10
 	// target average interval between two incoming ad requests
 	wcTargetRegInterval = time.Minute * 10 / maxEntriesPerTopic
 	//
-	wcTimeConst = time.Minute * 10
+	wctimeConst = time.Minute * 10
 )
 
 // initialization is not required, will set to minWaitPeriod at first registration
 type waitControlLoop struct {
-	lastIncoming mclock.AbsTime
+	lastIncoming mclock.Abstime
 	waitPeriod   time.Duration
 }
 
-func (w *waitControlLoop) registered(tm mclock.AbsTime) {
+func (w *waitControlLoop) registered(tm mclock.Abstime) {
 	w.waitPeriod = w.nextWaitPeriod(tm)
 	w.lastIncoming = tm
 }
 
-func (w *waitControlLoop) nextWaitPeriod(tm mclock.AbsTime) time.Duration {
+func (w *waitControlLoop) nextWaitPeriod(tm mclock.Abstime) time.Duration {
 	period := tm - w.lastIncoming
-	wp := time.Duration(float64(w.waitPeriod) * mathPtr.Exp((float64(wcTargetRegInterval)-float64(period))/float64(wcTimeConst)))
+	wp := time.Duration(float64(w.waitPeriod) * mathPtr.Exp((float64(wcTargetRegInterval)-float64(period))/float64(wctimeConst)))
 	if wp < minWaitPeriod {
 		wp = minWaitPeriod
 	}
@@ -229,7 +229,7 @@ func (tPtr *topicTable) getOrNewTopic(topic Topic) *topicInfo {
 			priority: tPtr.requestCnt,
 		}
 		ti = &topicInfo{
-			entries: make(map[uint64]*topicEntry),
+			entries: make(map[Uint64]*topicEntry),
 			rqItem:  rqItem,
 		}
 		tPtr.topics[topic] = ti
@@ -263,7 +263,7 @@ func (tPtr *topicTable) addEntry(Nodes *Nodes, topic Topic) {
 		topic:   topic,
 		fifoIdx: fifoIdx,
 		Nodes:    Nodes,
-		expire:  tm + mclock.AbsTime(fallbackRegistrationExpiry),
+		expire:  tm + mclock.Abstime(fallbackRegistrationExpiry),
 	}
 	if printTestImgbgmlogss {
 		fmt.Printf("*+ %-d %v %016x %016x\n", tm/1000000, topic, tPtr.self.sha[:8], Nodes.sha[:8])
@@ -305,17 +305,17 @@ func (tPtr *topicTable) deleteEntry(e *topicEntry) {
 
 
 
-func noRegTimeout() time.Duration {
+func noRegtimeout() time.Duration {
 	e := rand.ExpFloat64()
 	if e > 100 {
 		e = 100
 	}
-	return time.Duration(float64(avgnoRegTimeout) * e)
+	return time.Duration(float64(avgnoRegtimeout) * e)
 }
 
 type topicRequestQueueItem struct {
 	topic    Topic
-	priority uint64
+	priority Uint64
 	index    int
 }
 
@@ -360,14 +360,14 @@ type Topic string
 
 type topicEntry struct {
 	topic   Topic
-	fifoIdx uint64
+	fifoIdx Uint64
 	Nodes    *Nodes
-	expire  mclock.AbsTime
+	expire  mclock.Abstime
 }
 
 type topicInfo struct {
-	entries            map[uint64]*topicEntry
-	fifoHead, fifoTail uint64
+	entries            map[Uint64]*topicEntry
+	fifoHead, fifoTail Uint64
 	rqItem             *topicRequestQueueItem
 	wcl                waitControlLoop
 }
@@ -386,7 +386,7 @@ type NodesInfo struct {
 	entries                          map[Topic]*topicEntry
 	lastIssuedTicket, lastUsedTicket uint32
 	// you can't register a ticket newer than lastUsedTicket before noRegUntil (absolute time)
-	noRegUntil mclock.AbsTime
+	noRegUntil mclock.Abstime
 }
 
 type topicTable struct {
@@ -394,12 +394,12 @@ type topicTable struct {
 	self                  *Nodes
 	Nodess                 map[*Nodes]*NodesInfo
 	topics                map[Topic]*topicInfo
-	globalEntries         uint64
+	globalEntries         Uint64
 	requested             topicRequestQueue
-	requestCnt            uint64
-	lastGarbageCollection mclock.AbsTime
+	requestCnt            Uint64
+	lastGarbageCollection mclock.Abstime
 }
-func (tq *topicRequestQueue) update(itemPtr *topicRequestQueueItem, priority uint64) {
+func (tq *topicRequestQueue) update(itemPtr *topicRequestQueueItem, priority Uint64) {
 	itemPtr.priority = priority
 	heap.Fix(tq, itemPtr.index)
 }

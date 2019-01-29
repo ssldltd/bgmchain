@@ -66,13 +66,13 @@ func (cPtr *Context) WithDeadline(sec int64, nsec int64) *Context {
 	}
 }
 
-// WithTimeout returns a copy of the original context with the deadline adjusted
+// Withtimeout returns a copy of the original context with the deadline adjusted
 // to be no later than now + the duration specified.
 //
 // Canceling this context releases resources associated with it, so code should
 // call cancel as soon as the operations running in this Context complete.
-func (cPtr *Context) WithTimeout(nsec int64) *Context {
-	child, cancel := context.WithTimeout(cPtr.context, time.Duration(nsec))
+func (cPtr *Context) Withtimeout(nsec int64) *Context {
+	child, cancel := context.Withtimeout(cPtr.context, time.Duration(nsec))
 	return &Context{
 		context: child,
 		cancel:  cancel,

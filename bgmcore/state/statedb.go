@@ -21,7 +21,7 @@ import (
 	"sync"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmcrypto"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 	"github.com/ssldltd/bgmchain/rlp"
@@ -47,7 +47,7 @@ type StateDB struct {
 	stateObjectsDirty map[bgmcommon.Address]struct{}
 
 	// DB error.
-	// State objects are used by the consensus bgmcore and VM which are
+	// State objects are used by the consensus bgmCore and VM which are
 	// unable to deal with database-level errors. Any error that occurs
 	// during a database read is memoized here and will eventually be returned
 	// by StateDb.commit.
@@ -73,8 +73,8 @@ type StateDB struct {
 }
 
 // Create a new state from a given trie
-func New(root bgmcommon.Hash, db Database) (*StateDB, error) {
-	tr, err := dbPtr.OpenTrie(root)
+func New(blockRoot bgmcommon.Hash, db Database) (*StateDB, error) {
+	tr, err := dbPtr.OpenTrie(blockRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -102,8 +102,8 @@ func (self *StateDB) Error() error {
 
 // Reset clears out all emphemeral state objects from the state db, but keeps
 // the underlying state trie to avoid reloading data for the next operations.
-func (self *StateDB) Reset(root bgmcommon.Hash) error {
-	tr, err := self.dbPtr.OpenTrie(root)
+func (self *StateDB) Reset(blockRoot bgmcommon.Hash) error {
+	tr, err := self.dbPtr.OpenTrie(blockRoot)
 	if err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func (self *StateDB) Addbgmlogs(bgmlogs *types.bgmlogs) {
 	self.journal = append(self.journal, addbgmlogsChange{txhash: self.thash})
 
 	bgmlogs.TxHash = self.thash
-	bgmlogs.BlockHash = self.bhash
+	bgmlogs.hash = self.bhash
 	bgmlogs.TxIndex = uint(self.txIndex)
 	bgmlogs.Index = self.bgmlogsSize
 	self.bgmlogss[self.thash] = append(self.bgmlogss[self.thash], bgmlogs)
@@ -185,7 +185,7 @@ func (self *StateDB) GetBalance(addr bgmcommon.Address) *big.Int {
 	return bgmcommon.Big0
 }
 
-func (self *StateDB) GetNonce(addr bgmcommon.Address) uint64 {
+func (self *StateDB) GetNonce(addr bgmcommon.Address) Uint64 {
 	stateObject := self.getStateObject(addr)
 	if stateObject != nil {
 		return stateObject.Nonce()
@@ -279,7 +279,7 @@ func (self *StateDB) SetBalance(addr bgmcommon.Address, amount *big.Int) {
 	}
 }
 
-func (self *StateDB) SetNonce(addr bgmcommon.Address, nonce uint64) {
+func (self *StateDB) SetNonce(addr bgmcommon.Address, nonce Uint64) {
 	stateObject := self.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.SetNonce(nonce)
@@ -525,8 +525,8 @@ func (s *StateDB) Finalise(deleteEmptyObjects bool) {
 	s.clearJournalAndRefund()
 }
 
-// IntermediateRoot computes the current root hash of the state trie.
-// It is called in between transactions to get the root hash that
+// IntermediateRoot computes the current blockRoot hash of the state trie.
+// It is called in between transactions to get the blockRoot hash that
 // goes into transaction receipts.
 func (s *StateDB) IntermediateRoot(deleteEmptyObjects bool) (h bgmcommon.Hash) {
 	s.Finalise(deleteEmptyObjects)
@@ -569,7 +569,7 @@ func (s *StateDB) clearJournalAndRefund() {
 }
 
 // CommitTo writes the state to the given database.
-func (s *StateDB) CommitTo(dbw trie.DatabaseWriter, deleteEmptyObjects bool) (root bgmcommon.Hash, err error) {
+func (s *StateDB) CommitTo(dbw trie.DatabaseWriter, deleteEmptyObjects bool) (blockRoot bgmcommon.Hash, err error) {
 	defer s.clearJournalAndRefund()
 
 	// Commit objects to the trie.
@@ -598,7 +598,7 @@ func (s *StateDB) CommitTo(dbw trie.DatabaseWriter, deleteEmptyObjects bool) (ro
 		delete(s.stateObjectsDirty, addr)
 	}
 	// Write trie changes.
-	root, err = s.trie.CommitTo(dbw)
+	blockRoot, err = s.trie.CommitTo(dbw)
 	bgmlogs.Debug("Trie cache stats after commit", "misses", trie.CacheMisses(), "unloads", trie.CacheUnloads())
-	return root, err
+	return blockRoot, err
 }

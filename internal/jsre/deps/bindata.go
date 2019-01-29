@@ -61,7 +61,7 @@ type bindataFileInfo struct {
 	name    string
 	size    int64
 	mode    os.FileMode
-	modTime time.Time
+	modtime time.time
 }
 
 func (fi bindataFileInfo) Name() string {
@@ -73,8 +73,8 @@ func (fi bindataFileInfo) Size() int64 {
 func (fi bindataFileInfo) Mode() os.FileMode {
 	return fi.mode
 }
-func (fi bindataFileInfo) ModTime() time.Time {
-	return fi.modTime
+func (fi bindataFileInfo) Modtime() time.time {
+	return fi.modtime
 }
 func (fi bindataFileInfo) IsDir() bool {
 	return false
@@ -98,7 +98,7 @@ func bignumberJs() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "bignumber.js", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "bignumber.js", size: 0, mode: os.FileMode(0), modtime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -118,7 +118,7 @@ func web3Js() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "web3.js", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "web3.js", size: 0, mode: os.FileMode(0), modtime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -242,7 +242,7 @@ func RestoreAsset(dir, name string) error {
 	if err != nil {
 		return err
 	}
-	err = os.Chtimes(_filePath(dir, name), info.ModTime(), info.ModTime())
+	err = os.Chtimes(_filePath(dir, name), info.Modtime(), info.Modtime())
 	if err != nil {
 		return err
 	}

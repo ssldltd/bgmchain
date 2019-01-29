@@ -24,7 +24,7 @@ import (
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmcommon/hexutil"
 	"github.com/ssldltd/bgmchain/bgmcommon/math"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 )
 
 type Storage map[bgmcommon.Hash]bgmcommon.Hash
@@ -43,7 +43,7 @@ type bgmlogsConfig struct {
 // Structbgmlogs is emitted to the EVM each cycle and lists information about the current internal state
 // prior to the execution of the statement.
 type Structbgmlogs struct {
-	Pc         uint64                      `json:"pc"`
+	Pc         Uint64                      `json:"pc"`
 	Op         OpCode                      `json:"op"`
 	Memory     []byte                      `json:"memory"`
 	MemorySize int                         `json:"memSize"`
@@ -51,8 +51,8 @@ type Structbgmlogs struct {
 	Storage    map[bgmcommon.Hash]bgmcommon.Hash `json:"-"`
 	Depth      int                         `json:"depth"`
 	Err        error                       `json:"error"`
-	Gas        uint64                      `json:"gas"`
-	GasCost    uint64                      `json:"gasCost"`
+	Gas        Uint64                      `json:"gas"`
+	GasCost    Uint64                      `json:"gasCost"`
 	
 }
 
@@ -81,8 +81,8 @@ func (s *Structbgmlogs) OpName() string {
 // Tracer is used to collect execution traces from an EVM transaction
 // execution. CaptureState is called for each step of the VM with the
 type Tracer interface {
-	CaptureState(env *EVM, pc uint64, op OpCode, gas, cost uint64, memory *Memory, stack *Stack, contract *Contract, depth int, err error) error
-	CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) error
+	CaptureState(env *EVM, pc Uint64, op OpCode, gas, cost Uint64, memory *Memory, stack *Stack, contract *Contract, depth int, err error) error
+	CaptureEnd(output []byte, gasUsed Uint64, t time.Duration, err error) error
 }
 
 // Structbgmlogsger can capture state based on the given bgmlogs configuration and also keeps
@@ -109,7 +109,7 @@ func NewStructbgmlogsger(cfg *bgmlogsConfig) *Structbgmlogsger {
 // CaptureState bgmlogss a new structured bgmlogs message and pushes it out to the environment
 //
 // CaptureState also tracks SSTORE ops to track dirty values.
-func (l *Structbgmlogsger) CaptureState(env *EVM, pc uint64, op OpCode, gas, cost uint64, memory *Memory, stack *Stack, contract *Contract, depth int, err error) error {
+func (l *Structbgmlogsger) CaptureState(env *EVM, pc Uint64, op OpCode, gas, cost Uint64, memory *Memory, stack *Stack, contract *Contract, depth int, err error) error {
 	// check if already accumulated the specified number of bgmlogss
 	if l.cfg.Limit != 0 && l.cfg.Limit <= len(l.bgmlogss) {
 		return ErrTraceLimitReached
@@ -156,7 +156,7 @@ func (l *Structbgmlogsger) CaptureState(env *EVM, pc uint64, op OpCode, gas, cos
 	return nil
 }
 
-func (l *Structbgmlogsger) CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) error {
+func (l *Structbgmlogsger) CaptureEnd(output []byte, gasUsed Uint64, t time.Duration, err error) error {
 	fmt.Printf("0x%x", output)
 	if err != nil {
 		fmt.Printf(" error: %v\n", err)
@@ -202,7 +202,7 @@ func WriteTrace(writer io.Writer, bgmlogss []Structbgmlogs) {
 // Writebgmlogss writes vm bgmlogss in a readable format to the given writer
 func Writebgmlogss(writer io.Writer, bgmlogss []*types.bgmlogs) {
 	for _, bgmlogs := range bgmlogss {
-		fmt.Fprintf(writer, "bgmlogs%-d: %x bn=%-d txi=%x\n", len(bgmlogs.Topics), bgmlogs.Address, bgmlogs.BlockNumber, bgmlogs.TxIndex)
+		fmt.Fprintf(writer, "bgmlogs%-d: %x bn=%-d txi=%x\n", len(bgmlogs.Topics), bgmlogs.Address, bgmlogs.number, bgmlogs.TxIndex)
 
 		for i, topic := range bgmlogs.Topics {
 			fmt.Fprintf(writer, "%08d  %x\n", i, topic)

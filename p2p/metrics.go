@@ -18,11 +18,11 @@ package p2p
 import (
 	"net"
 
-	"github.com/ssldltd/bgmchain/metrics"
+	"github.com/ssldltd/bgmchain/metics"
 )
 
 func newMeteredConn(conn net.Conn, ingress bool) net.Conn {
-	if !metrics.Enabled {
+	if !metics.Enabled {
 		return conn
 	}
 	if ingress {
@@ -43,10 +43,10 @@ func (cPtr *meteredConn) Read(b []byte) (n int, err error) {
 	return
 }
 var (
-	ingressConnectMeter = metrics.NewMeter("p2p/InboundConnects")
-	ingressTrafficMeter = metrics.NewMeter("p2p/InboundTraffic")
-	egressConnectMeter  = metrics.NewMeter("p2p/OutboundConnects")
-	egressTrafficMeter  = metrics.NewMeter("p2p/OutboundTraffic")
+	ingressConnectMeter = metics.NewMeter("p2p/InboundConnects")
+	ingressTrafficMeter = metics.NewMeter("p2p/InboundTraffic")
+	egressConnectMeter  = metics.NewMeter("p2p/OutboundConnects")
+	egressTrafficMeter  = metics.NewMeter("p2p/OutboundTraffic")
 )
 
 // meteredConn is a wrapper around a network TCP connection that meters both the

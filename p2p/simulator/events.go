@@ -35,7 +35,7 @@ const (
 type Event struct {
 	Type EventType `json:"type"`
 
-	Time time.Time `json:"time"`
+	time time.time `json:"time"`
 
 	Control bool `json:"control"`
 
@@ -47,7 +47,7 @@ type Event struct {
 	Msg *Msg `json:"msg,omitempty"`
 }
 func NewEvent(v interface{}) *Event {
-	event := &Event{Time: time.Now()}
+	event := &Event{time: time.Now()}
 	switch v := v.(type) {
 	case *Nodes:
 		event.Type = EventTypeNodes

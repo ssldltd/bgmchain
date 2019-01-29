@@ -25,7 +25,7 @@ import (
 	bgmchain "github.com/ssldltd/bgmchain"
 	"github.com/ssldltd/bgmchain/account"
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 	"github.com/karalabe/hid"
 )
@@ -465,7 +465,7 @@ func (w *wallet) selfDerive() {
 			// Check the account's status against the current chain state
 			var (
 				balance *big.Int
-				nonce   uint64
+				nonce   Uint64
 			)
 			balance, err = w.deriveChain.BalanceAt(context, nextAddr, nil)
 			if err != nil {

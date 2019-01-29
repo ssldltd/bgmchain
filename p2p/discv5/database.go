@@ -130,22 +130,22 @@ func (dbPtr *NodessDB) expireNodess() error {
 
 // lastPing retrieves the time of the last ping packet send to a remote Nodes,
 // requesting binding.
-func (dbPtr *NodessDB) lastPing(id NodesID) time.Time {
+func (dbPtr *NodessDB) lastPing(id NodesID) time.time {
 	return time.Unix(dbPtr.fetchInt64(makeKey(id, NodessDBDiscoverPing)), 0)
 }
 
 // updateLastPing updates the last time we tried contacting a remote Nodes.
-func (dbPtr *NodessDB) updateLastPing(id NodesID, instance time.Time) error {
+func (dbPtr *NodessDB) updateLastPing(id NodesID, instance time.time) error {
 	return dbPtr.storeInt64(makeKey(id, NodessDBDiscoverPing), instance.Unix())
 }
 
 // lastPong retrieves the time of the last successful contact from remote Nodes.
-func (dbPtr *NodessDB) lastPong(id NodesID) time.Time {
+func (dbPtr *NodessDB) lastPong(id NodesID) time.time {
 	return time.Unix(dbPtr.fetchInt64(makeKey(id, NodessDBDiscoverPong)), 0)
 }
 
 // updateLastPong updates the last time a remote Nodes successfully contacted.
-func (dbPtr *NodessDB) updateLastPong(id NodesID, instance time.Time) error {
+func (dbPtr *NodessDB) updateLastPong(id NodesID, instance time.time) error {
 	return dbPtr.storeInt64(makeKey(id, NodessDBDiscoverPong), instance.Unix())
 }
 

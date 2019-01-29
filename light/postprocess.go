@@ -23,8 +23,8 @@ import (
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmcommon/bitutil"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 	"github.com/ssldltd/bgmchain/bgmparam"
@@ -33,12 +33,12 @@ import (
 )
 
 
-// trustedCheckpoint represents a set of post-processed trie roots (CHT and BloomTrie) associated with
+// trustedCheckpoint represents a set of post-processed trie blockRoots (CHT and BloomTrie) associated with
 // the appropriate section index and head hashPtr. It is used to start light syncing from this checkpoint
-// and avoid downloading the entire header chain while still being able to securely access old headers/bgmlogss.
+// and avoid downloading the entire Header chain while still being able to securely access old Headers/bgmlogss.
 type trustedCheckpoint struct {
 	name                                int
-	sectionIdx                          uint64
+	sectionIdx                          Uint64
 	sectionHead, chtRoot, bloomTrieRoot bgmcommon.Hash
 }
 
@@ -75,7 +75,7 @@ var trustedCheckpoints = map[bgmcommon.Hash]trustedCheckpoint{
 var (
 	ErrNoTrustedCht       = errors.New("No trusted canonical hash trie")
 	ErrNoHeader           = errors.New("Header not found")
-	chtPrefix             = []byte("chtRoot-") // chtPrefix + chtNum (uint64 big endian) -> trie root hash
+	chtPrefix             = []byte("chtRoot-") // chtPrefix + chtNum (Uint64 big endian) -> trie blockRoot hash
 	ChtTablePrefix        = "cht-"
 )
 
@@ -85,42 +85,42 @@ type ChtNode struct {
 	Td   *big.Int
 }
 
-// GetChtRoot reads the CHT root assoctiated to the given section from the database
+// GetChtRoot reads the CHT blockRoot assoctiated to the given section from the database
 // Note that sectionIdx is specified according to LES/1 CHT section size
-func GetChtRoot(db bgmdbPtr.Database, sectionIdx uint64, sectionHead bgmcommon.Hash) bgmcommon.Hash {
+func GetChtRoot(db bgmdbPtr.Database, sectionIdx Uint64, sectionHead bgmcommon.Hash) bgmcommon.Hash {
 	var encNumber [8]byte
 	binary.BigEndian.PutUint64(encNumber[:], sectionIdx)
 	data, _ := dbPtr.Get(append(append(chtPrefix, encNumber[:]...), sectionHead.Bytes()...))
 	return bgmcommon.BytesToHash(data)
 }
 
-// GetChtV2Root reads the CHT root assoctiated to the given section from the database
+// GetChtV2Root reads the CHT blockRoot assoctiated to the given section from the database
 // Note that sectionIdx is specified according to LES/2 CHT section size
-func GetChtV2Root(db bgmdbPtr.Database, sectionIdx uint64, sectionHead bgmcommon.Hash) bgmcommon.Hash {
+func GetChtV2Root(db bgmdbPtr.Database, sectionIdx Uint64, sectionHead bgmcommon.Hash) bgmcommon.Hash {
 	return GetChtRoot(db, (sectionIdx+1)*(ChtFrequency/ChtV1Frequency)-1, sectionHead)
 }
 
-// StoreChtRoot writes the CHT root assoctiated to the given section into the database
+// StoreChtRoot writes the CHT blockRoot assoctiated to the given section into the database
 // Note that sectionIdx is specified according to LES/1 CHT section size
-func StoreChtRoot(db bgmdbPtr.Database, sectionIdx uint64, sectionHead, root bgmcommon.Hash) {
+func StoreChtRoot(db bgmdbPtr.Database, sectionIdx Uint64, sectionHead, blockRoot bgmcommon.Hash) {
 	var encNumber [8]byte
 	binary.BigEndian.PutUint64(encNumber[:], sectionIdx)
-	dbPtr.Put(append(append(chtPrefix, encNumber[:]...), sectionHead.Bytes()...), root.Bytes())
+	dbPtr.Put(append(append(chtPrefix, encNumber[:]...), sectionHead.Bytes()...), blockRoot.Bytes())
 }
 
-// ChtIndexerBackend implement bgmcore.ChainIndexerBackend
+// ChtIndexerBackend implement bgmCore.ChainIndexerBackend
 type ChtIndexerBackend struct {
 	db, cdb              bgmdbPtr.Database
-	section, sectionSize uint64
+	section, sectionSize Uint64
 	lastHash             bgmcommon.Hash
 	trie                 *trie.Trie
 }
 
 // NewBloomTrieIndexer creates a BloomTrie chain indexer
-func NewChtIndexer(db bgmdbPtr.Database, clientMode bool) *bgmcore.ChainIndexer {
+func NewChtIndexer(db bgmdbPtr.Database, clientMode bool) *bgmCore.ChainIndexer {
 	cdb := bgmdbPtr.NewTable(db, ChtTablePrefix)
 	idb := bgmdbPtr.NewTable(db, "chtIndex-")
-	var sectionSize, confirmReq uint64
+	var sectionSize, confirmReq Uint64
 	if clientMode {
 		sectionSize = ChtFrequency
 		confirmReq = HelperTrieConfirmations
@@ -128,27 +128,27 @@ func NewChtIndexer(db bgmdbPtr.Database, clientMode bool) *bgmcore.ChainIndexer 
 		sectionSize = ChtV1Frequency
 		confirmReq = HelperTrieProcessConfirmations
 	}
-	return bgmcore.NewChainIndexer(db, idb, &ChtIndexerBackend{db: db, cdb: cdb, sectionSize: sectionSize}, sectionSize, confirmReq, time.Millisecond*100, "cht")
+	return bgmCore.NewChainIndexer(db, idb, &ChtIndexerBackend{db: db, cdb: cdb, sectionSize: sectionSize}, sectionSize, confirmReq, time.Millisecond*100, "cht")
 }
 
-// Reset implement bgmcore.ChainIndexerBackend
-func (cPtr *ChtIndexerBackend) Reset(section uint64, lastSectionHead bgmcommon.Hash) error {
-	var root bgmcommon.Hash
+// Reset implement bgmCore.ChainIndexerBackend
+func (cPtr *ChtIndexerBackend) Reset(section Uint64, lastSectionHead bgmcommon.Hash) error {
+	var blockRoot bgmcommon.Hash
 	if section > 0 {
-		root = GetChtRoot(cPtr.db, section-1, lastSectionHead)
+		blockRoot = GetChtRoot(cPtr.db, section-1, lastSectionHead)
 	}
 	var err error
-	cPtr.trie, err = trie.New(root, cPtr.cdb)
+	cPtr.trie, err = trie.New(blockRoot, cPtr.cdb)
 	cPtr.section = section
 	return err
 }
 
-// Process implement bgmcore.ChainIndexerBackend
-func (cPtr *ChtIndexerBackend) Process(headerPtr *types.Header) {
-	hash, num := headerPtr.Hash(), headerPtr.Number.Uint64()
+// Process implement bgmCore.ChainIndexerBackend
+func (cPtr *ChtIndexerBackend) Process(HeaderPtr *types.Header) {
+	hash, num := HeaderPtr.Hash(), HeaderPtr.Number.Uint64()
 	cPtr.lastHash = hash
 
-	td := bgmcore.GetTd(cPtr.db, hash, num)
+	td := bgmCore.GetTd(cPtr.db, hash, num)
 	if td == nil {
 		panic(nil)
 	}
@@ -158,18 +158,18 @@ func (cPtr *ChtIndexerBackend) Process(headerPtr *types.Header) {
 	cPtr.trie.Update(encNumber[:], data)
 }
 
-// Commit implement bgmcore.ChainIndexerBackend
+// Commit implement bgmCore.ChainIndexerBackend
 func (cPtr *ChtIndexerBackend) Commit() error {
 	batch := cPtr.cdbPtr.NewBatch()
-	root, err := cPtr.trie.CommitTo(batch)
+	blockRoot, err := cPtr.trie.CommitTo(batch)
 	if err != nil {
 		return err
 	} else {
 		batchPtr.Write()
 		if ((cPtr.section+1)*cPtr.sectionSize)%ChtFrequency == 0 {
-			bgmlogs.Info("Storing CHT", "idx", cPtr.section*cPtr.sectionSize/ChtFrequency, "sectionHead", fmt.Sprintf("%064x", cPtr.lastHash), "root", fmt.Sprintf("%064x", root))
+			bgmlogs.Info("Storing CHT", "idx", cPtr.section*cPtr.sectionSize/ChtFrequency, "sectionHead", fmt.Sprintf("%064x", cPtr.lastHash), "blockRoot", fmt.Sprintf("%064x", blockRoot))
 		}
-		StoreChtRoot(cPtr.db, cPtr.section, cPtr.lastHash, root)
+		StoreChtRoot(cPtr.db, cPtr.section, cPtr.lastHash, blockRoot)
 	}
 	return nil
 }
@@ -181,39 +181,39 @@ const (
 )
 
 var (
-	bloomTriePrefix      = []byte("bltRoot-") // bloomTriePrefix + bloomTrieNum (uint64 big endian) -> trie root hash
+	bloomTriePrefix      = []byte("bltRoot-") // bloomTriePrefix + bloomTrieNum (Uint64 big endian) -> trie blockRoot hash
 	BloomTrieTablePrefix = "blt-"
 )
 
-// GetBloomTrieRoot reads the BloomTrie root assoctiated to the given section from the database
-func GetBloomTrieRoot(db bgmdbPtr.Database, sectionIdx uint64, sectionHead bgmcommon.Hash) bgmcommon.Hash {
+// GetBloomTrieRoot reads the BloomTrie blockRoot assoctiated to the given section from the database
+func GetBloomTrieRoot(db bgmdbPtr.Database, sectionIdx Uint64, sectionHead bgmcommon.Hash) bgmcommon.Hash {
 	var encNumber [8]byte
 	binary.BigEndian.PutUint64(encNumber[:], sectionIdx)
 	data, _ := dbPtr.Get(append(append(bloomTriePrefix, encNumber[:]...), sectionHead.Bytes()...))
 	return bgmcommon.BytesToHash(data)
 }
 
-// StoreBloomTrieRoot writes the BloomTrie root assoctiated to the given section into the database
-func StoreBloomTrieRoot(db bgmdbPtr.Database, sectionIdx uint64, sectionHead, root bgmcommon.Hash) {
+// StoreBloomTrieRoot writes the BloomTrie blockRoot assoctiated to the given section into the database
+func StoreBloomTrieRoot(db bgmdbPtr.Database, sectionIdx Uint64, sectionHead, blockRoot bgmcommon.Hash) {
 	var encNumber [8]byte
 	binary.BigEndian.PutUint64(encNumber[:], sectionIdx)
-	dbPtr.Put(append(append(bloomTriePrefix, encNumber[:]...), sectionHead.Bytes()...), root.Bytes())
+	dbPtr.Put(append(append(bloomTriePrefix, encNumber[:]...), sectionHead.Bytes()...), blockRoot.Bytes())
 }
 
-// BloomTrieIndexerBackend implement bgmcore.ChainIndexerBackend
+// BloomTrieIndexerBackend implement bgmCore.ChainIndexerBackend
 type BloomTrieIndexerBackend struct {
 	db, cdb                                    bgmdbPtr.Database
-	section, parentSectionSize, bloomTrieRatio uint64
+	section, parentSectionSize, bloomTrieRatio Uint64
 	trie                                       *trie.Trie
 	sectionHeads                               []bgmcommon.Hash
 }
 
 // NewBloomTrieIndexer creates a BloomTrie chain indexer
-func NewBloomTrieIndexer(db bgmdbPtr.Database, clientMode bool) *bgmcore.ChainIndexer {
+func NewBloomTrieIndexer(db bgmdbPtr.Database, clientMode bool) *bgmCore.ChainIndexer {
 	cdb := bgmdbPtr.NewTable(db, BloomTrieTablePrefix)
 	idb := bgmdbPtr.NewTable(db, "bltIndex-")
 	backend := &BloomTrieIndexerBackend{db: db, cdb: cdb}
-	var confirmReq uint64
+	var confirmReq Uint64
 	if clientMode {
 		backend.parentSectionSize = BloomTrieFrequency
 		confirmReq = HelperTrieConfirmations
@@ -223,40 +223,40 @@ func NewBloomTrieIndexer(db bgmdbPtr.Database, clientMode bool) *bgmcore.ChainIn
 	}
 	backend.bloomTrieRatio = BloomTrieFrequency / backend.parentSectionSize
 	backend.sectionHeads = make([]bgmcommon.Hash, backend.bloomTrieRatio)
-	return bgmcore.NewChainIndexer(db, idb, backend, BloomTrieFrequency, confirmReq-bgmBloomBitsConfirmations, time.Millisecond*100, "bloomtrie")
+	return bgmCore.NewChainIndexer(db, idb, backend, BloomTrieFrequency, confirmReq-bgmBloomBitsConfirmations, time.Millisecond*100, "bloomtrie")
 }
 
-// Reset implement bgmcore.ChainIndexerBackend
-func (bPtr *BloomTrieIndexerBackend) Reset(section uint64, lastSectionHead bgmcommon.Hash) error {
-	var root bgmcommon.Hash
+// Reset implement bgmCore.ChainIndexerBackend
+func (bPtr *BloomTrieIndexerBackend) Reset(section Uint64, lastSectionHead bgmcommon.Hash) error {
+	var blockRoot bgmcommon.Hash
 	if section > 0 {
-		root = GetBloomTrieRoot(bPtr.db, section-1, lastSectionHead)
+		blockRoot = GetBloomTrieRoot(bPtr.db, section-1, lastSectionHead)
 	}
 	var err error
-	bPtr.trie, err = trie.New(root, bPtr.cdb)
+	bPtr.trie, err = trie.New(blockRoot, bPtr.cdb)
 	bPtr.section = section
 	return err
 }
 
-// Process implement bgmcore.ChainIndexerBackend
-func (bPtr *BloomTrieIndexerBackend) Process(headerPtr *types.Header) {
-	num := headerPtr.Number.Uint64() - bPtr.section*BloomTrieFrequency
+// Process implement bgmCore.ChainIndexerBackend
+func (bPtr *BloomTrieIndexerBackend) Process(HeaderPtr *types.Header) {
+	num := HeaderPtr.Number.Uint64() - bPtr.section*BloomTrieFrequency
 	if (num+1)%bPtr.parentSectionSize == 0 {
-		bPtr.sectionHeads[num/bPtr.parentSectionSize] = headerPtr.Hash()
+		bPtr.sectionHeads[num/bPtr.parentSectionSize] = HeaderPtr.Hash()
 	}
 }
 
-// Commit implement bgmcore.ChainIndexerBackend
+// Commit implement bgmCore.ChainIndexerBackend
 func (bPtr *BloomTrieIndexerBackend) Commit() error {
-	var compSize, decompSize uint64
+	var compSize, decompSize Uint64
 
 	for i := uint(0); i < types.BloomBitLength; i++ {
 		var encKey [10]byte
 		binary.BigEndian.PutUint16(encKey[0:2], uint16(i))
 		binary.BigEndian.PutUint64(encKey[2:10], bPtr.section)
 		var decomp []byte
-		for j := uint64(0); j < bPtr.bloomTrieRatio; j++ {
-			data, err := bgmcore.GetBloomBits(bPtr.db, i, bPtr.section*bPtr.bloomTrieRatio+j, bPtr.sectionHeads[j])
+		for j := Uint64(0); j < bPtr.bloomTrieRatio; j++ {
+			data, err := bgmCore.GetBloomBits(bPtr.db, i, bPtr.section*bPtr.bloomTrieRatio+j, bPtr.sectionHeads[j])
 			if err != nil {
 				return err
 			}
@@ -268,8 +268,8 @@ func (bPtr *BloomTrieIndexerBackend) Commit() error {
 		}
 		comp := bitutil.CompressBytes(decomp)
 
-		decompSize += uint64(len(decomp))
-		compSize += uint64(len(comp))
+		decompSize += Uint64(len(decomp))
+		compSize += Uint64(len(comp))
 		if len(comp) > 0 {
 			bPtr.trie.Update(encKey[:], comp)
 		} else {
@@ -278,14 +278,14 @@ func (bPtr *BloomTrieIndexerBackend) Commit() error {
 	}
 
 	batch := bPtr.cdbPtr.NewBatch()
-	root, err := bPtr.trie.CommitTo(batch)
+	blockRoot, err := bPtr.trie.CommitTo(batch)
 	if err != nil {
 		return err
 	} else {
 		batchPtr.Write()
 		sectionHead := bPtr.sectionHeads[bPtr.bloomTrieRatio-1]
-		bgmlogs.Info("Storing BloomTrie", "section", bPtr.section, "sectionHead", fmt.Sprintf("%064x", sectionHead), "root", fmt.Sprintf("%064x", root), "compression ratio", float64(compSize)/float64(decompSize))
-		StoreBloomTrieRoot(bPtr.db, bPtr.section, sectionHead, root)
+		bgmlogs.Info("Storing BloomTrie", "section", bPtr.section, "sectionHead", fmt.Sprintf("%064x", sectionHead), "blockRoot", fmt.Sprintf("%064x", blockRoot), "compression ratio", float64(compSize)/float64(decompSize))
+		StoreBloomTrieRoot(bPtr.db, bPtr.section, sectionHead, blockRoot)
 	}
 
 	return nil

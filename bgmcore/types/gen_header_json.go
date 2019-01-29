@@ -24,7 +24,7 @@ import (
 	"github.com/ssldltd/bgmchain/bgmcommon/hexutil"
 )
 
-var _ = (*headerMarshaling)(nil)
+var _ = (*HeaderMarshaling)(nil)
 
 // MarshalJSON marshals as JSON.
 func (h Header) MarshalJSON() ([]byte, error) {
@@ -33,7 +33,7 @@ func (h Header) MarshalJSON() ([]byte, error) {
 		Number      *hexutil.Big      `json:"number"           gencodec:"required"`
 		GasLimit    *hexutil.Big      `json:"gasLimit"         gencodec:"required"`
 		GasUsed     *hexutil.Big      `json:"gasUsed"          gencodec:"required"`
-		Time        *hexutil.Big      `json:"timestamp"        gencodec:"required"`
+		time        *hexutil.Big      `json:"timestamp"        gencodec:"required"`
 		Extra       hexutil.Bytes     `json:"extraData"        gencodec:"required"`
 		MixDigest   bgmcommon.Hash       `json:"mixHash"          gencodec:"required"`
 		Nonce       BlockNonce        `json:"nonce"            gencodec:"required"`
@@ -53,7 +53,7 @@ func (h Header) MarshalJSON() ([]byte, error) {
 	}
 	var enc Header
 	encPtr.GasUsed = (*hexutil.Big)(hPtr.GasUsed)
-	encPtr.Time = (*hexutil.Big)(hPtr.Time)
+	encPtr.time = (*hexutil.Big)(hPtr.time)
 	encPtr.Extra = hPtr.Extra
 	encPtr.MixDigest = hPtr.MixDigest
 	encPtr.Nonce = hPtr.Nonce
@@ -80,7 +80,7 @@ func (hPtr *Header) UnmarshalJSON(input []byte) error {
 	type Header struct {
 		GasLimit    *hexutil.Big      `json:"gasLimit"         gencodec:"required"`
 		GasUsed     *hexutil.Big      `json:"gasUsed"          gencodec:"required"`
-		Time        *hexutil.Big      `json:"timestamp"        gencodec:"required"`
+		time        *hexutil.Big      `json:"timestamp"        gencodec:"required"`
 		Extra       *hexutil.Bytes    `json:"extraData"        gencodec:"required"`
 		MixDigest   *bgmcommon.Hash      `json:"mixHash"          gencodec:"required"`
 		Nonce       *BlockNonce       `json:"nonce"            gencodec:"required"`
@@ -137,7 +137,7 @@ func (hPtr *Header) UnmarshalJSON(input []byte) error {
 		return errors.New("missing required field 'gasUsed' for Header")
 	}
 	hPtr.GasUsed = (*big.Int)(decPtr.GasUsed)
-	if decPtr.Time == nil {
+	if decPtr.time == nil {
 		return errors.New("missing required field 'timestamp' for Header")
 	}
 	hPtr.UncleHash = *decPtr.UncleHash
@@ -147,7 +147,7 @@ func (hPtr *Header) UnmarshalJSON(input []byte) error {
 		return errors.New("missing required field 'dposContext' for Header")
 	}
 	
-	hPtr.Time = (*big.Int)(decPtr.Time)
+	hPtr.time = (*big.Int)(decPtr.time)
 	if decPtr.Extra == nil {
 		return errors.New("missing required field 'extraData' for Header")
 	}

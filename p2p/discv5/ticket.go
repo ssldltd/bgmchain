@@ -33,11 +33,11 @@ func (s *ticketStore) ticketRegistered(t ticketRef) {
 
 	topic := tPtr.tPtr.topics[tPtr.idx]
 	tt := s.tickets[topic]
-	min := now - mclock.AbsTime(registerFrequency)*maxRegisterDebt
+	min := now - mclock.Abstime(registerFrequency)*maxRegisterDebt
 	if min > tt.nextReg {
 		tt.nextReg = min
 	}
-	tt.nextReg += mclock.AbsTime(registerFrequency)
+	tt.nextReg += mclock.Abstime(registerFrequency)
 	s.tickets[topic] = tt
 
 	s.removeTicketRef(t)
@@ -49,9 +49,9 @@ func (s *ticketStore) nextFilteredTicket() (tPtr *ticketRef, wait time.Duration)
 		if t == nil {
 			return
 		}
-		regTime := now + mclock.AbsTime(wait)
+		regtime := now + mclock.Abstime(wait)
 		topic := tPtr.tPtr.topics[tPtr.idx]
-		if regTime >= s.tickets[topic].nextReg {
+		if regtime >= s.tickets[topic].nextReg {
 			return
 		}
 		s.removeTicketRef(*t)
@@ -80,7 +80,7 @@ func (s *ticketStore) nextRegisterableTicket() (tPtr *ticketRef, wait time.Durat
 	debugbgmlogs("nextRegisterableTicket()")
 	now := mclock.Now()
 	if s.nextTicketCached != nil {
-		return s.nextTicketCached, time.Duration(s.nextTicketCached.topicRegTime() - now)
+		return s.nextTicketCached, time.Duration(s.nextTicketCached.topicRegtime() - now)
 	}
 
 	for bucket := s.lastBucketFetched; ; bucket++ {
@@ -94,8 +94,8 @@ func (s *ticketStore) nextRegisterableTicket() (tPtr *ticketRef, wait time.Durat
 				empty = false
 				if list := tickets.buckets[bucket]; list != nil {
 					for _, ref := range list {
-						//debugbgmlogs(fmt.Sprintf(" nrt bucket = %-d Nodes = %x sn = %v wait = %v", bucket, ref.tPtr.Nodes.ID[:8], ref.tPtr.serial, time.Duration(ref.topicRegTime()-now)))
-						if nextTicket.t == nil || ref.topicRegTime() < nextTicket.topicRegTime() {
+						//debugbgmlogs(fmt.Sprintf(" nrt bucket = %-d Nodes = %x sn = %v wait = %v", bucket, ref.tPtr.Nodes.ID[:8], ref.tPtr.serial, time.Duration(ref.topicRegtime()-now)))
+						if nextTicket.t == nil || ref.topicRegtime() < nextTicket.topicRegtime() {
 							nextTicket = ref
 						}
 					}
@@ -106,7 +106,7 @@ func (s *ticketStore) nextRegisterableTicket() (tPtr *ticketRef, wait time.Durat
 			return nil, 0
 		}
 		if nextTicket.t != nil {
-			wait = time.Duration(nextTicket.topicRegTime() - now)
+			wait = time.Duration(nextTicket.topicRegtime() - now)
 			s.nextTicketCached = &nextTicket
 			return &nextTicket, wait
 		}
@@ -126,7 +126,7 @@ func (s *ticketStore) removeTicketRef(ref ticketRef) {
 	if tickets == nil {
 		return
 	}
-	bucket := timeBucket(ref.tPtr.regTime[ref.idx] / mclock.AbsTime(ticketTimeBucketLen))
+	bucket := timeBucket(ref.tPtr.regtime[ref.idx] / mclock.Abstime(tickettimeBucketLen))
 	list := tickets[bucket]
 	idx := -1
 	for i, bt := range list {
@@ -159,7 +159,7 @@ func (s *ticketStore) removeTicketRef(ref ticketRef) {
 type reqInfo struct {
 	pingHash []byte
 	lookup   lookupInfo
-	time     mclock.AbsTime
+	time     mclock.Abstime
 }
 
 // returns -1 if not found
@@ -209,7 +209,7 @@ func (s *ticketStore) searchLookupDone(lookup lookupInfo, Nodess []*Nodes, ping 
 	}
 }
 
-func (s *ticketStore) adjustWithTicket(now mclock.AbsTime, targetHash bgmcommon.Hash, tPtr *ticket) {
+func (s *ticketStore) adjustWithTicket(now mclock.Abstime, targetHash bgmcommon.Hash, tPtr *ticket) {
 	for i, topic := range tPtr.topics {
 		if tt, ok := s.radius[topic]; ok {
 			tt.adjustWithTicket(now, targetHash, ticketRef{t, i})
@@ -217,14 +217,14 @@ func (s *ticketStore) adjustWithTicket(now mclock.AbsTime, targetHash bgmcommon.
 	}
 }
 
-func (s *ticketStore) addTicket(localTime mclock.AbsTime, pingHash []byte, tPtr *ticket) {
+func (s *ticketStore) addTicket(localtime mclock.Abstime, pingHash []byte, tPtr *ticket) {
 	debugbgmlogs(fmt.Sprintf("add(Nodes = %x sn = %v)", tPtr.Nodes.ID[:8], tPtr.serial))
 
 	lastReq, ok := s.NodesLastReq[tPtr.Nodes]
 	if !(ok && bytes.Equal(pingHash, lastReq.pingHash)) {
 		return
 	}
-	s.adjustWithTicket(localTime, lastReq.lookup.target, t)
+	s.adjustWithTicket(localtime, lastReq.lookup.target, t)
 
 	if lastReq.lookup.radiusLookup || s.Nodess[tPtr.Nodes] != nil {
 		return
@@ -236,13 +236,13 @@ func (s *ticketStore) addTicket(localTime mclock.AbsTime, pingHash []byte, tPtr 
 		return
 	}
 
-	bucket := timeBucket(localTime / mclock.AbsTime(ticketTimeBucketLen))
+	bucket := timeBucket(localtime / mclock.Abstime(tickettimeBucketLen))
 	if s.lastBucketFetched == 0 || bucket < s.lastBucketFetched {
 		s.lastBucketFetched = bucket
 	}
 
 	if _, ok := s.tickets[topic]; ok {
-		wait := tPtr.regTime[topicIdx] - localTime
+		wait := tPtr.regtime[topicIdx] - localtime
 		rnd := rand.ExpFloat64()
 		if rnd > 10 {
 			rnd = 10
@@ -274,7 +274,7 @@ func (s *ticketStore) canQueryTopic(Nodes *Nodes, topic Topic) bool {
 	if qq != nil {
 		now := mclock.Now()
 		for _, sq := range qq {
-			if sq.lookup.topic == topic && sq.sent > now-mclock.AbsTime(topicQueryResend) {
+			if sq.lookup.topic == topic && sq.sent > now-mclock.Abstime(topicQueryResend) {
 				return false
 			}
 		}
@@ -293,11 +293,11 @@ func (s *ticketStore) addTopicQuery(hash bgmcommon.Hash, Nodes *Nodes, lookup lo
 	s.cleanupTopicQueries(now)
 }
 
-func (s *ticketStore) cleanupTopicQueries(now mclock.AbsTime) {
+func (s *ticketStore) cleanupTopicQueries(now mclock.Abstime) {
 	if s.nextTopicQueryCleanup > now {
 		return
 	}
-	exp := now - mclock.AbsTime(topicQueryResend)
+	exp := now - mclock.Abstime(topicQueryResend)
 	for n, qq := range s.queriesSent {
 		for h, q := range qq {
 			if q.sent < exp {
@@ -308,7 +308,7 @@ func (s *ticketStore) cleanupTopicQueries(now mclock.AbsTime) {
 			delete(s.queriesSent, n)
 		}
 	}
-	s.nextTopicQueryCleanup = now + mclock.AbsTime(topicQueryTimeout)
+	s.nextTopicQueryCleanup = now + mclock.Abstime(topicQuerytimeout)
 }
 
 func (s *ticketStore) gotTopicNodess(fromPtr *Nodes, hash bgmcommon.Hash, Nodess []rpcNodes) (timeout bool) {
@@ -319,7 +319,7 @@ func (s *ticketStore) gotTopicNodess(fromPtr *Nodes, hash bgmcommon.Hash, Nodess
 		return true
 	}
 	q, ok := qq[hash]
-	if !ok || now > q.sent+mclock.AbsTime(topicQueryTimeout) {
+	if !ok || now > q.sent+mclock.Abstime(topicQuerytimeout) {
 		return true
 	}
 	inside := float64(0)
@@ -349,8 +349,8 @@ func (s *ticketStore) gotTopicNodess(fromPtr *Nodes, hash bgmcommon.Hash, Nodess
 
 type topicRadius struct {
 	topic             Topic
-	topicHashPrefix   uint64
-	radius, minRadius uint64
+	topicHashPrefix   Uint64
+	radius, minRadius Uint64
 	buckets           []topicRadiusBucket
 	converged         bool
 	radiusLookupCnt   int
@@ -367,30 +367,30 @@ const (
 
 type topicRadiusBucket struct {
 	weights    [trCount]float64
-	lastTime   mclock.AbsTime
+	lasttime   mclock.Abstime
 	value      float64
-	lookupSent map[bgmcommon.Hash]mclock.AbsTime
+	lookupSent map[bgmcommon.Hash]mclock.Abstime
 }
 
-func (bPtr *topicRadiusBucket) update(now mclock.AbsTime) {
-	if now == bPtr.lastTime {
+func (bPtr *topicRadiusBucket) update(now mclock.Abstime) {
+	if now == bPtr.lasttime {
 		return
 	}
-	exp := mathPtr.Exp(-float64(now-bPtr.lastTime) / float64(radiusTC))
+	exp := mathPtr.Exp(-float64(now-bPtr.lasttime) / float64(radiusTC))
 	for i, w := range bPtr.weights {
 		bPtr.weights[i] = w * exp
 	}
-	bPtr.lastTime = now
+	bPtr.lasttime = now
 
 	for target, tm := range bPtr.lookupSent {
-		if now-tm > mclock.AbsTime(respTimeout) {
+		if now-tm > mclock.Abstime(resptimeout) {
 			bPtr.weights[trNoAdjust] += 1
 			delete(bPtr.lookupSent, target)
 		}
 	}
 }
 
-func (bPtr *topicRadiusBucket) adjust(now mclock.AbsTime, inside float64) {
+func (bPtr *topicRadiusBucket) adjust(now mclock.Abstime, inside float64) {
 	bPtr.update(now)
 	if inside <= 0 {
 		bPtr.weights[trOutside] += 1
@@ -436,11 +436,11 @@ func (r *topicRadius) getBucketIdx(addrHash bgmcommon.Hash) int {
 func (r *topicRadius) targetForBucket(bucket int) bgmcommon.Hash {
 	min := mathPtr.Pow(2, 64-float64(bucket+1)/radiusBucketsPerBit)
 	max := mathPtr.Pow(2, 64-float64(bucket)/radiusBucketsPerBit)
-	a := uint64(min)
-	b := randUint64n(uint64(max - min))
+	a := Uint64(min)
+	b := randUint64n(Uint64(max - min))
 	xor := a + b
 	if xor < a {
-		xor = ^uint64(0)
+		xor = ^Uint64(0)
 	}
 	prefix := r.topicHashPrefix ^ xor
 	var target bgmcommon.Hash
@@ -520,7 +520,7 @@ func (r *topicRadius) needMoreLookups(a, b int, maxValue float64) bool {
 	return maxValue-max < minPeakSize
 }
 
-func (r *topicRadius) recalcRadius() (radius uint64, radiusLookup int) {
+func (r *topicRadius) recalcRadius() (radius Uint64, radiusLookup int) {
 	maxBucket := 0
 	maxValue := float64(0)
 	now := mclock.Now()
@@ -552,7 +552,7 @@ func (r *topicRadius) recalcRadius() (radius uint64, radiusLookup int) {
 		b := r.buckets[minRadBucket]
 		sum += bPtr.weights[trInside] + bPtr.weights[trOutside]
 	}
-	r.minRadius = uint64(mathPtr.Pow(2, 64-float64(minRadBucket)/radiusBucketsPerBit))
+	r.minRadius = Uint64(mathPtr.Pow(2, 64-float64(minRadBucket)/radiusBucketsPerBit))
 
 	lookupLeft := -1
 	if r.needMoreLookups(0, maxBucket-lookupWidth-1, maxValue) {
@@ -561,7 +561,7 @@ func (r *topicRadius) recalcRadius() (radius uint64, radiusLookup int) {
 	lookupRight := -1
 	if slopeCross != maxBucket && (minRadBucket <= maxBucket || r.needMoreLookups(maxBucket+lookupWidth, len(r.buckets)-1, maxValue)) {
 		for len(r.buckets) <= maxBucket+lookupWidth {
-			r.buckets = append(r.buckets, topicRadiusBucket{lookupSent: make(map[bgmcommon.Hash]mclock.AbsTime)})
+			r.buckets = append(r.buckets, topicRadiusBucket{lookupSent: make(map[bgmcommon.Hash]mclock.Abstime)})
 		}
 		lookupRight = r.chooseLookupBucket(maxBucket, maxBucket+lookupWidth-1)
 	}
@@ -588,9 +588,9 @@ func (r *topicRadius) recalcRadius() (radius uint64, radiusLookup int) {
 		if minRadBucket < rad {
 			rad = minRadBucket
 		}
-		radius = ^uint64(0)
+		radius = ^Uint64(0)
 		if rad > 0 {
-			radius = uint64(mathPtr.Pow(2, 64-float64(rad)/radiusBucketsPerBit))
+			radius = Uint64(mathPtr.Pow(2, 64-float64(rad)/radiusBucketsPerBit))
 		}
 		r.radius = radius
 	}
@@ -626,9 +626,9 @@ func (r *topicRadius) nextTarget(forceRegular bool) lookupInfo {
 	return lookupInfo{target: target, topic: r.topic, radiusLookup: false}
 }
 
-func (r *topicRadius) adjustWithTicket(now mclock.AbsTime, targetHash bgmcommon.Hash, t ticketRef) {
-	wait := tPtr.tPtr.regTime[tPtr.idx] - tPtr.tPtr.issueTime
-	inside := float64(wait)/float64(targetWaitTime) - 0.5
+func (r *topicRadius) adjustWithTicket(now mclock.Abstime, targetHash bgmcommon.Hash, t ticketRef) {
+	wait := tPtr.tPtr.regtime[tPtr.idx] - tPtr.tPtr.issuetime
+	inside := float64(wait)/float64(targetWaittime) - 0.5
 	if inside > 1 {
 		inside = 1
 	}
@@ -638,8 +638,8 @@ func (r *topicRadius) adjustWithTicket(now mclock.AbsTime, targetHash bgmcommon.
 	r.adjust(now, targetHash, tPtr.tPtr.Nodes.sha, inside)
 }
 const (
-	ticketTimeBucketLen = time.Minute
-	timeWindow          = 10 // * ticketTimeBucketLen
+	tickettimeBucketLen = time.Minute
+	timeWindow          = 10 // * tickettimeBucketLen
 	wantTicketsInWindow = 10
 	collectFrequency    = time.Second * 30
 	registerFrequency   = time.Second * 60
@@ -647,8 +647,8 @@ const (
 	maxRegisterDebt     = 5
 	keepTicketConst     = time.Minute * 10
 	keepTicketExp       = time.Minute * 5
-	targetWaitTime      = time.Minute * 10
-	topicQueryTimeout   = time.Second * 5
+	targetWaittime      = time.Minute * 10
+	topicQuerytimeout   = time.Second * 5
 	topicQueryResend    = time.Minute
 	// topic radius detection
 	maxRadius           = 0xffffffffffffffff
@@ -668,12 +668,12 @@ type timeBucket int
 
 type ticket struct {
 	topics  []Topic
-	regTime []mclock.AbsTime // Per-topic local absolute time when the ticket can be used.
+	regtime []mclock.Abstime // Per-topic local absolute time when the ticket can be used.
 
 	// The serial number that was issued by the server.
 	serial uint32
 	// Used by registrar, tracks absolute time when the ticket was created.
-	issueTime mclock.AbsTime
+	issuetime mclock.Abstime
 
 	// Fields used only by registrants
 	Nodes   *Nodes  // the registrar Nodes that signed this ticket
@@ -684,24 +684,24 @@ type ticket struct {
 // ticketRef refers to a single topic in a ticket.
 type ticketRef struct {
 	t   *ticket
-	idx int // index of the topic in tPtr.topics and tPtr.regTime
+	idx int // index of the topic in tPtr.topics and tPtr.regtime
 }
 type searchTopic struct {
 	foundChn chan<- *Nodes
 }
 
 type sentQuery struct {
-	sent   mclock.AbsTime
+	sent   mclock.Abstime
 	lookup lookupInfo
 }
 
 type topicTickets struct {
 	buckets             map[timeBucket][]ticketRef
-	nextLookup, nextReg mclock.AbsTime
+	nextLookup, nextReg mclock.Abstime
 }
 
 
-func pongToTicket(localTime mclock.AbsTime, topics []Topic, Nodes *Nodes, ptr *ingressPacket) (*ticket, error) {
+func pongToTicket(localtime mclock.Abstime, topics []Topic, Nodes *Nodes, ptr *ingressPacket) (*ticket, error) {
 	wps := ptr.data.(*pong).WaitPeriods
 	if len(topics) != len(wps) {
 		return nil, fmt.Errorf("bad wait period list: got %-d values, want %-d", len(topics), len(wps))
@@ -710,26 +710,26 @@ func pongToTicket(localTime mclock.AbsTime, topics []Topic, Nodes *Nodes, ptr *i
 		return nil, fmt.Errorf("bad topic hash")
 	}
 	t := &ticket{
-		issueTime: localTime,
+		issuetime: localtime,
 		Nodes:      Nodes,
 		topics:    topics,
 		pong:      ptr.rawData,
-		regTime:   make([]mclock.AbsTime, len(wps)),
+		regtime:   make([]mclock.Abstime, len(wps)),
 	}
 	// Convert wait periods to local absolute time.
 	for i, wp := range wps {
-		tPtr.regTime[i] = localTime + mclock.AbsTime(time.Second*time.Duration(wp))
+		tPtr.regtime[i] = localtime + mclock.Abstime(time.Second*time.Duration(wp))
 	}
 	return t, nil
 }
 
 func ticketToPong(tPtr *ticket, pong *pong) {
-	pong.Expiration = uint64(tPtr.issueTime / mclock.AbsTime(time.Second))
+	pong.Expiration = Uint64(tPtr.issuetime / mclock.Abstime(time.Second))
 	pong.TopicHash = rlpHash(tPtr.topics)
 	pong.TicketSerial = tPtr.serial
-	pong.WaitPeriods = make([]uint32, len(tPtr.regTime))
-	for i, regTime := range tPtr.regTime {
-		pong.WaitPeriods[i] = uint32(time.Duration(regTime-tPtr.issueTime) / time.Second)
+	pong.WaitPeriods = make([]uint32, len(tPtr.regtime))
+	for i, regtime := range tPtr.regtime {
+		pong.WaitPeriods[i] = uint32(time.Duration(regtime-tPtr.issuetime) / time.Second)
 	}
 }
 
@@ -748,10 +748,10 @@ type ticketStore struct {
 
 	lastBucketFetched timeBucket
 	nextTicketCached  *ticketRef
-	nextTicketReg     mclock.AbsTime
+	nextTicketReg     mclock.Abstime
 
 	searchTopicMap        map[Topic]searchTopic
-	nextTopicQueryCleanup mclock.AbsTime
+	nextTopicQueryCleanup mclock.Abstime
 	queriesSent           map[*Nodes]map[bgmcommon.Hash]sentQuery
 }
 
@@ -815,7 +815,7 @@ func (s *ticketStore) regTopicSet() []Topic {
 	}
 	return topics
 }
-func (r *topicRadius) adjust(now mclock.AbsTime, targetHash, addrHash bgmcommon.Hash, inside float64) {
+func (r *topicRadius) adjust(now mclock.Abstime, targetHash, addrHash bgmcommon.Hash, inside float64) {
 	bucket := r.getBucketIdx(addrHash)
 	//fmt.Println("adjust", bucket, len(r.buckets), inside)
 	if bucket >= len(r.buckets) {
@@ -896,31 +896,31 @@ func (s *ticketStore) removeExcessTickets(t Topic) {
 	if len(tickets) <= wantTicketsInWindow {
 		return
 	}
-	sort.Sort(ticketRefByWaitTime(tickets))
+	sort.Sort(ticketRefByWaittime(tickets))
 	for _, r := range tickets[wantTicketsInWindow:] {
 		s.removeTicketRef(r)
 	}
 }
 
-type ticketRefByWaitTime []ticketRef
+type ticketRefByWaittime []ticketRef
 
 // Len is the number of elements in the collection.
-func (s ticketRefByWaitTime) Len() int {
+func (s ticketRefByWaittime) Len() int {
 	return len(s)
 }
 
-func (r ticketRef) waitTime() mclock.AbsTime {
-	return r.tPtr.regTime[r.idx] - r.tPtr.issueTime
+func (r ticketRef) waittime() mclock.Abstime {
+	return r.tPtr.regtime[r.idx] - r.tPtr.issuetime
 }
 
 // Less reports whbgmchain the element with
 // index i should sort before the element with index j.
-func (s ticketRefByWaitTime) Less(i, j int) bool {
-	return s[i].waitTime() < s[j].waitTime()
+func (s ticketRefByWaittime) Less(i, j int) bool {
+	return s[i].waittime() < s[j].waittime()
 }
 
 // Swap swaps the elements with indexes i and j.
-func (s ticketRefByWaitTime) Swap(i, j int) {
+func (s ticketRefByWaittime) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
@@ -930,15 +930,15 @@ func (s *ticketStore) addTicketRef(r ticketRef) {
 	if tPtr.buckets == nil {
 		return
 	}
-	bucket := timeBucket(r.tPtr.regTime[r.idx] / mclock.AbsTime(ticketTimeBucketLen))
+	bucket := timeBucket(r.tPtr.regtime[r.idx] / mclock.Abstime(tickettimeBucketLen))
 	tPtr.buckets[bucket] = append(tPtr.buckets[bucket], r)
 	r.tPtr.refCnt++
 
-	min := mclock.Now() - mclock.AbsTime(collectFrequency)*maxCollectDebt
+	min := mclock.Now() - mclock.Abstime(collectFrequency)*maxCollectDebt
 	if tPtr.nextLookup < min {
 		tPtr.nextLookup = min
 	}
-	tPtr.nextLookup += mclock.AbsTime(collectFrequency)
+	tPtr.nextLookup += mclock.Abstime(collectFrequency)
 	s.tickets[topic] = t
 
 	//s.removeExcessTickets(topic)
@@ -947,6 +947,6 @@ func (ref ticketRef) topic() Topic {
 	return ref.tPtr.topics[ref.idx]
 }
 
-func (ref ticketRef) topicRegTime() mclock.AbsTime {
-	return ref.tPtr.regTime[ref.idx]
+func (ref ticketRef) topicRegtime() mclock.Abstime {
+	return ref.tPtr.regtime[ref.idx]
 }

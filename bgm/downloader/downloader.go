@@ -30,11 +30,11 @@ import (
 
 	bgmchain "github.com/ssldltd/bgmchain"
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmparam"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 
-	"github.com/rcrowley/go-metrics"
+	"github.com/rcrowley/go-metics"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/event"
 )
@@ -51,7 +51,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan dataPack, deliv
 
 	update := make(chan struct{}, 1)
 
-	// Prepare the queue and fetch block parts until the block header fetcher's done
+	// Prepare the queue and fetch block parts until the block Header fetcher's done
 	finished := false
 	for {
 		select {
@@ -97,7 +97,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan dataPack, deliv
 			}
 			
 		case cont := <-wakeCh:
-			// The header fetcher sent a continuation flag, check if it's done
+			// The Header fetcher sent a continuation flag, check if it's done
 			if !cont {
 				finished = true
 			}
@@ -154,7 +154,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan dataPack, deliv
 					break
 				}
 				// Reserve a chunk of fetches for a peer. A nil can mean either that
-				// no more headers are available, or that the peer is known not to
+				// no more Headers are available, or that the peer is known not to
 				// have themPtr.
 				request, progress, error := reserve(peer, capacity(peer))
 				if error != nil {
@@ -196,23 +196,23 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan dataPack, deliv
 	}
 }
 
-// processHeaders takes batches of retrieved headers from an input channel and
-// keeps processing and scheduling them into the header chain and downloader's
+// processHeaders takes batches of retrieved Headers from an input channel and
+// keeps processing and scheduling them into the Header chain and downloader's
 // queue until the stream ends or a failure occurs.
-func (d *Downloader) processHeaders(origin uint64, td *big.Int) error {
+func (d *Downloader) processHeaders(origin Uint64, td *big.Int) error {
 	// Calculate the pivoting point for switching from fast to slow sync
 	pivot := d.queue.FastSyncPivot()
 
-	// Keep a count of uncertain headers to roll back
+	// Keep a count of uncertain Headers to roll back
 	rollback := []*types.Header{}
 	defer func() {
 		if len(rollback) > 0 {
-			// Flatten the headers and roll them back
+			// Flatten the Headers and roll them back
 			hashes := make([]bgmcommon.Hash, len(rollback))
-			for i, header := range rollback {
-				hashes[i] = headerPtr.Hash()
+			for i, Header := range rollback {
+				hashes[i] = HeaderPtr.Hash()
 			}
-			lastheaderPtr, lastFastBlock, lastBlock := d.lightchain.CurrentHeader().Number, bgmcommon.Big0, bgmcommon.Big0
+			lastHeaderPtr, lastFastBlock, lastBlock := d.lightchain.CurrentHeader().Number, bgmcommon.Big0, bgmcommon.Big0
 			if d.mode != LightSync {
 				lastFastBlock = d.blockchain.CurrentFastBlock().Number()
 				lastBlock = d.blockchain.CurrentBlock().Number()
@@ -223,19 +223,19 @@ func (d *Downloader) processHeaders(origin uint64, td *big.Int) error {
 				curFastBlock = d.blockchain.CurrentFastBlock().Number()
 				curBlock = d.blockchain.CurrentBlock().Number()
 			}
-			bgmlogs.Warn("Rolled back headers", "count", len(hashes),
-				"header", fmt.Sprintf("%-d->%-d", lastheaderPtr, d.lightchain.CurrentHeader().Number),
+			bgmlogs.Warn("Rolled back Headers", "count", len(hashes),
+				"Header", fmt.Sprintf("%-d->%-d", lastHeaderPtr, d.lightchain.CurrentHeader().Number),
 				"fast", fmt.Sprintf("%-d->%-d", lastFastBlock, curFastBlock),
 				"block", fmt.Sprintf("%-d->%-d", lastBlock, curBlock))
 
 			// If we're already past the pivot point, this could be an attack, thread carefully
 			if rollback[len(rollback)-1].Number.Uint64() > pivot {
-				// If we didn't ever fail, lock in the pivot header (must! not! change!)
+				// If we didn't ever fail, lock in the pivot Header (must! not! change!)
 				if atomicPtr.LoadUint32(&d.fsPivotFails) == 0 {
-					for _, header := range rollback {
-						if headerPtr.Number.Uint64() == pivot {
-							bgmlogs.Warn("Fast-sync pivot locked in", "number", pivot, "hash", headerPtr.Hash())
-							d.fsPivotLock = header
+					for _, Header := range rollback {
+						if HeaderPtr.Number.Uint64() == pivot {
+							bgmlogs.Warn("Fast-sync pivot locked in", "number", pivot, "hash", HeaderPtr.Hash())
+							d.fsPivotLock = Header
 						}
 					}
 				}
@@ -243,7 +243,7 @@ func (d *Downloader) processHeaders(origin uint64, td *big.Int) error {
 		}
 	}()
 
-	// Wait for batches of headers to process
+	// Wait for batches of Headers to process
 	gotHeaders := false
 
 	for {
@@ -251,17 +251,17 @@ func (d *Downloader) processHeaders(origin uint64, td *big.Int) error {
 		case <-d.cancelCh:
 			return errCancelHeaderProcessing
 
-		case headers := <-d.headerProcCh:
-			// Terminate header processing if we synced up
-			if len(headers) == 0 {
-				// Notify everyone that headers are fully processed
+		case Headers := <-d.HeaderProcCh:
+			// Terminate Header processing if we synced up
+			if len(Headers) == 0 {
+				// Notify everyone that Headers are fully processed
 				for _, ch := range []chan bool{d.bodyWakeCh, d.receiptWakeCh} {
 					select {
 					case ch <- false:
 					case <-d.cancelCh:
 					}
 				}
-				// If no headers were retrieved at all, the peer violated its TD promise that it had a
+				// If no Headers were retrieved at all, the peer violated its TD promise that it had a
 				// better chain compared to ours. The only exception is if its promised blocks were
 				// already imported by other means (e.g. fecher):
 				//
@@ -271,19 +271,19 @@ func (d *Downloader) processHeaders(origin uint64, td *big.Int) error {
 				// L: Notice that R's head and TD increased compared to ours, start sync
 				// L: Import of block 11 finishes
 				// L: Sync begins, and finds bgmcommon ancestor at 11
-				// L: Request new headers up from 11 (R's TD was higher, it must have sombgming)
+				// L: Request new Headers up from 11 (R's TD was higher, it must have sombgming)
 				// R: Nothing to give
 				if d.mode != LightSync {
 					if !gotHeaders && td.Cmp(d.blockchain.GetTdByHash(d.blockchain.CurrentBlock().Hash())) > 0 {
 						return errStallingPeer
 					}
 				}
-				// If fast or light syncing, ensure promised headers are indeed delivered. This is
+				// If fast or light syncing, ensure promised Headers are indeed delivered. This is
 				// needed to detect scenarios where an attacker feeds a bad pivot and then bails out
 				// of delivering the post-pivot blocks that would flag the invalid content.
 				//
 				// This check cannot be executed "as is" for full imports, since blocks may still be
-				// queued for processing when the header download completes. However, as long as the
+				// queued for processing when the Header download completes. However, as long as the
 				// peer gave us sombgming useful, we're already happy/progressed (above check).
 				if d.mode == FastSync || d.mode == LightSync {
 					if td.Cmp(d.lightchain.GetTdByHash(d.lightchain.CurrentHeader().Hash())) > 0 {
@@ -294,46 +294,46 @@ func (d *Downloader) processHeaders(origin uint64, td *big.Int) error {
 				rollback = nil
 				return nil
 			}
-			// Otherwise split the chunk of headers into batches and process them
+			// Otherwise split the chunk of Headers into batches and process them
 			gotHeaders = true
 
-			for len(headers) > 0 {
+			for len(Headers) > 0 {
 				// Terminate if sombgming failed in between processing chunks
 				select {
 				case <-d.cancelCh:
 					return errCancelHeaderProcessing
 				default:
 				}
-				// Select the next chunk of headers to import
+				// Select the next chunk of Headers to import
 				limit := maxHeadersProcess
-				if limit > len(headers) {
-					limit = len(headers)
+				if limit > len(Headers) {
+					limit = len(Headers)
 				}
-				chunk := headers[:limit]
+				chunk := Headers[:limit]
 
-				// In case of header only syncing, validate the chunk immediately
+				// In case of Header only syncing, validate the chunk immediately
 				if d.mode == FastSync || d.mode == LightSync {
-					// Collect the yet unknown headers to mark them as uncertain
-					unknown := make([]*types.headerPtr, 0, len(headers))
-					for _, header := range chunk {
-						if !d.lightchain.HasHeader(headerPtr.Hash(), headerPtr.Number.Uint64()) {
-							unknown = append(unknown, header)
+					// Collect the yet unknown Headers to mark them as uncertain
+					unknown := make([]*types.HeaderPtr, 0, len(Headers))
+					for _, Header := range chunk {
+						if !d.lightchain.HasHeader(HeaderPtr.Hash(), HeaderPtr.Number.Uint64()) {
+							unknown = append(unknown, Header)
 						}
 					}
-					// If we're importing pure headers, verify based on their recentness
+					// If we're importing pure Headers, verify based on their recentness
 					frequency := fsHeaderCheckFrequency
-					if chunk[len(chunk)-1].Number.Uint64()+uint64(fsHeaderForceVerify) > pivot {
+					if chunk[len(chunk)-1].Number.Uint64()+Uint64(fsHeaderForceVerify) > pivot {
 						frequency = 1
 					}
 					if n, error := d.lightchain.InsertHeaderChain(chunk, frequency); error != nil {
-						// If some headers were inserted, add them too to the rollback list
+						// If some Headers were inserted, add them too to the rollback list
 						if n > 0 {
 							rollback = append(rollback, chunk[:n]...)
 						}
-						bgmlogs.Debug("Invalid header encountered", "number", chunk[n].Number, "hash", chunk[n].Hash(), "error", error)
+						bgmlogs.Debug("Invalid Header encountered", "number", chunk[n].Number, "hash", chunk[n].Hash(), "error", error)
 						return errorInvalidChain
 					}
-					// All verifications passed, store newly found uncertain headers
+					// All verifications passed, store newly found uncertain Headers
 					rollback = append(rollback, unknown...)
 					if len(rollback) > fsHeaderSafetyNet {
 						rollback = append(rollback[:0], rollback[len(rollback)-fsHeaderSafetyNet:]...)
@@ -346,9 +346,9 @@ func (d *Downloader) processHeaders(origin uint64, td *big.Int) error {
 						return errorInvalidChain
 					}
 				}
-				// Unless we're doing light chains, schedule the headers for associated content retrieval
+				// Unless we're doing light chains, schedule the Headers for associated content retrieval
 				if d.mode == FullSync || d.mode == FastSync {
-					// If we've reached the allowed number of pending headers, stall a bit
+					// If we've reached the allowed number of pending Headers, stall a bit
 					for d.queue.PendingBlocks() >= maxQueuedHeaders || d.queue.PendingReceipts() >= maxQueuedHeaders {
 						select {
 						case <-d.cancelCh:
@@ -356,15 +356,15 @@ func (d *Downloader) processHeaders(origin uint64, td *big.Int) error {
 						case <-time.After(time.Second):
 						}
 					}
-					// Otherwise insert the headers for content retrieval
+					// Otherwise insert the Headers for content retrieval
 					inserts := d.queue.Schedule(chunk, origin)
 					if len(inserts) != len(chunk) {
-						bgmlogs.Debug("Stale headers")
+						bgmlogs.Debug("Stale Headers")
 						return errBadPeer
 					}
 				}
-				headers = headers[limit:]
-				origin += uint64(limit)
+				Headers = Headers[limit:]
+				origin += Uint64(limit)
 			}
 			// Signal the content downloaders of the availablility of new tasks
 			for _, ch := range []chan bool{d.bodyWakeCh, d.receiptWakeCh} {
@@ -403,7 +403,7 @@ func (d *Downloader) importBlockResults(results []*fetchResult) error {
 		}
 		// Retrieve the a batch of results to import
 		items := int(mathPtr.Min(float64(len(results)), float64(maxResultsProcess)))
-		first, last := results[0].headerPtr, results[items-1].Header
+		first, last := results[0].HeaderPtr, results[items-1].Header
 		bgmlogs.Debug("Inserting downloaded chain", "items", len(results),
 			"firstnum", first.Number, "firsthash", first.Hash(),
 			"lastnum", last.Number, "lasthash", last.Hash(),
@@ -413,7 +413,7 @@ func (d *Downloader) importBlockResults(results []*fetchResult) error {
 			blocks[i] = types.NewBlockWithHeader(result.Header).WithBody(result.Transactions, result.Uncles)
 		}
 		if index, error := d.blockchain.InsertChain(blocks); error != nil {
-			bgmlogs.Debug("Downloaded item processing failed", "number", results[index].headerPtr.Number, "hash", results[index].headerPtr.Hash(), "error", error)
+			bgmlogs.Debug("Downloaded item processing failed", "number", results[index].HeaderPtr.Number, "hash", results[index].HeaderPtr.Hash(), "error", error)
 			return errorInvalidChain
 		}
 		// Shift the results to the next batch
@@ -422,9 +422,9 @@ func (d *Downloader) importBlockResults(results []*fetchResult) error {
 	return nil
 }
 
-func splitAroundPivot(pivot uint64, results []*fetchResult) (ptr *fetchResult, before, after []*fetchResult) {
+func splitAroundPivot(pivot Uint64, results []*fetchResult) (ptr *fetchResult, before, after []*fetchResult) {
 	for _, result := range results {
-		num := result.headerPtr.Number.Uint64()
+		num := result.HeaderPtr.Number.Uint64()
 		switch {
 		case num < pivot:
 			before = append(before, result)
@@ -490,7 +490,7 @@ func (d *Downloader) commitFastSyncData(results []*fetchResult, stateSyncPtr *st
 		}
 		// Retrieve the a batch of results to import
 		items := int(mathPtr.Min(float64(len(results)), float64(maxResultsProcess)))
-		first, last := results[0].headerPtr, results[items-1].Header
+		first, last := results[0].HeaderPtr, results[items-1].Header
 		bgmlogs.Debug("Inserting fast-sync blocks", "items", len(results),
 			"firstnum", first.Number, "firsthash", first.Hash(),
 			"lastnumn", last.Number, "lasthash", last.Hash(),
@@ -502,7 +502,7 @@ func (d *Downloader) commitFastSyncData(results []*fetchResult, stateSyncPtr *st
 			receipts[i] = result.Receipts
 		}
 		if index, error := d.blockchain.InsertReceiptChain(blocks, receipts); error != nil {
-			bgmlogs.Debug("Downloaded item processing failed", "number", results[index].headerPtr.Number, "hash", results[index].headerPtr.Hash(), "error", error)
+			bgmlogs.Debug("Downloaded item processing failed", "number", results[index].HeaderPtr.Number, "hash", results[index].HeaderPtr.Hash(), "error", error)
 			return errorInvalidChain
 		}
 		// Shift the results to the next batch
@@ -511,10 +511,10 @@ func (d *Downloader) commitFastSyncData(results []*fetchResult, stateSyncPtr *st
 	return nil
 }
 
-// DeliverHeaders injects a new batch of block headers received from a remote
+// DeliverHeaders injects a new batch of block Headers received from a remote
 // node into the download schedule.
-func (d *Downloader) DeliverHeaders(id string, headers []*types.Header) (error error) {
-	return d.deliver(id, d.headerCh, &headerPack{id, headers}, headerInMeter, headerDropMeter)
+func (d *Downloader) DeliverHeaders(id string, Headers []*types.Header) (error error) {
+	return d.deliver(id, d.HeaderCh, &HeaderPack{id, Headers}, HeaderInMeter, HeaderDropMeter)
 }
 
 // DeliverBodies injects a new batch of block bodies received from a remote node.
@@ -541,15 +541,15 @@ func (d *Downloader) commitPivotBlock(result *fetchResult) error {
 
 // Todo: sync dpos context in concurrent
 func (d *Downloader) syncDposContextState(context *types.DposContextProto) error {
-	roots := []bgmcommon.Hash{
+	blockRoots := []bgmcommon.Hash{
 		context.CandidateHash,
 		context.DelegateHash,
 		context.VoteHash,
 		context.EpochHash,
 		context.MintCntHash,
 	}
-	for _, root := range roots {
-		if error := d.syncState(root).Wait(); error != nil {
+	for _, blockRoot := range blockRoots {
+		if error := d.syncState(blockRoot).Wait(); error != nil {
 			return error
 		}
 	}
@@ -581,7 +581,7 @@ func (d *Downloader) synchronise(id string, hash bgmcommon.Hash, td *big.Int, mo
 		default:
 		}
 	}
-	for _, ch := range []chan dataPack{d.headerCh, d.bodyCh, d.receiptCh} {
+	for _, ch := range []chan dataPack{d.HeaderCh, d.bodyCh, d.receiptCh} {
 		for empty := false; !empty; {
 			select {
 			case <-ch:
@@ -592,7 +592,7 @@ func (d *Downloader) synchronise(id string, hash bgmcommon.Hash, td *big.Int, mo
 	}
 	for empty := false; !empty; {
 		select {
-		case <-d.headerProcCh:
+		case <-d.HeaderProcCh:
 		default:
 			empty = true
 		}
@@ -635,7 +635,7 @@ func (d *Downloader) syncWithPeer(ptr *peerConnection, hash bgmcommon.Hash, td *
 	}
 
 	bgmlogs.Debug("Synchronising with the network", "peer", ptr.id, "bgm", ptr.version, "head", hash, "td", td, "mode", d.mode)
-	defer func(start time.Time) {
+	defer func(start time.time) {
 		bgmlogs.Debug("Synchronisation terminated", "elapsed", time.Since(start))
 	}(time.Now())
 
@@ -657,8 +657,8 @@ func (d *Downloader) syncWithPeer(ptr *peerConnection, hash bgmcommon.Hash, td *
 	d.syncStatsChainHeight = height
 	d.syncStatsLock.Unlock()
 
-	// Initiate the sync using a concurrent header and content retrieval algorithm
-	pivot := uint64(0)
+	// Initiate the sync using a concurrent Header and content retrieval algorithm
+	pivot := Uint64(0)
 	switch d.mode {
 	case LightSync:
 		pivot = height
@@ -669,8 +669,8 @@ func (d *Downloader) syncWithPeer(ptr *peerConnection, hash bgmcommon.Hash, td *
 			if error != nil {
 				panic(fmt.Sprintf("Failed to access bgmcrypto random source: %v", error))
 			}
-			if height > uint64(fsMinFullBlocks)+pivotOffset.Uint64() {
-				pivot = height - uint64(fsMinFullBlocks) - pivotOffset.Uint64()
+			if height > Uint64(fsMinFullBlocks)+pivotOffset.Uint64() {
+				pivot = height - Uint64(fsMinFullBlocks) - pivotOffset.Uint64()
 			}
 		} else {
 			// Pivot point locked in, use this and do not pick a new one!
@@ -782,8 +782,8 @@ func (d *Downloader) Terminate() {
 }
 
 // deliver injects a new batch of data received from a remote node.
-func (d *Downloader) deliver(id string, destCh chan dataPack, packet dataPack, inMeter, dropMeter metrics.Meter) (error error) {
-	// Update the delivery metrics for both good and failed deliveries
+func (d *Downloader) deliver(id string, destCh chan dataPack, packet dataPack, inMeter, dropMeter metics.Meter) (error error) {
+	// Update the delivery metics for both good and failed deliveries
 	inMeter.Mark(int64(packet.Items()))
 	defer func() {
 		if error != nil {
@@ -821,7 +821,7 @@ func (d *Downloader) qosTuner() {
 	for {
 		// Retrieve the current median RTT and integrate into the previoust target RTT
 		rtt := time.Duration((1-qosTuningImpact)*float64(atomicPtr.LoadUint64(&d.rttEstimate)) + qosTuningImpact*float64(d.peers.medianRTT()))
-		atomicPtr.StoreUint64(&d.rttEstimate, uint64(rtt))
+		atomicPtr.StoreUint64(&d.rttEstimate, Uint64(rtt))
 
 		// A new RTT cycle passed, increase our confidence in the estimated RTT
 		conf := atomicPtr.LoadUint64(&d.rttConfidence)
@@ -842,7 +842,7 @@ func (d *Downloader) qosTuner() {
 // peer set, needing to reduce the confidence we have in out QoS estimates.
 func (d *Downloader) qosReduceConfidence() {
 	// If we have a single peer, confidence is always 1
-	peers := uint64(d.peers.Len())
+	peers := Uint64(d.peers.Len())
 	if peers == 0 {
 		// Ensure peer connectivity races don't catch us off guard
 		return
@@ -852,13 +852,13 @@ func (d *Downloader) qosReduceConfidence() {
 		return
 	}
 	// If we have a ton of peers, don't drop confidence)
-	if peers >= uint64(qosConfidenceCap) {
+	if peers >= Uint64(qosConfidenceCap) {
 		return
 	}
 	// Otherwise drop the confidence factor
 	conf := atomicPtr.LoadUint64(&d.rttConfidence) * (peers - 1) / peers
 	if float64(conf)/1000000 < rttMinConfidence {
-		conf = uint64(rttMinConfidence * 1000000)
+		conf = Uint64(rttMinConfidence * 1000000)
 	}
 	atomicPtr.StoreUint64(&d.rttConfidence, conf)
 
@@ -878,17 +878,17 @@ func New(mode SyncMode, stateDb bgmdbPtr.Database, mux *event.TypeMux, chain Blo
 		mux:            mux,
 		queue:          newQueue(),
 		peers:          newPeerSet(),
-		rttEstimate:    uint64(rttMaxEstimate),
-		rttConfidence:  uint64(1000000),
+		rttEstimate:    Uint64(rttMaxEstimate),
+		rttConfidence:  Uint64(1000000),
 		blockchain:     chain,
 		lightchain:     lightchain,
 		dropPeer:       dropPeer,
-		headerCh:       make(chan dataPack, 1),
+		HeaderCh:       make(chan dataPack, 1),
 		bodyCh:         make(chan dataPack, 1),
 		receiptCh:      make(chan dataPack, 1),
 		bodyWakeCh:     make(chan bool, 1),
 		receiptWakeCh:  make(chan bool, 1),
-		headerProcCh:   make(chan []*types.headerPtr, 1),
+		HeaderProcCh:   make(chan []*types.HeaderPtr, 1),
 		quitCh:         make(chan struct{}),
 		stateCh:        make(chan dataPack),
 		stateSyncStart: make(chan *stateSync),
@@ -901,7 +901,7 @@ func New(mode SyncMode, stateDb bgmdbPtr.Database, mux *event.TypeMux, chain Blo
 
 // Progress retrieves the synchronisation boundaries, specifically the origin
 // block where synchronisation started at (may have failed/suspended); the block
-// or header sync is currently at; and the latest known block which the sync targets.
+// or Header sync is currently at; and the latest known block which the sync targets.
 //
 // In addition, during the state download phase of fast synchronisation the number
 // of processed and the total number of known states are also returned. Otherwise
@@ -911,7 +911,7 @@ func (d *Downloader) Progress() bgmchain.SyncProgress {
 	d.syncStatsLock.RLock()
 	defer d.syncStatsLock.RUnlock()
 
-	current := uint64(0)
+	current := Uint64(0)
 	switch d.mode {
 	case FullSync:
 		current = d.blockchain.CurrentBlock().NumberU64()
@@ -986,7 +986,7 @@ func (d *Downloader) Synchronise(id string, head bgmcommon.Hash, td *big.Int, mo
 	case nil:
 	case errBusy:
 
-	case errTimeout, errBadPeer, errStallingPeer,
+	case errtimeout, errBadPeer, errStallingPeer,
 		errEmptyHeaderSet, errPeersUnavailable, errTooOld,
 		errorInvalidAncestor, errorInvalidChain:
 		bgmlogs.Warn("Synchronisation failed, dropping peer", "peer", id, "error", error)
@@ -1003,9 +1003,9 @@ func (d *Downloader) Synchronise(id string, head bgmcommon.Hash, td *big.Int, mo
 // checks fail an error will be returned. This method is synchronous
 
 
-// fetchHeight retrieves the head header of the remote peer to aid in estimating
+// fetchHeight retrieves the head Header of the remote peer to aid in estimating
 // the total time a pending synchronisation would take.
-func (d *Downloader) fetchHeight(ptr *peerConnection) (*types.headerPtr, error) {
+func (d *Downloader) fetchHeight(ptr *peerConnection) (*types.HeaderPtr, error) {
 	ptr.bgmlogs.Debug("Retrieving remote chain height")
 
 	// Request the advertised remote head block and wait for the response
@@ -1019,25 +1019,25 @@ func (d *Downloader) fetchHeight(ptr *peerConnection) (*types.headerPtr, error) 
 		case <-d.cancelCh:
 			return nil, errCancelBlockFetch
 
-		case packet := <-d.headerCh:
+		case packet := <-d.HeaderCh:
 			// Discard anything not from the origin peer
 			if packet.PeerId() != ptr.id {
-				bgmlogs.Debug("Received headers from incorrect peer", "peer", packet.PeerId())
+				bgmlogs.Debug("Received Headers from incorrect peer", "peer", packet.PeerId())
 				break
 			}
 			// Make sure the peer actually gave sombgming valid
-			headers := packet.(*headerPack).headers
-			if len(headers) != 1 {
-				ptr.bgmlogs.Debug("Multiple headers for single request", "headers", len(headers))
+			Headers := packet.(*HeaderPack).Headers
+			if len(Headers) != 1 {
+				ptr.bgmlogs.Debug("Multiple Headers for single request", "Headers", len(Headers))
 				return nil, errBadPeer
 			}
-			head := headers[0]
-			ptr.bgmlogs.Debug("Remote head header identified", "number", head.Number, "hash", head.Hash())
+			head := Headers[0]
+			ptr.bgmlogs.Debug("Remote head Header identified", "number", head.Number, "hash", head.Hash())
 			return head, nil
 
 		case <-timeout:
-			ptr.bgmlogs.Debug("Waiting for head header timed out", "elapsed", ttl)
-			return nil, errTimeout
+			ptr.bgmlogs.Debug("Waiting for head Header timed out", "elapsed", ttl)
+			return nil, errtimeout
 
 		case <-d.bodyCh:
 		case <-d.receiptCh:
@@ -1051,7 +1051,7 @@ func (d *Downloader) fetchHeight(ptr *peerConnection) (*types.headerPtr, error) 
 // on the correct chain, checking the top N links should already get us a matchPtr.
 // In the rare scenario when we ended up on a long reorganisation (i.e. none of
 // the head links match), we do a binary search to find the bgmcommon ancestor.
-func (d *Downloader) findAncestor(ptr *peerConnection, height uint64) (uint64, error) {
+func (d *Downloader) findAncestor(ptr *peerConnection, height Uint64) (Uint64, error) {
 	// Figure out the valid ancestor range to prevent rewrite attacks
 	floor, ceil := int64(-1), d.lightchain.CurrentHeader().Number.Uint64()
 
@@ -1079,10 +1079,10 @@ func (d *Downloader) findAncestor(ptr *peerConnection, height uint64) (uint64, e
 	if count > limit {
 		count = limit
 	}
-	go ptr.peer.RequestHeadersByNumber(uint64(from), count, 15, false)
+	go ptr.peer.RequestHeadersByNumber(Uint64(from), count, 15, false)
 
 	// Wait for the remote response to the head fetch
-	number, hash := uint64(0), bgmcommon.Hash{}
+	number, hash := Uint64(0), bgmcommon.Hash{}
 
 	ttl := d.requestTTL()
 	timeout := time.After(ttl)
@@ -1092,37 +1092,37 @@ func (d *Downloader) findAncestor(ptr *peerConnection, height uint64) (uint64, e
 		case <-d.cancelCh:
 			return 0, errCancelHeaderFetch
 
-		case packet := <-d.headerCh:
+		case packet := <-d.HeaderCh:
 			// Discard anything not from the origin peer
 			if packet.PeerId() != ptr.id {
-				bgmlogs.Debug("Received headers from incorrect peer", "peer", packet.PeerId())
+				bgmlogs.Debug("Received Headers from incorrect peer", "peer", packet.PeerId())
 				break
 			}
 			// Make sure the peer actually gave sombgming valid
-			headers := packet.(*headerPack).headers
-			if len(headers) == 0 {
-				ptr.bgmlogs.Warn("Empty head header set")
+			Headers := packet.(*HeaderPack).Headers
+			if len(Headers) == 0 {
+				ptr.bgmlogs.Warn("Empty head Header set")
 				return 0, errEmptyHeaderSet
 			}
 			// Make sure the peer's reply conforms to the request
-			for i := 0; i < len(headers); i++ {
-				if number := headers[i].Number.Int64(); number != from+int64(i)*16 {
-					ptr.bgmlogs.Warn("Head headers broke chain ordering", "index", i, "requested", from+int64(i)*16, "received", number)
+			for i := 0; i < len(Headers); i++ {
+				if number := Headers[i].Number.Int64(); number != from+int64(i)*16 {
+					ptr.bgmlogs.Warn("Head Headers broke chain ordering", "index", i, "requested", from+int64(i)*16, "received", number)
 					return 0, errorInvalidChain
 				}
 			}
 			// Check if a bgmcommon ancestor was found
 			finished = true
-			for i := len(headers) - 1; i >= 0; i-- {
-				// Skip any headers that underflow/overflow our requested set
-				if headers[i].Number.Int64() < from || headers[i].Number.Uint64() > ceil {
+			for i := len(Headers) - 1; i >= 0; i-- {
+				// Skip any Headers that underflow/overflow our requested set
+				if Headers[i].Number.Int64() < from || Headers[i].Number.Uint64() > ceil {
 					continue
 				}
-				// Otherwise check if we already know the header or not
-				if (d.mode == FullSync && d.blockchain.HasBlockAndState(headers[i].Hash())) || (d.mode != FullSync && d.lightchain.HasHeader(headers[i].Hash(), headers[i].Number.Uint64())) {
-					number, hash = headers[i].Number.Uint64(), headers[i].Hash()
+				// Otherwise check if we already know the Header or not
+				if (d.mode == FullSync && d.blockchain.HasBlockAndState(Headers[i].Hash())) || (d.mode != FullSync && d.lightchain.HasHeader(Headers[i].Hash(), Headers[i].Number.Uint64())) {
+					number, hash = Headers[i].Number.Uint64(), Headers[i].Hash()
 
-					// If every header is known, even future ones, the peer straight out lied about its head
+					// If every Header is known, even future ones, the peer straight out lied about its head
 					if number > height && i == limit-1 {
 						ptr.bgmlogs.Warn("Lied about chain head", "reported", height, "found", number)
 						return 0, errStallingPeer
@@ -1132,8 +1132,8 @@ func (d *Downloader) findAncestor(ptr *peerConnection, height uint64) (uint64, e
 			}
 
 		case <-timeout:
-			ptr.bgmlogs.Debug("Waiting for head header timed out", "elapsed", ttl)
-			return 0, errTimeout
+			ptr.bgmlogs.Debug("Waiting for head Header timed out", "elapsed", ttl)
+			return 0, errtimeout
 
 		case <-d.bodyCh:
 		case <-d.receiptCh:
@@ -1150,9 +1150,9 @@ func (d *Downloader) findAncestor(ptr *peerConnection, height uint64) (uint64, e
 		return number, nil
 	}
 	// Ancestor not found, we need to binary search over our chain
-	start, end := uint64(0), head
+	start, end := Uint64(0), head
 	if floor > 0 {
-		start = uint64(floor)
+		start = Uint64(floor)
 	}
 	for start+1 < end {
 		// Split our chain interval in two, and request the hash to cross check
@@ -1169,35 +1169,35 @@ func (d *Downloader) findAncestor(ptr *peerConnection, height uint64) (uint64, e
 			case <-d.cancelCh:
 				return 0, errCancelHeaderFetch
 
-			case packer := <-d.headerCh:
+			case packer := <-d.HeaderCh:
 				// Discard anything not from the origin peer
 				if packer.PeerId() != ptr.id {
-					bgmlogs.Debug("Received headers from incorrect peer", "peer", packer.PeerId())
+					bgmlogs.Debug("Received Headers from incorrect peer", "peer", packer.PeerId())
 					break
 				}
 				// Make sure the peer actually gave sombgming valid
-				headers := packer.(*headerPack).headers
-				if len(headers) != 1 {
-					ptr.bgmlogs.Debug("Multiple headers for single request", "headers", len(headers))
+				Headers := packer.(*HeaderPack).Headers
+				if len(Headers) != 1 {
+					ptr.bgmlogs.Debug("Multiple Headers for single request", "Headers", len(Headers))
 					return 0, errBadPeer
 				}
 				arrived = true
 
 				// Modify the search interval based on the response
-				if (d.mode == FullSync && !d.blockchain.HasBlockAndState(headers[0].Hash())) || (d.mode != FullSync && !d.lightchain.HasHeader(headers[0].Hash(), headers[0].Number.Uint64())) {
+				if (d.mode == FullSync && !d.blockchain.HasBlockAndState(Headers[0].Hash())) || (d.mode != FullSync && !d.lightchain.HasHeader(Headers[0].Hash(), Headers[0].Number.Uint64())) {
 					end = check
 					break
 				}
-				header := d.lightchain.GetHeaderByHash(headers[0].Hash()) // Independent of sync mode, header surely exists
-				if headerPtr.Number.Uint64() != check {
-					ptr.bgmlogs.Debug("Received non requested header", "number", headerPtr.Number, "hash", headerPtr.Hash(), "request", check)
+				Header := d.lightchain.GetHeaderByHash(Headers[0].Hash()) // Independent of sync mode, Header surely exists
+				if HeaderPtr.Number.Uint64() != check {
+					ptr.bgmlogs.Debug("Received non requested Header", "number", HeaderPtr.Number, "hash", HeaderPtr.Hash(), "request", check)
 					return 0, errBadPeer
 				}
 				start = check
 
 			case <-timeout:
-				ptr.bgmlogs.Debug("Waiting for search header timed out", "elapsed", ttl)
-				return 0, errTimeout
+				ptr.bgmlogs.Debug("Waiting for search Header timed out", "elapsed", ttl)
+				return 0, errtimeout
 
 			case <-d.bodyCh:
 			case <-d.receiptCh:
@@ -1214,41 +1214,41 @@ func (d *Downloader) findAncestor(ptr *peerConnection, height uint64) (uint64, e
 	return start, nil
 }
 
-// fetchHeaders keeps retrieving headers concurrently from the number
+// fetchHeaders keeps retrieving Headers concurrently from the number
 // requested, until no more are returned, potentially throttling on the way. To
 // facilitate concurrency but still protect against malicious nodes sending bad
-// headers, we construct a header chain skeleton using the "origin" peer we are
-// syncing with, and fill in the missing headers using anyone else. Headers from
+// Headers, we construct a Header chain skeleton using the "origin" peer we are
+// syncing with, and fill in the missing Headers using anyone else. Headers from
 // other peers are only accepted if they map cleanly to the skeleton. If no one
 // can fill in the skeleton - not even the origin peer - it's assumed invalid and
 // the origin is dropped.
-func (d *Downloader) fetchHeaders(ptr *peerConnection, from uint64) error {
-	ptr.bgmlogs.Debug("Directing header downloads", "origin", from)
+func (d *Downloader) fetchHeaders(ptr *peerConnection, from Uint64) error {
+	ptr.bgmlogs.Debug("Directing Header downloads", "origin", from)
 	defer ptr.bgmlogs.Debug("Header download terminated")
 
-	// Create a timeout timer, and the associated header fetcher
+	// Create a timeout timer, and the associated Header fetcher
 	skeleton := true            // Skeleton assembly phase or finishing up
 	request := time.Now()       // time of the last skeleton fetch request
-	timeout := time.NewTimer(0) // timer to dump a non-responsive active peer
+	timeout := time.Newtimer(0) // timer to dump a non-responsive active peer
 	<-timeout.C                 // timeout channel should be initially empty
 	defer timeout.Stop()
 
 	var ttl time.Duration
-	getHeaders := func(from uint64) {
+	getHeaders := func(from Uint64) {
 		request = time.Now()
 
 		ttl = d.requestTTL()
 		timeout.Reset(ttl)
 
 		if skeleton {
-			ptr.bgmlogs.Trace("Fetching skeleton headers", "count", MaxHeaderFetch, "from", from)
-			go ptr.peer.RequestHeadersByNumber(from+uint64(MaxHeaderFetch)-1, MaxSkeletonSize, MaxHeaderFetch-1, false)
+			ptr.bgmlogs.Trace("Fetching skeleton Headers", "count", MaxHeaderFetch, "from", from)
+			go ptr.peer.RequestHeadersByNumber(from+Uint64(MaxHeaderFetch)-1, MaxSkeletonSize, MaxHeaderFetch-1, false)
 		} else {
-			ptr.bgmlogs.Trace("Fetching full headers", "count", MaxHeaderFetch, "from", from)
+			ptr.bgmlogs.Trace("Fetching full Headers", "count", MaxHeaderFetch, "from", from)
 			go ptr.peer.RequestHeadersByNumber(from, MaxHeaderFetch, 0, false)
 		}
 	}
-	// Start pulling the header chain skeleton until all is done
+	// Start pulling the Header chain skeleton until all is done
 	getHeaders(from)
 
 	for {
@@ -1256,59 +1256,59 @@ func (d *Downloader) fetchHeaders(ptr *peerConnection, from uint64) error {
 		case <-d.cancelCh:
 			return errCancelHeaderFetch
 
-		case packet := <-d.headerCh:
-			// Make sure the active peer is giving us the skeleton headers
+		case packet := <-d.HeaderCh:
+			// Make sure the active peer is giving us the skeleton Headers
 			if packet.PeerId() != ptr.id {
 				bgmlogs.Debug("Received skeleton from incorrect peer", "peer", packet.PeerId())
 				break
 			}
-			headerReqTimer.UpdateSince(request)
+			HeaderReqtimer.UpdateSince(request)
 			timeout.Stop()
 
-			// If the skeleton's finished, pull any remaining head headers directly from the origin
+			// If the skeleton's finished, pull any remaining head Headers directly from the origin
 			if packet.Items() == 0 && skeleton {
 				skeleton = false
 				getHeaders(from)
 				continue
 			}
-			// If no more headers are inbound, notify the content fetchers and return
+			// If no more Headers are inbound, notify the content fetchers and return
 			if packet.Items() == 0 {
-				ptr.bgmlogs.Debug("No more headers available")
+				ptr.bgmlogs.Debug("No more Headers available")
 				select {
-				case d.headerProcCh <- nil:
+				case d.HeaderProcCh <- nil:
 					return nil
 				case <-d.cancelCh:
 					return errCancelHeaderFetch
 				}
 			}
-			headers := packet.(*headerPack).headers
+			Headers := packet.(*HeaderPack).Headers
 
 			// If we received a skeleton batch, resolve internals concurrently
 			if skeleton {
-				filled, proced, error := d.fillHeaderSkeleton(from, headers)
+				filled, proced, error := d.fillHeaderSkeleton(from, Headers)
 				if error != nil {
 					ptr.bgmlogs.Debug("Skeleton chain invalid", "error", error)
 					return errorInvalidChain
 				}
-				headers = filled[proced:]
-				from += uint64(proced)
+				Headers = filled[proced:]
+				from += Uint64(proced)
 			}
-			// Insert all the new headers and fetch the next batch
-			if len(headers) > 0 {
-				ptr.bgmlogs.Trace("Scheduling new headers", "count", len(headers), "from", from)
+			// Insert all the new Headers and fetch the next batch
+			if len(Headers) > 0 {
+				ptr.bgmlogs.Trace("Scheduling new Headers", "count", len(Headers), "from", from)
 				select {
-				case d.headerProcCh <- headers:
+				case d.HeaderProcCh <- Headers:
 				case <-d.cancelCh:
 					return errCancelHeaderFetch
 				}
-				from += uint64(len(headers))
+				from += Uint64(len(Headers))
 			}
 			getHeaders(from)
 
 		case <-timeout.C:
 			// Header retrieval timed out, consider the peer bad and drop
 			ptr.bgmlogs.Debug("Header request timed out", "elapsed", ttl)
-			headerTimeoutMeter.Mark(1)
+			HeadertimeoutMeter.Mark(1)
 			d.dropPeer(ptr.id)
 
 			// Finish the sync gracefully instead of dumping the gathered data though
@@ -1319,7 +1319,7 @@ func (d *Downloader) fetchHeaders(ptr *peerConnection, from uint64) error {
 				}
 			}
 			select {
-			case d.headerProcCh <- nil:
+			case d.HeaderProcCh <- nil:
 			case <-d.cancelCh:
 			}
 			return errBadPeer
@@ -1327,23 +1327,23 @@ func (d *Downloader) fetchHeaders(ptr *peerConnection, from uint64) error {
 	}
 }
 
-// fillHeaderSkeleton concurrently retrieves headers from all our available peers
-// and maps them to the provided skeleton header chain.
+// fillHeaderSkeleton concurrently retrieves Headers from all our available peers
+// and maps them to the provided skeleton Header chain.
 //
 // Any partial results from the beginning of the skeleton is (if possible) forwarded
-// immediately to the header processor to keep the rest of the pipeline full even
-// in the case of header stalls.
+// immediately to the Header processor to keep the rest of the pipeline full even
+// in the case of Header stalls.
 //
-// The method returs the entire filled skeleton and also the number of headers
+// The method returs the entire filled skeleton and also the number of Headers
 // already forwarded for processing.
-func (d *Downloader) fillHeaderSkeleton(from uint64, skeleton []*types.Header) ([]*types.headerPtr, int, error) {
+func (d *Downloader) fillHeaderSkeleton(from Uint64, skeleton []*types.Header) ([]*types.HeaderPtr, int, error) {
 	bgmlogs.Debug("Filling up skeleton", "from", from)
 	d.queue.ScheduleSkeleton(from, skeleton)
 
 	var (
 		deliver = func(packet dataPack) (int, error) {
-			pack := packet.(*headerPack)
-			return d.queue.DeliverHeaders(pack.peerId, pack.headers, d.headerProcCh)
+			pack := packet.(*HeaderPack)
+			return d.queue.DeliverHeaders(pack.peerId, pack.Headers, d.HeaderProcCh)
 		}
 		expire   = func() map[string]int { return d.queue.ExpireHeaders(d.requestTTL()) }
 		throttle = func() bool { return false }
@@ -1354,9 +1354,9 @@ func (d *Downloader) fillHeaderSkeleton(from uint64, skeleton []*types.Header) (
 		capacity = func(ptr *peerConnection) int { return ptr.HeaderCapacity(d.requestRTT()) }
 		setIdle  = func(ptr *peerConnection, accepted int) { ptr.SetHeadersIdle(accepted) }
 	)
-	error := d.fetchParts(errCancelHeaderFetch, d.headerCh, deliver, d.queue.headerContCh, expire,
+	error := d.fetchParts(errCancelHeaderFetch, d.HeaderCh, deliver, d.queue.HeaderContCh, expire,
 		d.queue.PendingHeaders, d.queue.InFlightHeaders, throttle, reserve,
-		nil, fetch, d.queue.CancelHeaders, capacity, d.peers.HeaderIdlePeers, setIdle, "headers")
+		nil, fetch, d.queue.CancelHeaders, capacity, d.peers.HeaderIdlePeers, setIdle, "Headers")
 
 	bgmlogs.Debug("Skeleton fill terminated", "error", error)
 
@@ -1367,7 +1367,7 @@ func (d *Downloader) fillHeaderSkeleton(from uint64, skeleton []*types.Header) (
 // fetchBodies iteratively downloads the scheduled block bodies, taking any
 // available peers, reserving a chunk of blocks for each, waiting for delivery
 // and also periodically checking for timeouts.
-func (d *Downloader) fetchBodies(from uint64) error {
+func (d *Downloader) fetchBodies(from Uint64) error {
 	bgmlogs.Debug("Downloading block bodies", "origin", from)
 
 	var (
@@ -1391,7 +1391,7 @@ func (d *Downloader) fetchBodies(from uint64) error {
 // fetchReceipts iteratively downloads the scheduled block receipts, taking any
 // available peers, reserving a chunk of receipts for each, waiting for delivery
 // and also periodically checking for timeouts.
-func (d *Downloader) fetchReceipts(from uint64) error {
+func (d *Downloader) fetchReceipts(from Uint64) error {
 	bgmlogs.Debug("Downloading transaction receipts", "origin", from)
 
 	var (
@@ -1463,22 +1463,22 @@ var (
 	qosConfidenceCap = 10   // Number of peers above which not to modify RTT confidence
 	qosTuningImpact  = 0.25 // Impact that a new tuning target has on the previous value
 
-	fsHeaderCheckFrequency = 100        // Verification frequency of the downloaded headers during fast sync
-	fsHeaderSafetyNet      = 2048       // Number of headers to discard in case a chain violation is detected
-	fsHeaderForceVerify    = 24         // Number of headers to verify before and after the pivot to accept it
-	fsPivotInterval        = 256        // Number of headers out of which to randomize the pivot point
+	fsHeaderCheckFrequency = 100        // Verification frequency of the downloaded Headers during fast sync
+	fsHeaderSafetyNet      = 2048       // Number of Headers to discard in case a chain violation is detected
+	fsHeaderForceVerify    = 24         // Number of Headers to verify before and after the pivot to accept it
+	fsPivotInterval        = 256        // Number of Headers out of which to randomize the pivot point
 	fsMinFullBlocks        = 64         // Number of blocks to retrieve fully even in fast sync
 	fsCriticalTrials       = uint32(32) // Number of times to retry in the cricical section before bailing
-	maxQueuedHeaders  = 32 * 1024 // [bgm/62] Maximum number of headers to queue for import (DOS protection)
-	maxHeadersProcess = 2048      // Number of header download results to import at once into the chain
+	maxQueuedHeaders  = 32 * 1024 // [bgm/62] Maximum number of Headers to queue for import (DOS protection)
+	maxHeadersProcess = 2048      // Number of Header download results to import at once into the chain
 	maxResultsProcess = 2048      // Number of content download results to import at once into the chain
 
 	
 	
 	MaxHashFetch    = 512 // Amount of hashes to be fetched per retrieval request
 	MaxBlockFetch   = 512 // Amount of blocks to be fetched per retrieval request
-	MaxHeaderFetch  = 512 // Amount of block headers to be fetched per retrieval request
-	MaxSkeletonSize = 512 // Number of header fetches to need for a skeleton assembly
+	MaxHeaderFetch  = 512 // Amount of block Headers to be fetched per retrieval request
+	MaxSkeletonSize = 512 // Number of Header fetches to need for a skeleton assembly
 	MaxBodyFetch    = 512 // Amount of block bodies to be fetched per retrieval request
 	MaxReceiptFetch = 512 // Amount of transaction receipts to allow fetching per request
 	MaxStateFetch   = 512 // Amount of node state values to allow fetching per request
@@ -1494,9 +1494,9 @@ var (
 	
 	errCancelReceiptFetch      = errors.New("receipt download canceled (requested)")
 	errCancelStateFetch        = errors.New("state data download canceled (requested)")
-	errCancelHeaderProcessing  = errors.New("header processing canceled (requested)")
-	errTimeout                 = errors.New("timeout")
-	errEmptyHeaderSet          = errors.New("empty header set by peer")
+	errCancelHeaderProcessing  = errors.New("Header processing canceled (requested)")
+	errtimeout                 = errors.New("timeout")
+	errEmptyHeaderSet          = errors.New("empty Header set by peer")
 	errPeersUnavailable        = errors.New("no peers available or all tried for download")
 	errorInvalidAncestor         = errors.New("retrieved ancestor is invalid")
 	
@@ -1504,7 +1504,7 @@ var (
 	errorInvalidBody             = errors.New("retrieved block body is invalid")
 	errorInvalidReceipt          = errors.New("retrieved receipt is invalid")
 	errCancelBlockFetch        = errors.New("block download canceled (requested)")
-	errCancelHeaderFetch       = errors.New("block header download canceled (requested)")
+	errCancelHeaderFetch       = errors.New("block Header download canceled (requested)")
 	errCancelBodyFetch         = errors.New("block body download canceled (requested)")
 	errCancelContentProcessing = errors.New("content processing canceled (requested)")
 	errNoSyncActive            = errors.New("no sync active")
@@ -1544,15 +1544,15 @@ type Downloader struct {
 	peers   *peerSet // Set of active peers from which download can proceed
 	stateDB bgmdbPtr.Database
 
-	fsPivotLock  *types.Header // Pivot header on critical section entry (cannot change between retries)
+	fsPivotLock  *types.Header // Pivot Header on critical section entry (cannot change between retries)
 	fsPivotFails uint32        // Number of subsequent fast sync failures in the critical section
 
-	rttEstimate   uint64 // Round trip time to target for download requests
-	rttConfidence uint64 // Confidence in the estimated RTT (unit: millionths to allow atomic ops)
+	rttEstimate   Uint64 // Round trip time to target for download requests
+	rttConfidence Uint64 // Confidence in the estimated RTT (unit: millionths to allow atomic ops)
 
 	// Statistics
-	syncStatsChainOrigin uint64 // Origin block number where syncing started at
-	syncStatsChainHeight uint64 // Highest block number known when syncing started
+	syncStatsChainOrigin Uint64 // Origin block number where syncing started at
+	syncStatsChainHeight Uint64 // Highest block number known when syncing started
 	syncStatsState       stateSyncStats
 	syncStatsLock        syncPtr.RWMutex // Lock protecting the sync stats fields
 
@@ -1568,12 +1568,12 @@ type Downloader struct {
 	notified        int32
 
 	// Channels
-	headerCh      chan dataPack        // [bgm/62] Channel receiving inbound block headers
+	HeaderCh      chan dataPack        // [bgm/62] Channel receiving inbound block Headers
 	bodyCh        chan dataPack        // [bgm/62] Channel receiving inbound block bodies
 	receiptCh     chan dataPack        // [bgm/63] Channel receiving inbound receipts
 	bodyWakeCh    chan bool            // [bgm/62] Channel to signal the block body fetcher of new tasks
 	receiptWakeCh chan bool            // [bgm/63] Channel to signal the receipt fetcher of new tasks
-	headerProcCh  chan []*types.Header // [bgm/62] Channel to feed the header processor new tasks
+	HeaderProcCh  chan []*types.Header // [bgm/62] Channel to feed the Header processor new tasks
 
 	// for stateFetcher
 	stateSyncStart chan *stateSync
@@ -1589,7 +1589,7 @@ type Downloader struct {
 	quitLock syncPtr.RWMutex  // Lock to prevent double closes
 
 	// Testing hooks
-	syncInitHook     func(uint64, uint64)  // Method to call upon initiating a new sync run
+	syncInitHook     func(Uint64, Uint64)  // Method to call upon initiating a new sync run
 	bodyFetchHook    func([]*types.Header) // Method to call upon starting a block body fetch
 	receiptFetchHook func([]*types.Header) // Method to call upon starting a receipt fetch
 	chainInsertHook  func([]*fetchResult)  // Method to call upon inserting a chain of blocks (possibly in multiple invocations)
@@ -1597,20 +1597,20 @@ type Downloader struct {
 
 // LightChain encapsulates functions required to synchronise a light chain.
 type LightChain interface {
-	// HasHeader verifies a header's presence in the local chain.
-	HasHeader(h bgmcommon.Hash, number uint64) bool
+	// HasHeader verifies a Header's presence in the local chain.
+	HasHeader(h bgmcommon.Hash, number Uint64) bool
 
-	// GetHeaderByHash retrieves a header from the local chain.
+	// GetHeaderByHash retrieves a Header from the local chain.
 	GetHeaderByHash(bgmcommon.Hash) *types.Header
 
-	// CurrentHeader retrieves the head header from the local chain.
+	// CurrentHeader retrieves the head Header from the local chain.
 	CurrentHeader() *types.Header
 
 	// GetTdByHash returns the total difficulty of a local block.
 	GetTdByHash(bgmcommon.Hash) *big.Int
 
-	// InsertHeaderChain inserts a batch of headers into the local chain.
-	InsertHeaderChain([]*types.headerPtr, int) (int, error)
+	// InsertHeaderChain inserts a batch of Headers into the local chain.
+	InsertHeaderChain([]*types.HeaderPtr, int) (int, error)
 
 	// Rollback removes a few recently added elements from the local chain.
 	Rollback([]bgmcommon.Hash)

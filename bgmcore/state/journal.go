@@ -48,7 +48,7 @@ type (
 	}
 	nonceChange struct {
 		account *bgmcommon.Address
-		prev    uint64
+		prev    Uint64
 	}
 	storageChange struct {
 		account       *bgmcommon.Address

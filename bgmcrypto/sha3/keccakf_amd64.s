@@ -319,7 +319,7 @@
 	MOVQ rDi, _si(oState); \
 	MOVQ rDo, _so(oState)  \
 
-// func keccakF1600(state *[25]uint64)
+// func keccakF1600(state *[25]Uint64)
 TEXT ·keccakF1600(SB), 0, $200-8
 	MOVQ state+0(FP), rpState
 

@@ -14,11 +14,11 @@
 // along with the BMG Chain project source. If not, you can see <http://www.gnu.org/licenses/> for detail.
 // +build !linux
 
-package metrics
+package metics
 
 import "errors"
 
-// ReadDiskStats retrieves the disk IO stats belonging to the current process.
-func ReadDiskStats(stats *DiskStats) error {
+// ReadDiskStats retrieves the disk IO states belonging to the current process.
+func ReadDiskStats(states *DiskStats) error {
 	return errors.New("Not implemented")
 }

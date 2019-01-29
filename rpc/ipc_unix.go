@@ -23,8 +23,8 @@ import (
 )
 
 // newIPCConnection will connect to a Unix socket on the given endpoint.
-func newIPCConnection(ctx context.Context, endpoint string) (net.Conn, error) {
-	return dialContext(ctx, "unix", endpoint)
+func newIPCConnection(CTX context.Context, endpoint string) (net.Conn, error) {
+	return dialContext(CTX, "unix", endpoint)
 }
 func ipcListen(endpoint string) (net.Listener, error) {
 	// Ensure the IPC path exists and remove any previous leftover

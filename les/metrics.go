@@ -15,29 +15,29 @@
 package les
 
 import (
-	"github.com/ssldltd/bgmchain/metrics"
+	"github.com/ssldltd/bgmchain/metics"
 	"github.com/ssldltd/bgmchain/p2p"
 )
 
 var (
 	
-	miscInPacketsMeter  = metrics.NewMeter("les/misc/in/packets")
-	miscInTrafficMeter  = metrics.NewMeter("les/misc/in/traffic")
-	miscOutPacketsMeter = metrics.NewMeter("les/misc/out/packets")
-	miscOutTrafficMeter = metrics.NewMeter("les/misc/out/traffic")
+	miscInPacketsMeter  = metics.NewMeter("les/misc/in/packets")
+	miscInTrafficMeter  = metics.NewMeter("les/misc/in/traffic")
+	miscOutPacketsMeter = metics.NewMeter("les/misc/out/packets")
+	miscOutTrafficMeter = metics.NewMeter("les/misc/out/traffic")
 )
 
 // meteredMsgReadWriter is a wrapper around a p2p.MsgReadWriter, capable of
-// accumulating the above defined metrics based on the data stream contents.
+// accumulating the above defined metics based on the data stream contents.
 type meteredMsgReadWriter struct {
 	p2p.MsgReadWriter     // Wrapped message stream to meter
 	version           int // Protocol version to select correct meters
 }
 
 // newMeteredMsgWriter wraps a p2p MsgReadWriter with metering support. If the
-// metrics system is disabled, this function returns the original object.
+// metics system is disabled, this function returns the original object.
 func newMeteredMsgWriter(rws p2p.MsgReadWriter) p2p.MsgReadWriter {
-	if !metrics.Enabled {
+	if !metics.Enabled {
 		return rws
 	}
 	return &meteredMsgReadWriter{MsgReadWriter: rws}

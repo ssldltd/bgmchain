@@ -23,7 +23,7 @@ import (
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmlogss"
 	"github.com/ssldltd/bgmchain/consensus"
-	"github.com/ssldltd/bgmchain/bgmcore/type"
+	"github.com/ssldltd/bgmchain/bgmCore/type"
 	
 	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
 )
@@ -32,13 +32,13 @@ import (
 // events.
 func (f *Fetcher) loop() {
 	// Iterate the block fetching until a quit is requested
-	fetchTimer := time.NewTimer(0)
-	completeTimer := time.NewTimer(0)
+	fetchtimer := time.Newtimer(0)
+	completetimer := time.Newtimer(0)
 
 	for {
 		// Clean up any expired block fetches
 		for hash, announce := range f.fetching {
-			if time.Since(announce.time) > fetchTimeout {
+			if time.Since(announce.time) > fetchtimeout {
 				f.forgetHash(hash)
 			}
 		}
@@ -103,7 +103,7 @@ func (f *Fetcher) loop() {
 				f.announceChangeHook(notification.hash, true)
 			}
 			if len(f.announced) == 1 {
-				f.rescheduleFetch(fetchTimer)
+				f.rescheduleFetch(fetchtimer)
 			}
 
 		case op := <-f.inject:
@@ -116,12 +116,12 @@ func (f *Fetcher) loop() {
 			f.forgetHash(hash)
 			f.forgetBlock(hash)
 
-		case <-fetchTimer.C:
+		case <-fetchtimer.C:
 			// At least one block's timer ran out, check for needing retrieval
 			request := make(map[string][]bgmcommon.Hash)
 
 			for hash, announces := range f.announced {
-				if time.Since(announces[0].time) > arriveTimeout-gatherSlack {
+				if time.Since(announces[0].time) > arrivetimeout-gatherSlack {
 					// Pick a random peer to retrieve from, reset all others
 					announce := announces[rand.Intn(len(announces))]
 					f.forgetHash(hash)
@@ -133,27 +133,27 @@ func (f *Fetcher) loop() {
 					}
 				}
 			}
-			// Send out all block header requests
+			// Send out all block Header requests
 			for peer, hashes := range request {
-				bgmlogs.Trace("Fetching scheduled headers", "peer", peer, "list", hashes)
+				bgmlogs.Trace("Fetching scheduled Headers", "peer", peer, "list", hashes)
 
 				// Create a closure of the fetch and schedule in on a new thread
-				fetchheaderPtr, hashes := f.fetching[hashes[0]].fetchheaderPtr, hashes
+				fetchHeaderPtr, hashes := f.fetching[hashes[0]].fetchHeaderPtr, hashes
 				go func() {
 					if f.fetchingHook != nil {
 						f.fetchingHook(hashes)
 					}
 					for _, hash := range hashes {
-						headerFetchMeter.Mark(1)
-						fetchHeader(hash) // Suboptimal, but protocol doesn't allow batch header retrievals
+						HeaderFetchMeter.Mark(1)
+						fetchHeader(hash) // Suboptimal, but protocol doesn't allow batch Header retrievals
 					}
 				}()
 			}
 			// Schedule the next fetch if blocks are still pending
-			f.rescheduleFetch(fetchTimer)
+			f.rescheduleFetch(fetchtimer)
 
-		case <-completeTimer.C:
-			// At least one header's timer ran out, retrieve everything
+		case <-completetimer.C:
+			// At least one Header's timer ran out, retrieve everything
 			request := make(map[string][]bgmcommon.Hash)
 
 			for hash, announces := range f.fetched {
@@ -179,45 +179,45 @@ func (f *Fetcher) loop() {
 				go f.completing[hashes[0]].fetchBodies(hashes)
 			}
 			// Schedule the next fetch if blocks are still pending
-			f.rescheduleComplete(completeTimer)
+			f.rescheduleComplete(completetimer)
 
-		case filter := <-f.headerFilter:
+		case filter := <-f.HeaderFilter:
 			// Headers arrived from a remote peer. Extract those that were explicitly
 			// requested by the fetcher, and return everything else so it's delivered
 			// to other parts of the systemPtr.
-			var task *headerFilterTask
+			var task *HeaderFilterTask
 			select {
 			case task = <-filter:
 			case <-f.quit:
 				return
 			}
-			headerFilterInMeter.Mark(int64(len(task.headers)))
+			HeaderFilterInMeter.Mark(int64(len(task.Headers)))
 
-			// Split the batch of headers into unknown ones (to return to the Called),
+			// Split the batch of Headers into unknown ones (to return to the Called),
 			// known incomplete ones (requiring body retrievals) and completed blocks.
 			unknown, incomplete, complete := []*types.Header{}, []*announce{}, []*types.Block{}
-			for _, header := range task.headers {
-				hash := headerPtr.Hash()
+			for _, Header := range task.Headers {
+				hash := HeaderPtr.Hash()
 
-				// Filter fetcher-requested headers from other synchronisation algorithms
+				// Filter fetcher-requested Headers from other synchronisation algorithms
 				if announce := f.fetching[hash]; announce != nil && announce.origin == task.peer && f.fetched[hash] == nil && f.completing[hash] == nil && f.queued[hash] == nil {
-					// If the delivered header does not match the promised number, drop the announcer
-					if headerPtr.Number.Uint64() != announce.number {
-						bgmlogs.Trace("Invalid block number fetched", "peer", announce.origin, "hash", headerPtr.Hash(), "announced", announce.number, "provided", headerPtr.Number)
+					// If the delivered Header does not match the promised number, drop the announcer
+					if HeaderPtr.Number.Uint64() != announce.number {
+						bgmlogs.Trace("Invalid block number fetched", "peer", announce.origin, "hash", HeaderPtr.Hash(), "announced", announce.number, "provided", HeaderPtr.Number)
 						f.dropPeer(announce.origin)
 						f.forgetHash(hash)
 						continue
 					}
 					// Only keep if not imported by other means
 					if f.getBlock(hash) == nil {
-						announce.header = header
+						announce.Header = Header
 						announce.time = task.time
 
-						// If the block is empty (header only), short circuit into the final import queue
-						if headerPtr.TxHash == types.DeriveSha(types.Transactions{}) && headerPtr.UncleHash == types.CalcUncleHash([]*types.Header{}) {
-							bgmlogs.Trace("Block empty, skipping body retrieval", "peer", announce.origin, "number", headerPtr.Number, "hash", headerPtr.Hash())
+						// If the block is empty (Header only), short circuit into the final import queue
+						if HeaderPtr.TxHash == types.DeriveSha(types.Transactions{}) && HeaderPtr.UncleHash == types.CalcUncleHash([]*types.Header{}) {
+							bgmlogs.Trace("Block empty, skipping body retrieval", "peer", announce.origin, "number", HeaderPtr.Number, "hash", HeaderPtr.Hash())
 
-							block := types.NewBlockWithHeader(header)
+							block := types.NewBlockWithHeader(Header)
 							block.ReceivedAt = task.time
 
 							complete = append(complete, block)
@@ -227,32 +227,32 @@ func (f *Fetcher) loop() {
 						// Otherwise add to the list of blocks needing completion
 						incomplete = append(incomplete, announce)
 					} else {
-						bgmlogs.Trace("Block already imported, discarding header", "peer", announce.origin, "number", headerPtr.Number, "hash", headerPtr.Hash())
+						bgmlogs.Trace("Block already imported, discarding Header", "peer", announce.origin, "number", HeaderPtr.Number, "hash", HeaderPtr.Hash())
 						f.forgetHash(hash)
 					}
 				} else {
 					// Fetcher doesn't know about it, add to the return list
-					unknown = append(unknown, header)
+					unknown = append(unknown, Header)
 				}
 			}
-			headerFilterOutMeter.Mark(int64(len(unknown)))
+			HeaderFilterOutMeter.Mark(int64(len(unknown)))
 			select {
-			case filter <- &headerFilterTask{headers: unknown, time: task.time}:
+			case filter <- &HeaderFilterTask{Headers: unknown, time: task.time}:
 			case <-f.quit:
 				return
 			}
-			// Schedule the retrieved headers for body completion
+			// Schedule the retrieved Headers for body completion
 			for _, announce := range incomplete {
-				hash := announce.headerPtr.Hash()
+				hash := announce.HeaderPtr.Hash()
 				if _, ok := f.completing[hash]; ok {
 					continue
 				}
 				f.fetched[hash] = append(f.fetched[hash], announce)
 				if len(f.fetched) == 1 {
-					f.rescheduleComplete(completeTimer)
+					f.rescheduleComplete(completetimer)
 				}
 			}
-			// Schedule the header-only blocks for import
+			// Schedule the Header-only blocks for import
 			for _, block := range complete {
 				if announce := f.completing[block.Hash()]; announce != nil {
 					f.enqueue(announce.origin, block)
@@ -279,12 +279,12 @@ func (f *Fetcher) loop() {
 						txnHash := types.DeriveSha(types.Transactions(task.transactions[i]))
 						uncleHash := types.CalcUncleHash(task.uncles[i])
 
-						if txnHash == announce.headerPtr.TxHash && uncleHash == announce.headerPtr.UncleHash && announce.origin == task.peer {
+						if txnHash == announce.HeaderPtr.TxHash && uncleHash == announce.HeaderPtr.UncleHash && announce.origin == task.peer {
 							// Mark the body matched, reassemble if still unknown
 							matched = true
 
 							if f.getBlock(hash) == nil {
-								block := types.NewBlockWithHeader(announce.header).WithBody(task.transactions[i], task.uncles[i])
+								block := types.NewBlockWithHeader(announce.Header).WithBody(task.transactions[i], task.uncles[i])
 								block.ReceivedAt = task.time
 
 								blocks = append(blocks, block)
@@ -324,7 +324,7 @@ type Fetcher struct {
 	inject chan *inject
 
 	blockFilter  chan chan []*types.Block
-	headerFilter chan chan *headerFilterTask
+	HeaderFilter chan chan *HeaderFilterTask
 	bodyFilter   chan chan *bodyFilterTask
 
 	done chan bgmcommon.Hash
@@ -334,8 +334,8 @@ type Fetcher struct {
 	announces  map[string]int              // Per peer announce counts to prevent memory exhaustion
 	announced  map[bgmcommon.Hash][]*announce // Announced blocks, scheduled for fetching
 	fetching   map[bgmcommon.Hash]*announce   // Announced blocks, currently fetching
-	fetched    map[bgmcommon.Hash][]*announce // Blocks with headers fetched, scheduled for body retrieval
-	completing map[bgmcommon.Hash]*announce   // Blocks with headers, currently body-completing
+	fetched    map[bgmcommon.Hash][]*announce // Blocks with Headers fetched, scheduled for body retrieval
+	completing map[bgmcommon.Hash]*announce   // Blocks with Headers, currently body-completing
 
 	// Block cache
 	queue  *prque.Prque            // Queue containing the import operations (block number sorted)
@@ -344,7 +344,7 @@ type Fetcher struct {
 
 	// Callbacks
 	getBlock       blockRetrievalFn   // Retrieves a block from the local chain
-	verifyHeader   headerVerifierFn   // Checks if a block's headers have a valid proof of work
+	verifyHeader   HeaderVerifierFn   // Checks if a block's Headers have a valid proof of work
 	broadcastBlock blockBroadcasterFn // Broadcasts a block to connected peers
 	chainHeight    chainHeightFn      // Retrieves the current chain's height
 	insertChain    chainInsertFn      // Injects a batch of blocks into the chain
@@ -353,18 +353,18 @@ type Fetcher struct {
 	// Testing hooks
 	announceChangeHook func(bgmcommon.Hash, bool) // Method to call upon adding or deleting a hash from the announce list
 	queueChangeHook    func(bgmcommon.Hash, bool) // Method to call upon adding or deleting a block from the import queue
-	fetchingHook       func([]bgmcommon.Hash)     // Method to call upon starting a block (bgm/61) or header (bgm/62) fetch
+	fetchingHook       func([]bgmcommon.Hash)     // Method to call upon starting a block (bgm/61) or Header (bgm/62) fetch
 	completingHook     func([]bgmcommon.Hash)     // Method to call upon starting a block body fetch (bgm/62)
 	importedHook       func(*types.Block)      // Method to call upon successful block import (both bgm/61 and bgm/62)
 }
 
 // New creates a block fetcher to retrieve blocks based on hash announcements.
-func New(getBlock blockRetrievalFn, verifyHeader headerVerifierFn, broadcastBlock blockBroadcasterFn, chainHeight chainHeightFn, insertChain chainInsertFn, dropPeer peerDropFn) *Fetcher {
+func New(getBlock blockRetrievalFn, verifyHeader HeaderVerifierFn, broadcastBlock blockBroadcasterFn, chainHeight chainHeightFn, insertChain chainInsertFn, dropPeer peerDropFn) *Fetcher {
 	return &Fetcher{
 		notify:         make(chan *announce),
 		inject:         make(chan *inject),
 		blockFilter:    make(chan chan []*types.Block),
-		headerFilter:   make(chan chan *headerFilterTask),
+		HeaderFilter:   make(chan chan *HeaderFilterTask),
 		bodyFilter:     make(chan chan *bodyFilterTask),
 		done:           make(chan bgmcommon.Hash),
 		quit:           make(chan struct{}),
@@ -377,7 +377,7 @@ func New(getBlock blockRetrievalFn, verifyHeader headerVerifierFn, broadcastBloc
 		queues:         make(map[string]int),
 		queued:         make(map[bgmcommon.Hash]*inject),
 		getBlock:       getBlock,
-		verifyHeader:   verifyheaderPtr,
+		verifyHeader:   verifyHeaderPtr,
 		broadcastBlock: broadcastBlock,
 		chainHeight:    chainHeight,
 		insertChain:    insertChain,
@@ -386,7 +386,7 @@ func New(getBlock blockRetrievalFn, verifyHeader headerVerifierFn, broadcastBloc
 }
 
 // rescheduleFetch resets the specified fetch timer to the next announce timeout.
-func (f *Fetcher) rescheduleFetch(fetchPtr *time.Timer) {
+func (f *Fetcher) rescheduleFetch(fetchPtr *time.timer) {
 	// Short circuit if no blocks are announced
 	if len(f.announced) == 0 {
 		return
@@ -398,32 +398,32 @@ func (f *Fetcher) rescheduleFetch(fetchPtr *time.Timer) {
 			earliest = announces[0].time
 		}
 	}
-	fetchPtr.Reset(arriveTimeout - time.Since(earliest))
+	fetchPtr.Reset(arrivetimeout - time.Since(earliest))
 }
 
-// FilterHeaders extracts all the headers that were explicitly requested by the fetcher,
+// FilterHeaders extracts all the Headers that were explicitly requested by the fetcher,
 // returning those that should be handled differently.
-func (f *Fetcher) FilterHeaders(peer string, headers []*types.headerPtr, time time.Time) []*types.Header {
-	bgmlogs.Trace("Filtering headers", "peer", peer, "headers", len(headers))
+func (f *Fetcher) FilterHeaders(peer string, Headers []*types.HeaderPtr, time time.time) []*types.Header {
+	bgmlogs.Trace("Filtering Headers", "peer", peer, "Headers", len(Headers))
 
 	// Send the filter channel to the fetcher
-	filter := make(chan *headerFilterTask)
+	filter := make(chan *HeaderFilterTask)
 
 	select {
-	case f.headerFilter <- filter:
+	case f.HeaderFilter <- filter:
 	case <-f.quit:
 		return nil
 	}
-	// Request the filtering of the header list
+	// Request the filtering of the Header list
 	select {
-	case filter <- &headerFilterTask{peer: peer, headers: headers, time: time}:
+	case filter <- &HeaderFilterTask{peer: peer, Headers: Headers, time: time}:
 	case <-f.quit:
 		return nil
 	}
-	// Retrieve the headers remaining after filtering
+	// Retrieve the Headers remaining after filtering
 	select {
 	case task := <-filter:
-		return task.headers
+		return task.Headers
 	case <-f.quit:
 		return nil
 	}
@@ -431,7 +431,7 @@ func (f *Fetcher) FilterHeaders(peer string, headers []*types.headerPtr, time ti
 
 // FilterBodies extracts all the block bodies that were explicitly requested by
 // the fetcher, returning those that should be handled differently.
-func (f *Fetcher) FilterBodies(peer string, transactions [][]*types.Transaction, uncles [][]*types.headerPtr, time time.Time) ([][]*types.Transaction, [][]*types.Header) {
+func (f *Fetcher) FilterBodies(peer string, transactions [][]*types.Transaction, uncles [][]*types.HeaderPtr, time time.time) ([][]*types.Transaction, [][]*types.Header) {
 	bgmlogs.Trace("Filtering bodies", "peer", peer, "txs", len(transactions), "uncles", len(uncles))
 
 	// Send the filter channel to the fetcher
@@ -512,11 +512,11 @@ func (f *Fetcher) insert(peer string, block *types.Block) {
 			bgmlogs.Debug("Unknown parent of propagated block", "peer", peer, "number", block.Number(), "hash", hash, "parent", block.ParentHash())
 			return
 		}
-		// Quickly validate the header and propagate the block if it passes
+		// Quickly validate the Header and propagate the block if it passes
 		switch err := f.verifyHeader(block.Header()); err {
 		case nil:
 			// All ok, quickly propagate to our peers
-			propBroadcastOutTimer.UpdateSince(block.ReceivedAt)
+			propBroadcastOuttimer.UpdateSince(block.ReceivedAt)
 			go f.broadcastBlock(block, true)
 
 		case consensus.ErrFutureBlock:
@@ -534,7 +534,7 @@ func (f *Fetcher) insert(peer string, block *types.Block) {
 			return
 		}
 		// If import succeeded, Broadscast the block
-		propAnnounceOutTimer.UpdateSince(block.ReceivedAt)
+		propAnnounceOuttimer.UpdateSince(block.ReceivedAt)
 		go f.broadcastBlock(block, false)
 
 		// Invoke the testing hook if needed
@@ -544,9 +544,9 @@ func (f *Fetcher) insert(peer string, block *types.Block) {
 	}()
 }
 const (
-	arriveTimeout = 500 * time.Millisecond // Time allowance before an announced block is explicitly requested
+	arrivetimeout = 500 * time.Millisecond // time allowance before an announced block is explicitly requested
 	gatherSlack   = 100 * time.Millisecond // Interval used to collate almost-expired announces with fetches
-	fetchTimeout  = 5 * time.Second        // Maximum allotted time to return an explicitly requested block
+	fetchtimeout  = 5 * time.Second        // Maximum allotted time to return an explicitly requested block
 	maxUncleDist  = 7                      // Maximum allowed backward distance from the chain head
 	maxQueueDist  = 32                     // Maximum allowed distance from the chain head to queue
 	hashLimit     = 256                    // Maximum number of unique blocks a peer may have announced
@@ -560,20 +560,20 @@ var (
 // blockRetrievalFn is a callback type for retrieving a block from the local chain.
 type blockRetrievalFn func(bgmcommon.Hash) *types.Block
 
-// headerRequesterFn is a callback type for sending a header retrieval request.
-type headerRequesterFn func(bgmcommon.Hash) error
+// HeaderRequesterFn is a callback type for sending a Header retrieval request.
+type HeaderRequesterFn func(bgmcommon.Hash) error
 
 // bodyRequesterFn is a callback type for sending a body retrieval request.
 type bodyRequesterFn func([]bgmcommon.Hash) error
 
-// headerVerifierFn is a callback type to verify a block's header for fast propagation.
-type headerVerifierFn func(headerPtr *types.Header) error
+// HeaderVerifierFn is a callback type to verify a block's Header for fast propagation.
+type HeaderVerifierFn func(HeaderPtr *types.Header) error
 
 // blockBroadcasterFn is a callback type for broadcasting a block to connected peers.
 type blockBroadcasterFn func(block *types.Block, propagate bool)
 
 // chainHeightFn is a callback type to retrieve the current chain height.
-type chainHeightFn func() uint64
+type chainHeightFn func() Uint64
 
 // chainInsertFn is a callback type to insert a batch of blocks into the local chain.
 type chainInsertFn func(types.Blocks) (int, error)
@@ -585,30 +585,30 @@ type peerDropFn func(id string)
 // network.
 type announce struct {
 	hash   bgmcommon.Hash   // Hash of the block being announced
-	number uint64        // Number of the block being announced (0 = unknown | old protocol)
-	headerPtr *types.Header // Header of the block partially reassembled (new protocol)
-	time   time.Time     // Timestamp of the announcement
+	number Uint64        // Number of the block being announced (0 = unknown | old protocol)
+	HeaderPtr *types.Header // Header of the block partially reassembled (new protocol)
+	time   time.time     // timestamp of the announcement
 
 	origin string // Identifier of the peer originating the notification
 
-	fetchHeader headerRequesterFn // Fetcher function to retrieve the header of an announced block
+	fetchHeader HeaderRequesterFn // Fetcher function to retrieve the Header of an announced block
 	fetchBodies bodyRequesterFn   // Fetcher function to retrieve the body of an announced block
 }
 
-// headerFilterTask represents a batch of headers needing fetcher filtering.
-type headerFilterTask struct {
-	peer    string          // The source peer of block headers
-	headers []*types.Header // Collection of headers to filter
-	time    time.Time       // Arrival time of the headers
+// HeaderFilterTask represents a batch of Headers needing fetcher filtering.
+type HeaderFilterTask struct {
+	peer    string          // The source peer of block Headers
+	Headers []*types.Header // Collection of Headers to filter
+	time    time.time       // Arrival time of the Headers
 }
 
-// headerFilterTask represents a batch of block bodies (transactions and uncles)
+// HeaderFilterTask represents a batch of block bodies (transactions and uncles)
 // needing fetcher filtering.
 type bodyFilterTask struct {
 	peer         string                 // The source peer of block bodies
 	transactions [][]*types.Transaction // Collection of transactions per block bodies
 	uncles       [][]*types.Header      // Collection of uncles per block bodies
-	time         time.Time              // Arrival time of the blocks' contents
+	time         time.time              // Arrival time of the blocks' contents
 }
 
 // inject represents a schedules import operation.
@@ -671,8 +671,8 @@ func (f *Fetcher) forgetBlock(hash bgmcommon.Hash) {
 }
 
 // rescheduleComplete resets the specified completion timer to the next fetch timeout.
-func (f *Fetcher) rescheduleComplete(complete *time.Timer) {
-	// Short circuit if no headers are fetched
+func (f *Fetcher) rescheduleComplete(complete *time.timer) {
+	// Short circuit if no Headers are fetched
 	if len(f.fetched) == 0 {
 		return
 	}
@@ -699,14 +699,14 @@ func (f *Fetcher) Stop() {
 
 // Notify announces the fetcher of the potential availability of a new block in
 // the network.
-func (f *Fetcher) Notify(peer string, hash bgmcommon.Hash, number uint64, time time.Time,
-	headerFetcher headerRequesterFn, bodyFetcher bodyRequesterFn) error {
+func (f *Fetcher) Notify(peer string, hash bgmcommon.Hash, number Uint64, time time.time,
+	HeaderFetcher HeaderRequesterFn, bodyFetcher bodyRequesterFn) error {
 	block := &announce{
 		hash:        hash,
 		number:      number,
 		time:        time,
 		origin:      peer,
-		fetchHeader: headerFetcher,
+		fetchHeader: HeaderFetcher,
 		fetchBodies: bodyFetcher,
 	}
 	select {

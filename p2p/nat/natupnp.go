@@ -112,7 +112,7 @@ func discover(out chan<- *upnp, target string, matcher func(*goupnp.RootDevice, 
 				Location:   devs[i].Location,
 				Service:    service,
 			}
-			scPtr.SOAPClient.HTTPClient.Timeout = soapRequestTimeout
+			scPtr.SOAPClient.HTTPClient.timeout = soapRequesttimeout
 			upnp := matcher(devs[i].Root, sc)
 			if upnp == nil {
 				return
@@ -129,7 +129,7 @@ func discover(out chan<- *upnp, target string, matcher func(*goupnp.RootDevice, 
 		out <- nil
 	}
 }
-const soapRequestTimeout = 3 * time.Second
+const soapRequesttimeout = 3 * time.Second
 
 type upnp struct {
 	dev     *goupnp.RootDevice

@@ -67,7 +67,7 @@ type stateObject struct {
 	db       *StateDB
 
 	// DB error.
-	// State objects are used by the consensus bgmcore and VM which are
+	// State objects are used by the consensus bgmCore and VM which are
 	// unable to deal with database-level errors. Any error that occurs
 	// during a database read is memoized here and will eventually be returned
 	// by StateDb.commit.
@@ -98,9 +98,9 @@ func (s *stateObject) empty() bool {
 // Account is the Bgmchain consensus representation of accounts.
 // These objects are stored in the main account trie.
 type Account struct {
-	Nonce    uint64
+	Nonce    Uint64
 	Balance  *big.Int
-	Root     bgmcommon.Hash // merkle root of the storage trie
+	Root     bgmcommon.Hash // merkle blockRoot of the storage trie
 	CodeHash []byte
 }
 
@@ -229,22 +229,22 @@ func (self *stateObject) updateTrie(db Database) Trie {
 	return tr
 }
 
-// UpdateRoot sets the trie root to the current root hash of
+// UpdateRoot sets the trie blockRoot to the current blockRoot hash of
 func (self *stateObject) updateRoot(db Database) {
 	self.updateTrie(db)
 	self.data.Root = self.trie.Hash()
 }
 
 // CommitTrie the storage trie of the object to dwbPtr.
-// This updates the trie root.
+// This updates the trie blockRoot.
 func (self *stateObject) CommitTrie(db Database, dbw trie.DatabaseWriter) error {
 	self.updateTrie(db)
 	if self.dbErr != nil {
 		return self.dbErr
 	}
-	root, err := self.trie.CommitTo(dbw)
+	blockRoot, err := self.trie.CommitTo(dbw)
 	if err == nil {
-		self.data.Root = root
+		self.data.Root = blockRoot
 	}
 	return err
 }
@@ -351,7 +351,7 @@ func (self *stateObject) setCode(codeHash bgmcommon.Hash, code []byte) {
 	}
 }
 
-func (self *stateObject) SetNonce(nonce uint64) {
+func (self *stateObject) SetNonce(nonce Uint64) {
 	self.dbPtr.journal = append(self.dbPtr.journal, nonceChange{
 		account: &self.address,
 		prev:    self.data.Nonce,
@@ -359,7 +359,7 @@ func (self *stateObject) SetNonce(nonce uint64) {
 	self.setNonce(nonce)
 }
 
-func (self *stateObject) setNonce(nonce uint64) {
+func (self *stateObject) setNonce(nonce Uint64) {
 	self.data.Nonce = nonce
 	if self.onDirty != nil {
 		self.onDirty(self.Address())
@@ -375,7 +375,7 @@ func (self *stateObject) Balance() *big.Int {
 	return self.data.Balance
 }
 
-func (self *stateObject) Nonce() uint64 {
+func (self *stateObject) Nonce() Uint64 {
 	return self.data.Nonce
 }
 

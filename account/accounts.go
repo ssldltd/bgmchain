@@ -19,7 +19,7 @@ import (
 
 	"github.com/ssldltd/bgmchain"
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/event"
 )
 

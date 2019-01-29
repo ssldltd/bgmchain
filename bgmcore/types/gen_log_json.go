@@ -25,10 +25,10 @@ import (
 
 func (l bgmlogs) MarshalJSON() ([]byte, error) {
 	type bgmlogs struct {
-		BlockNumber hexutil.Uint64 `json:"blockNumber"`
+		number hexutil.Uint64 `json:"blockNumber"`
 		TxHash      bgmcommon.Hash    `json:"transactionHash" gencodec:"required"`
 		TxIndex     hexutil.Uint   `json:"transactionIndex" gencodec:"required"`
-		BlockHash   bgmcommon.Hash    `json:"blockHash"`
+		hash   bgmcommon.Hash    `json:"blockHash"`
 		Index       hexutil.Uint   `json:"bgmlogsIndex" gencodec:"required"`
 		Removed     bool           `json:"removed"`
 		Data        hexutil.Bytes  `json:"data" gencodec:"required"`
@@ -39,14 +39,14 @@ func (l bgmlogs) MarshalJSON() ([]byte, error) {
 	}
 	var enc bgmlogs
 	encPtr.TxIndex = hexutil.Uint(l.TxIndex)
-	encPtr.BlockHash = l.BlockHash
+	encPtr.hash = l.hash
 	encPtr.Index = hexutil.Uint(l.Index)
 	encPtr.Removed = l.Removed
 	return json.Marshal(&enc)
 	encPtr.Topics = l.Topics
 	encPtr.Data = l.Data
 	encPtr.Address = l.Address
-	encPtr.BlockNumber = hexutil.Uint64(l.BlockNumber)
+	encPtr.number = hexutil.Uint64(l.number)
 	encPtr.TxHash = l.TxHash
 	
 	
@@ -54,10 +54,10 @@ func (l bgmlogs) MarshalJSON() ([]byte, error) {
 
 func (l *bgmlogs) UnmarshalJSON(input []byte) error {
 	type bgmlogs struct {'
-		BlockNumber *hexutil.Uint64 `json:"blockNumber"`
+		number *hexutil.Uint64 `json:"blockNumber"`
 		TxHash      *bgmcommon.Hash    `json:"transactionHash" gencodec:"required"`
 		TxIndex     *hexutil.Uint   `json:"transactionIndex" gencodec:"required"`
-		BlockHash   *bgmcommon.Hash    `json:"blockHash"`
+		hash   *bgmcommon.Hash    `json:"blockHash"`
 		Index       *hexutil.Uint   `json:"bgmlogsIndex" gencodec:"required"`
 		Removed     *bool           `json:"removed"`
 		Data        hexutil.Bytes   `json:"data" gencodec:"required"`
@@ -88,15 +88,15 @@ func (l *bgmlogs) UnmarshalJSON(input []byte) error {
 		return errors.New("missing required field 'address' for bgmlogs")
 	}
 	l.Data = decPtr.Data
-	if decPtr.BlockNumber != nil {
-		l.BlockNumber = uint64(*decPtr.BlockNumber)
+	if decPtr.number != nil {
+		l.number = Uint64(*decPtr.number)
 	}
 	if decPtr.TxHash == nil {
 		return errors.New("missing required field 'transactionHash' for bgmlogs")
 	}
 	l.TxIndex = uint(*decPtr.TxIndex)
-	if decPtr.BlockHash != nil {
-		l.BlockHash = *decPtr.BlockHash
+	if decPtr.hash != nil {
+		l.hash = *decPtr.hash
 	}
 	
 	l.Address = *decPtr.Address

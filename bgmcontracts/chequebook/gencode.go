@@ -22,7 +22,7 @@ import (
 	"github.com/ssldltd/bgmchain/account/abi/bind"
 	"github.com/ssldltd/bgmchain/account/abi/bind/backends"
 	"github.com/ssldltd/bgmchain/bgmcontracts/Chequesbooks/contract"
-	"github.com/ssldltd/bgmchain/bgmcore"
+	"github.com/ssldltd/bgmchain/bgmCore"
 	"github.com/ssldltd/bgmchain/bgmcrypto"
 )
 
@@ -53,7 +53,7 @@ func main() {
 
 var (
 	testKey, _  = bgmcrypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-	testAccount = bgmcore.GenesisAccount{
+	testAccount = bgmCore.GenesisAccount{
 		Address: bgmcrypto.PubkeyToAddress(testKey.PublicKey),
 		Balance: big.NewInt(500000000000),
 	}

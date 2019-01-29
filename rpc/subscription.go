@@ -66,8 +66,8 @@ func newNotifier(codec ServerCodec) *Notifier {
 func (s *Subscription) Err() <-chan error {
 	return s.err
 }
-func NotifierFromContext(ctx context.Context) (*Notifier, bool) {
-	n, ok := ctx.Value(notifierKey{}).(*Notifier)
+func NotifierFromContext(CTX context.Context) (*Notifier, bool) {
+	n, ok := CTX.Value(notifierKey{}).(*Notifier)
 	return n, ok
 }
 func (n *Notifier) CreateSubscription() *Subscription {

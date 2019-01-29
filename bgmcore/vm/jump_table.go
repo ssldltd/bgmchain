@@ -23,13 +23,13 @@ import (
 )
 
 type (
-	executionFunc       func(pcPtr *uint64, env *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error)
-	gasFunc             func(bgmparam.GasTable, *EVM, *Contract, *Stack, *Memory, uint64) (uint64, error) // last bgmparameter is the requested memory size as a uint64
+	executionFunc       func(pcPtr *Uint64, env *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error)
+	gasFunc             func(bgmparam.GasTable, *EVM, *Contract, *Stack, *Memory, Uint64) (Uint64, error) // last bgmparameter is the requested memory size as a Uint64
 	stackValidationFunc func(*Stack) error
 	memorySizeFunc      func(*Stack) *big.Int
 )
 
-var errGasUintOverflow = errors.New("gas uint64 overflow")
+var errGasUintOverflow = errors.New("gas Uint64 overflow")
 
 type operation struct {
 	// gasCost is the gas function and returns the gas required for execution
@@ -357,7 +357,7 @@ func NewFrontierInstructionSet() [256]operation {
 			valid:         true,
 		},
 		TIMESTAMP: {
-			execute:       opTimestamp,
+			execute:       optimestamp,
 			gasCost:       constGasFunc(GasQuickStep),
 			validateStack: makeStackFunc(0, 1),
 			valid:         true,

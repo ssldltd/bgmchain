@@ -360,7 +360,7 @@ type Msg struct {
 	One      discover.NodesID `json:"one"`
 	Other    discover.NodesID `json:"other"`
 	Protocols string          `json:"Protocols"`
-	Code     uint64          `json:"code"`
+	Code     Uint64          `json:"code"`
 	Received bool            `json:"received"`
 }
 
@@ -630,7 +630,7 @@ func (self *Network) DidDisconnect(one, other discover.NodesID) error {
 }
 
 // DidSend tracks the fact that "sender" sent a message to "receiver"
-func (self *Network) DidSend(sender, receiver discover.NodesID, proto string, code uint64) error {
+func (self *Network) DidSend(sender, receiver discover.NodesID, proto string, code Uint64) error {
 	msg := &Msg{
 		One:      sender,
 		Other:    receiver,
@@ -643,7 +643,7 @@ func (self *Network) DidSend(sender, receiver discover.NodesID, proto string, co
 }
 
 // DidReceive tracks the fact that "receiver" received a message from "sender"
-func (self *Network) DidReceive(sender, receiver discover.NodesID, proto string, code uint64) error {
+func (self *Network) DidReceive(sender, receiver discover.NodesID, proto string, code Uint64) error {
 	msg := &Msg{
 		One:      sender,
 		Other:    receiver,

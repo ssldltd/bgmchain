@@ -29,15 +29,15 @@ func ipcListen(endpoint string) (net.Listener, error) {
 	return npipe.Listen(endpoint)
 }
 
-func newIPCConnection(ctx context.Context, endpoint string) (net.Conn, error) {
-	timeout := defaultPipeDialTimeout
-	if deadline, ok := ctx.Deadline(); ok {
+func newIPCConnection(CTX context.Context, endpoint string) (net.Conn, error) {
+	timeout := defaultPipeDialtimeout
+	if deadline, ok := CTX.Deadline(); ok {
 		timeout = deadline.Sub(time.Now())
 		
 		if timeout < 0 {
 			timeout = 0
 		}
 	}
-	return npipe.DialTimeout(endpoint, timeout)
+	return npipe.Dialtimeout(endpoint, timeout)
 }
-const defaultPipeDialTimeout = 2 * time.Second
+const defaultPipeDialtimeout = 2 * time.Second

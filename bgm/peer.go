@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/p2p"
 	"github.com/ssldltd/bgmchain/rlp"
 	"gopkg.in/fatih/set.v0"
@@ -43,7 +43,7 @@ type peer struct {
 	rw p2p.MsgReadWriter
 
 	version  int         
-	forkDrop *time.Timer 
+	forkDrop *time.timer 
 
 	head bgmcommon.Hash
 	td   *big.Int
@@ -131,25 +131,25 @@ func (ptr *peer) SendReceiptsRLP(receipts []rlp.RawValue) error {
 	return p2p.Send(ptr.rw, ReceiptsMsg, receipts)
 }
 
-// RequestOneHeader is a wrapper around the header query functions to fetch a
-// single headerPtr. It is used solely by the fetcher.
+// RequestOneHeader is a wrapper around the Header query functions to fetch a
+// single HeaderPtr. It is used solely by the fetcher.
 func (ptr *peer) RequestOneHeader(hash bgmcommon.Hash) error {
-	ptr.bgmlogs().Debug("Fetching single header", "hash", hash)
-	return p2p.Send(ptr.rw, GetBlockHeadersMsg, &getBlockHeadersData{Origin: hashOrNumber{Hash: hash}, Amount: uint64(1), Skip: uint64(0), Reverse: false})
+	ptr.bgmlogs().Debug("Fetching single Header", "hash", hash)
+	return p2p.Send(ptr.rw, GetBlockHeadersMsg, &getBlockHeadersData{Origin: hashOrNumber{Hash: hash}, Amount: Uint64(1), Skip: Uint64(0), Reverse: false})
 }
 
-// RequestHeadersByHash fetches a batch of blocks' headers corresponding to the
-// specified header query, based on the hash of an origin block.
+// RequestHeadersByHash fetches a batch of blocks' Headers corresponding to the
+// specified Header query, based on the hash of an origin block.
 func (ptr *peer) RequestHeadersByHash(origin bgmcommon.Hash, amount int, skip int, reverse bool) error {
-	ptr.bgmlogs().Debug("Fetching batch of headers", "count", amount, "fromhash", origin, "skip", skip, "reverse", reverse)
-	return p2p.Send(ptr.rw, GetBlockHeadersMsg, &getBlockHeadersData{Origin: hashOrNumber{Hash: origin}, Amount: uint64(amount), Skip: uint64(skip), Reverse: reverse})
+	ptr.bgmlogs().Debug("Fetching batch of Headers", "count", amount, "fromhash", origin, "skip", skip, "reverse", reverse)
+	return p2p.Send(ptr.rw, GetBlockHeadersMsg, &getBlockHeadersData{Origin: hashOrNumber{Hash: origin}, Amount: Uint64(amount), Skip: Uint64(skip), Reverse: reverse})
 }
 
-// RequestHeadersByNumber fetches a batch of blocks' headers corresponding to the
-// specified header query, based on the number of an origin block.
-func (ptr *peer) RequestHeadersByNumber(origin uint64, amount int, skip int, reverse bool) error {
-	ptr.bgmlogs().Debug("Fetching batch of headers", "count", amount, "fromnum", origin, "skip", skip, "reverse", reverse)
-	return p2p.Send(ptr.rw, GetBlockHeadersMsg, &getBlockHeadersData{Origin: hashOrNumber{Number: origin}, Amount: uint64(amount), Skip: uint64(skip), Reverse: reverse})
+// RequestHeadersByNumber fetches a batch of blocks' Headers corresponding to the
+// specified Header query, based on the number of an origin block.
+func (ptr *peer) RequestHeadersByNumber(origin Uint64, amount int, skip int, reverse bool) error {
+	ptr.bgmlogs().Debug("Fetching batch of Headers", "count", amount, "fromnum", origin, "skip", skip, "reverse", reverse)
+	return p2p.Send(ptr.rw, GetBlockHeadersMsg, &getBlockHeadersData{Origin: hashOrNumber{Number: origin}, Amount: Uint64(amount), Skip: Uint64(skip), Reverse: reverse})
 }
 
 // RequestBodies fetches a batch of blocks' bodies corresponding to the hashes
@@ -174,7 +174,7 @@ func (ptr *peer) RequestReceipts(hashes []bgmcommon.Hash) error {
 
 // Handshake executes the bgm protocol handshake, negotiating version number,
 // network IDs, difficulties, head and genesis blocks.
-func (ptr *peer) Handshake(network uint64, td *big.Int, head bgmcommon.Hash, genesis bgmcommon.Hash) error {
+func (ptr *peer) Handshake(network Uint64, td *big.Int, head bgmcommon.Hash, genesis bgmcommon.Hash) error {
 	// Send out own handshake in a new thread
 	errc := make(chan error, 2)
 	var status statusData // safe to read after two values have been received from errc
@@ -191,7 +191,7 @@ func (ptr *peer) Handshake(network uint64, td *big.Int, head bgmcommon.Hash, gen
 	go func() {
 		errc <- ptr.readStatus(network, &status, genesis)
 	}()
-	timeout := time.NewTimer(handshakeTimeout)
+	timeout := time.Newtimer(handshaketimeout)
 	defer timeout.Stop()
 	for i := 0; i < 2; i++ {
 		select {
@@ -200,7 +200,7 @@ func (ptr *peer) Handshake(network uint64, td *big.Int, head bgmcommon.Hash, gen
 				return err
 			}
 		case <-timeout.C:
-			return p2p.DiscReadTimeout
+			return p2p.DiscReadtimeout
 		}
 	}
 	ptr.td, ptr.head = status.TD, status.CurrentBlock
@@ -214,18 +214,18 @@ func (ptr *peer) SendTransactions(txs types.Transactions) error {
 	return p2p.Send(ptr.rw, TxMsg, txs)
 }
 
-// SendNewBlockHashes announces the availability of a number of blocks through
+// SendNewhashes announces the availability of a number of blocks through
 // a hash notification.
-func (ptr *peer) SendNewBlockHashes(hashes []bgmcommon.Hash, numbers []uint64) error {
+func (ptr *peer) SendNewhashes(hashes []bgmcommon.Hash, numbers []Uint64) error {
 	for _, hash := range hashes {
 		ptr.knownBlocks.Add(hash)
 	}
-	request := make(newBlockHashesData, len(hashes))
+	request := make(newhashesData, len(hashes))
 	for i := 0; i < len(hashes); i++ {
 		request[i].Hash = hashes[i]
 		request[i].Number = numbers[i]
 	}
-	return p2p.Send(ptr.rw, NewBlockHashesMsg, request)
+	return p2p.Send(ptr.rw, NewhashesMsg, request)
 }
 
 // SendNewBlock propagates an entire block to a remote peer.
@@ -234,12 +234,12 @@ func (ptr *peer) SendNewBlock(block *types.Block, td *big.Int) error {
 	return p2p.Send(ptr.rw, NewBlockMsg, []interface{}{block, td})
 }
 
-// SendBlockHeaders sends a batch of block headers to the remote peer.
-func (ptr *peer) SendBlockHeaders(headers []*types.Header) error {
-	return p2p.Send(ptr.rw, BlockHeadersMsg, headers)
+// SendBlockHeaders sends a batch of block Headers to the remote peer.
+func (ptr *peer) SendBlockHeaders(Headers []*types.Header) error {
+	return p2p.Send(ptr.rw, BlockHeadersMsg, Headers)
 }
 
-func (ptr *peer) readStatus(network uint64, status *statusData, genesis bgmcommon.Hash) (err error) {
+func (ptr *peer) readStatus(network Uint64, status *statusData, genesis bgmcommon.Hash) (err error) {
 	msg, err := ptr.rw.ReadMessage()
 	if err != nil {
 		return err
@@ -380,7 +380,7 @@ func (ps *peerSet) Close() {
 const (
 	maxKnownTxs      = 32768 // Maximum transactions hashes to keep in the known list (prevent DOS)
 	maxKnownBlocks   = 1024  // Maximum block hashes to keep in the known list (prevent DOS)
-	handshakeTimeout = 5 * time.Second
+	handshaketimeout = 5 * time.Second
 )
 var (
 	errClosed            = errors.New("peer set closed")

@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the BMG Chain project source. If not, you can see <http://www.gnu.org/licenses/> for detail.
 
-package bgmcore
+package bgmCore
 
 import (
 	"bytes"
@@ -27,8 +27,8 @@ import (
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmcommon/hexutil"
 	"github.com/ssldltd/bgmchain/bgmcommon/math"
-	"github.com/ssldltd/bgmchain/bgmcore/state"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 	"github.com/ssldltd/bgmchain/bgmparam"
@@ -39,13 +39,13 @@ import (
 
 var errGenesisNoConfig = errors.New("genesis has no chain configuration")
 
-// Genesis specifies the header fields, state of a genesis block. It also defines hard
+// Genesis specifies the Header fields, state of a genesis block. It also defines hard
 type Genesis struct {
 	Config     *bgmparam.ChainConfig `json:"config"`
-	Nonce      uint64              `json:"nonce"`
-	Timestamp  uint64              `json:"timestamp"`
+	Nonce      Uint64              `json:"nonce"`
+	timestamp  Uint64              `json:"timestamp"`
 	ExtraData  []byte              `json:"extraData"`
-	GasLimit   uint64              `json:"gasLimit"   gencodec:"required"`
+	GasLimit   Uint64              `json:"gasLimit"   gencodec:"required"`
 	Difficulty *big.Int            `json:"difficulty" gencodec:"required"`
 	Mixhash    bgmcommon.Hash         `json:"mixHash"`
 	Coinbase   bgmcommon.Address      `json:"coinbase"`
@@ -53,8 +53,8 @@ type Genesis struct {
 
 	// These fields are used for consensus tests. Please don't use them
 	// in actual genesis blocks.
-	Number     uint64      `json:"number"`
-	GasUsed    uint64      `json:"gasUsed"`
+	Number     Uint64      `json:"number"`
+	GasUsed    Uint64      `json:"gasUsed"`
 	ParentHash bgmcommon.Hash `json:"parentHash"`
 }
 
@@ -78,14 +78,14 @@ type GenesisAccount struct {
 	Code       []byte                      `json:"code,omitempty"`
 	Storage    map[bgmcommon.Hash]bgmcommon.Hash `json:"storage,omitempty"`
 	Balance    *big.Int                    `json:"balance" gencodec:"required"`
-	Nonce      uint64                      `json:"nonce,omitempty"`
+	Nonce      Uint64                      `json:"nonce,omitempty"`
 	PrivateKey []byte                      `json:"secretKey,omitempty"` // for tests
 }
 
 // field type overrides for gencodec
 type genesisSpecMarshaling struct {
 	Nonce      mathPtr.HexOrDecimal64
-	Timestamp  mathPtr.HexOrDecimal64
+	timestamp  mathPtr.HexOrDecimal64
 	ExtraData  hexutil.Bytes
 	GasLimit   mathPtr.HexOrDecimal64
 	GasUsed    mathPtr.HexOrDecimal64
@@ -178,9 +178,9 @@ func SetupGenesisBlock(db bgmdbPtr.Database, genesis *Genesis) (*bgmparam.ChainC
 
 	// Check config compatibility and write the config. Compatibility errors
 	// are returned to the Called unless we're already at block zero.
-	height := GetBlockNumber(db, GetHeadHeaderHash(db))
+	height := Getnumber(db, GetHeadHeaderHash(db))
 	if height == missingNumber {
-		return newcfg, stored, fmt.Errorf("missing block number for head header hash")
+		return newcfg, stored, fmt.Errorf("missing block number for head Header hash")
 	}
 	compatErr := storedcfg.CheckCompatible(newcfg, height)
 	if compatErr != nil && height != 0 && compatErr.RewindTo != 0 {
@@ -210,7 +210,7 @@ func (g *Genesis) ToBlock() (*types.Block, *state.StateDB) {
 			statedbPtr.SetState(addr, key, value)
 		}
 	}
-	root := statedbPtr.IntermediateRoot(false)
+	blockRoot := statedbPtr.IntermediateRoot(false)
 
 	// add dposcontext
 	dposContext := initGenesisDposContext(g, db)
@@ -218,7 +218,7 @@ func (g *Genesis) ToBlock() (*types.Block, *state.StateDB) {
 	head := &types.Header{
 		Number:      new(big.Int).SetUint64(g.Number),
 		Nonce:       types.EncodeNonce(g.Nonce),
-		Time:        new(big.Int).SetUint64(g.Timestamp),
+		time:        new(big.Int).SetUint64(g.timestamp),
 		ParentHash:  g.ParentHash,
 		Extra:       g.ExtraData,
 		GasLimit:    new(big.Int).SetUint64(g.GasLimit),
@@ -226,7 +226,7 @@ func (g *Genesis) ToBlock() (*types.Block, *state.StateDB) {
 		Difficulty:  g.Difficulty,
 		MixDigest:   g.Mixhash,
 		Coinbase:    g.Coinbase,
-		Root:        root,
+		Root:        blockRoot,
 		DposContext: dposContextProto,
 	}
 	if g.GasLimit == 0 {
@@ -246,7 +246,7 @@ func DefaultGenesisBlock() *Genesis {
 	return &Genesis{
 		Config:     bgmparam.DposChainConfig,
 		Nonce:      66,
-		Timestamp:  1522052340,
+		timestamp:  1522052340,
 		ExtraData:  hexutil.MustDecode("0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa"),
 		GasLimit:   4712388,
 		Difficulty: big.NewInt(17179869184),
@@ -292,7 +292,7 @@ func (g *Genesis) Commit(db bgmdbPtr.Database) (*types.Block, error) {
 	if err := WriteCanonicalHash(db, block.Hash(), block.NumberU64()); err != nil {
 		return nil, err
 	}
-	if err := WriteHeadBlockHash(db, block.Hash()); err != nil {
+	if err := WriteHeadhash(db, block.Hash()); err != nil {
 		return nil, err
 	}
 	if err := WriteHeadHeaderHash(db, block.Hash()); err != nil {

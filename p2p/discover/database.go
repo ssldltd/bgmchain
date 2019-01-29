@@ -57,8 +57,8 @@ func newMemorynodesDB(self NodeID) (*nodesDB, error) {
 var (
 
 	nodesDBNilNodeIDs      = NodeID{}       // Special node ID to use as a nil element.
-	nodesDBNodeExpiration = 24 * time.Hour // Time after which an unseen node should be dropped.
-	nodesDBCleanupCycle   = time.Hour      // Time period for running the expiration task.
+	nodesDBNodeExpiration = 24 * time.Hour // time after which an unseen node should be dropped.
+	nodesDBCleanupCycle   = time.Hour      // time period for running the expiration task.
 )
 type nodesDB struct {
 	lvl    *leveldbPtr.DB   // Interface to the database itself
@@ -219,16 +219,16 @@ func (dbPtr *nodesDB) expireNodes() error {
 	}
 	return nil
 }
-func (dbPtr *nodesDB) lastPing(id NodeID) time.Time {
+func (dbPtr *nodesDB) lastPing(id NodeID) time.time {
 	return time.Unix(dbPtr.fetchInt64(makeKey(id, nodesDBDiscoverPing)), 0)
 }
-func (dbPtr *nodesDB) updateLastPing(id NodeID, instance time.Time) error {
+func (dbPtr *nodesDB) updateLastPing(id NodeID, instance time.time) error {
 	return dbPtr.storeInt64(makeKey(id, nodesDBDiscoverPing), instance.Unix())
 }
-func (dbPtr *nodesDB) lastPong(id NodeID) time.Time {
+func (dbPtr *nodesDB) lastPong(id NodeID) time.time {
 	return time.Unix(dbPtr.fetchInt64(makeKey(id, nodesDBDiscoverPong)), 0)
 }
-func (dbPtr *nodesDB) updateLastPong(id NodeID, instance time.Time) error {
+func (dbPtr *nodesDB) updateLastPong(id NodeID, instance time.time) error {
 	return dbPtr.storeInt64(makeKey(id, nodesDBDiscoverPong), instance.Unix())
 }
 func (dbPtr *nodesDB) findFails(id NodeID) int {

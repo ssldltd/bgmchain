@@ -11,7 +11,7 @@
 
 typedef struct {
     /* X = sum(i=0..4, elem[i]*2^52) mod n */
-    uint64_t n[5];
+    Uint64_t n[5];
 #ifdef VERIFY
     int magnitude;
     int normalized;
@@ -20,11 +20,11 @@ typedef struct {
 
 /* Unpacks a constant into a overlapping multi-limbed FE element. */
 #define SECP256K1_FE_CONST_INNER(d7, d6, d5, d4, d3, d2, d1, d0) { \
-    (d0) | (((uint64_t)(d1) & 0xFFFFFUL) << 32), \
-    ((uint64_t)(d1) >> 20) | (((uint64_t)(d2)) << 12) | (((uint64_t)(d3) & 0xFFUL) << 44), \
-    ((uint64_t)(d3) >> 8) | (((uint64_t)(d4) & 0xFFFFFFFUL) << 24), \
-    ((uint64_t)(d4) >> 28) | (((uint64_t)(d5)) << 4) | (((uint64_t)(d6) & 0xFFFFUL) << 36), \
-    ((uint64_t)(d6) >> 16) | (((uint64_t)(d7)) << 16) \
+    (d0) | (((Uint64_t)(d1) & 0xFFFFFUL) << 32), \
+    ((Uint64_t)(d1) >> 20) | (((Uint64_t)(d2)) << 12) | (((Uint64_t)(d3) & 0xFFUL) << 44), \
+    ((Uint64_t)(d3) >> 8) | (((Uint64_t)(d4) & 0xFFFFFFFUL) << 24), \
+    ((Uint64_t)(d4) >> 28) | (((Uint64_t)(d5)) << 4) | (((Uint64_t)(d6) & 0xFFFFUL) << 36), \
+    ((Uint64_t)(d6) >> 16) | (((Uint64_t)(d7)) << 16) \
 }
 
 #ifdef VERIFY
@@ -34,14 +34,14 @@ typedef struct {
 #endif
 
 typedef struct {
-    uint64_t n[4];
+    Uint64_t n[4];
 } secp256k1_fe_storage;
 
 #define SECP256K1_FE_STORAGE_CONST(d7, d6, d5, d4, d3, d2, d1, d0) {{ \
-    (d0) | (((uint64_t)(d1)) << 32), \
-    (d2) | (((uint64_t)(d3)) << 32), \
-    (d4) | (((uint64_t)(d5)) << 32), \
-    (d6) | (((uint64_t)(d7)) << 32) \
+    (d0) | (((Uint64_t)(d1)) << 32), \
+    (d2) | (((Uint64_t)(d3)) << 32), \
+    (d4) | (((Uint64_t)(d5)) << 32), \
+    (d6) | (((Uint64_t)(d7)) << 32) \
 }}
 
 #endif

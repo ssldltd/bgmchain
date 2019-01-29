@@ -56,13 +56,13 @@ var (
 )
 
 type GasTable struct {
-	ExtcodeSize uint64
-	ExtcodeCopy uint64
-	Balance     uint64
-	SLoad       uint64
-	Calls       uint64
-	Suicide     uint64
+	ExtcodeSize Uint64
+	ExtcodeCopy Uint64
+	Balance     Uint64
+	SLoad       Uint64
+	Calls       Uint64
+	Suicide     Uint64
 
-	ExpByte uint64
-	CreateBySuicide uint64
+	ExpByte Uint64
+	CreateBySuicide Uint64
 }

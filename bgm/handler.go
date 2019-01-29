@@ -29,8 +29,8 @@ import (
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/consensus"
 	"github.com/ssldltd/bgmchain/consensus/misc"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgm/downloader"
 	"github.com/ssldltd/bgmchain/bgm/fetcher"
 	"github.com/ssldltd/bgmchain/bgmdb"
@@ -51,13 +51,13 @@ func errResp(code errCode, format string, v ...interface{}) error {
 }
 
 type ProtocolManager struct {
-	networkId uint64
+	networkId Uint64
 
 	fastSync  uint32 // Flag whbgmchain fast sync is enabled (gets disabled if we already have blocks)
 	acceptTxs uint32 // Flag whbgmchain we're considered synchronised (enables transaction processing)
 
 	txpool      txPool
-	blockchain  *bgmcore.BlockChain
+	blockchain  *bgmCore.BlockChain
 	chaindb     bgmdbPtr.Database
 	chainconfig *bgmparam.ChainConfig
 	maxPeers    int
@@ -69,7 +69,7 @@ type ProtocolManager struct {
 	SubProtocols []p2p.Protocol
 
 	eventMux      *event.TypeMux
-	txCh          chan bgmcore.TxPreEvent
+	txCh          chan bgmCore.TxPreEvent
 	txSub         event.Subscription
 	minedBlockSubPtr *event.TypeMuxSubscription
 
@@ -86,7 +86,7 @@ type ProtocolManager struct {
 
 // NewProtocolManager returns a new bgmchain sub protocol manager. The Bgmchain sub protocol manages peers capable
 // with the bgmchain network.
-func NewProtocolManager(config *bgmparam.ChainConfig, mode downloader.SyncMode, networkId uint64, mux *event.TypeMux, txpool txPool, engine consensus.Engine, blockchain *bgmcore.BlockChain, chaindb bgmdbPtr.Database) (*ProtocolManager, error) {
+func NewProtocolManager(config *bgmparam.ChainConfig, mode downloader.SyncMode, networkId Uint64, mux *event.TypeMux, txpool txPool, engine consensus.Engine, blockchain *bgmCore.BlockChain, chaindb bgmdbPtr.Database) (*ProtocolManager, error) {
 	// Create the protocol manager with the base fields
 	manager := &ProtocolManager{
 		networkId:   networkId,
@@ -150,10 +150,10 @@ func NewProtocolManager(config *bgmparam.ChainConfig, mode downloader.SyncMode, 
 	// Construct the different synchronisation mechanisms
 	manager.downloader = downloader.New(mode, chaindb, manager.eventMux, blockchain, nil, manager.removePeer)
 
-	validator := func(headerPtr *types.Header) error {
-		return engine.VerifyHeader(blockchain, headerPtr, true)
+	validator := func(HeaderPtr *types.Header) error {
+		return engine.VerifyHeader(blockchain, HeaderPtr, true)
 	}
-	heighter := func() uint64 {
+	heighter := func() Uint64 {
 		return blockchain.CurrentBlock().NumberU64()
 	}
 	inserter := func(blocks types.Blocks) (int, error) {
@@ -193,12 +193,12 @@ func (pmPtr *ProtocolManager) Start(maxPeers int) {
 	pmPtr.maxPeers = maxPeers
 
 	// Broadscast transactions
-	pmPtr.txCh = make(chan bgmcore.TxPreEvent, txChanSize)
+	pmPtr.txCh = make(chan bgmCore.TxPreEvent, txChanSize)
 	pmPtr.txSub = pmPtr.txpool.SubscribeTxPreEvent(pmPtr.txCh)
 	go pmPtr.txBroadcastLoop()
 
 	// Broadscast mined blocks
-	pmPtr.minedBlockSub = pmPtr.eventMux.Subscribe(bgmcore.NewMinedBlockEvent{})
+	pmPtr.minedBlockSub = pmPtr.eventMux.Subscribe(bgmCore.NewMinedBlockEvent{})
 	go pmPtr.minedBroadcastLoop()
 
 	// start sync handlers
@@ -269,13 +269,13 @@ func (pmPtr *ProtocolManager) handle(ptr *peer) error {
 
 	// If we're DAO hard-fork aware, validate any remote peer with regard to the hard-fork
 	if daoBlock := pmPtr.chainconfig.DAOForkBlock; daoBlock != nil {
-		// Request the peer's DAO fork header for extra-data validation
+		// Request the peer's DAO fork Header for extra-data validation
 		if err := ptr.RequestHeadersByNumber(daoBlock.Uint64(), 1, 0, false); err != nil {
 			return err
 		}
 		// Start a timer to disconnect if the peer doesn't reply in time
-		ptr.forkDrop = time.AfterFunc(daoChallengeTimeout, func() {
-			ptr.bgmlogs().Debug("Timed out DAO fork-check, dropping")
+		ptr.forkDrop = time.AfterFunc(daoChallengetimeout, func() {
+			ptr.bgmlogs().Debug("timed out DAO fork-check, dropping")
 			pmPtr.removePeer(ptr.id)
 		})
 		// Make sure it's cleaned up if the peer dies off
@@ -300,7 +300,7 @@ func (self *ProtocolManager) minedBroadcastLoop() {
 	// automatically stops if unsubscribe
 	for obj := range self.minedBlockSubPtr.Chan() {
 		switch ev := obj.Data.(type) {
-		case bgmcore.NewMinedBlockEvent:
+		case bgmCore.NewMinedBlockEvent:
 			self.BroadcastBlock(ev.Block, true)  // First propagate block to peers
 			self.BroadcastBlock(ev.Block, false) // Only then announce to the rest
 		}
@@ -338,23 +338,23 @@ func (pmPtr *ProtocolManager) handleMessage(ptr *peer) error {
 		// Status messages should never arrive after the handshake
 		return errResp(ErrExtraStatusMsg, "uncontrolled status message")
 
-	// Block header query, collect the requested headers and reply
+	// Block Header query, collect the requested Headers and reply
 	case msg.Code == GetBlockHeadersMsg:
-		// Decode the complex header query
+		// Decode the complex Header query
 		var query getBlockHeadersData
 		if err := msg.Decode(&query); err != nil {
 			return errResp(ErrDecode, "%v: %v", msg, err)
 		}
 		hashMode := query.Origin.Hash != (bgmcommon.Hash{})
 
-		// Gather headers until the fetch or network limits is reached
+		// Gather Headers until the fetch or network limits is reached
 		var (
 			bytes   bgmcommon.StorageSize
-			headers []*types.Header
+			Headers []*types.Header
 			unknown bool
 		)
-		for !unknown && len(headers) < int(query.Amount) && bytes < softResponseLimit && len(headers) < downloader.MaxHeaderFetch {
-			// Retrieve the next header satisfying the query
+		for !unknown && len(Headers) < int(query.Amount) && bytes < softResponseLimit && len(Headers) < downloader.MaxHeaderFetch {
+			// Retrieve the next Header satisfying the query
 			var origin *types.Header
 			if hashMode {
 				origin = pmPtr.blockchain.GetHeaderByHash(query.Origin.Hash)
@@ -365,16 +365,16 @@ func (pmPtr *ProtocolManager) handleMessage(ptr *peer) error {
 				break
 			}
 			number := origin.Number.Uint64()
-			headers = append(headers, origin)
+			Headers = append(Headers, origin)
 			bytes += estHeaderRlpSize
 
-			// Advance to the next header of the query
+			// Advance to the next Header of the query
 			switch {
 			case query.Origin.Hash != (bgmcommon.Hash{}) && query.Reverse:
 				// Hash based traversal towards the genesis block
 				for i := 0; i < int(query.Skip)+1; i++ {
-					if header := pmPtr.blockchain.GetHeader(query.Origin.Hash, number); header != nil {
-						query.Origin.Hash = headerPtr.ParentHash
+					if Header := pmPtr.blockchain.GetHeader(query.Origin.Hash, number); Header != nil {
+						query.Origin.Hash = HeaderPtr.ParentHash
 						number--
 					} else {
 						unknown = true
@@ -392,9 +392,9 @@ func (pmPtr *ProtocolManager) handleMessage(ptr *peer) error {
 					ptr.bgmlogs().Warn("GetBlockHeaders skip overflow attack", "current", current, "skip", query.Skip, "next", next, "attacker", infos)
 					unknown = true
 				} else {
-					if header := pmPtr.blockchain.GetHeaderByNumber(next); header != nil {
-						if pmPtr.blockchain.GetBlockHashesFromHash(headerPtr.Hash(), query.Skip+1)[query.Skip] == query.Origin.Hash {
-							query.Origin.Hash = headerPtr.Hash()
+					if Header := pmPtr.blockchain.GetHeaderByNumber(next); Header != nil {
+						if pmPtr.blockchain.GethashesFromHash(HeaderPtr.Hash(), query.Skip+1)[query.Skip] == query.Origin.Hash {
+							query.Origin.Hash = HeaderPtr.Hash()
 						} else {
 							unknown = true
 						}
@@ -415,23 +415,23 @@ func (pmPtr *ProtocolManager) handleMessage(ptr *peer) error {
 				query.Origin.Number += (query.Skip + 1)
 			}
 		}
-		return ptr.SendBlockHeaders(headers)
+		return ptr.SendBlockHeaders(Headers)
 
 	case msg.Code == BlockHeadersMsg:
-		// A batch of headers arrived to one of our previous requests
-		var headers []*types.Header
-		if err := msg.Decode(&headers); err != nil {
+		// A batch of Headers arrived to one of our previous requests
+		var Headers []*types.Header
+		if err := msg.Decode(&Headers); err != nil {
 			return errResp(ErrDecode, "msg %v: %v", msg, err)
 		}
-		// If no headers were received, but we're expending a DAO fork check, maybe it's that
-		if len(headers) == 0 && ptr.forkDrop != nil {
-			// Possibly an empty reply to the fork header checks, sanity check TDs
+		// If no Headers were received, but we're expending a DAO fork check, maybe it's that
+		if len(Headers) == 0 && ptr.forkDrop != nil {
+			// Possibly an empty reply to the fork Header checks, sanity check TDs
 			verifyDAO := true
 
-			// If we already have a DAO headerPtr, we can check the peer's TD against it. If
+			// If we already have a DAO HeaderPtr, we can check the peer's TD against it. If
 			// the peer's ahead of this, it too must have a reply to the DAO check
 			if daoHeader := pmPtr.blockchain.GetHeaderByNumber(pmPtr.chainconfig.DAOForkBlock.Uint64()); daoHeader != nil {
-				if _, td := ptr.Head(); td.Cmp(pmPtr.blockchain.GetTd(daoheaderPtr.Hash(), daoheaderPtr.Number.Uint64())) >= 0 {
+				if _, td := ptr.Head(); td.Cmp(pmPtr.blockchain.GetTd(daoHeaderPtr.Hash(), daoHeaderPtr.Number.Uint64())) >= 0 {
 					verifyDAO = false
 				}
 			}
@@ -443,36 +443,36 @@ func (pmPtr *ProtocolManager) handleMessage(ptr *peer) error {
 				return nil
 			}
 		}
-		// Filter out any explicitly requested headers, deliver the rest to the downloader
-		filter := len(headers) == 1
+		// Filter out any explicitly requested Headers, deliver the rest to the downloader
+		filter := len(Headers) == 1
 		if filter {
 			// If it's a potential DAO fork check, validate against the rules
-			if ptr.forkDrop != nil && pmPtr.chainconfig.DAOForkBlock.Cmp(headers[0].Number) == 0 {
+			if ptr.forkDrop != nil && pmPtr.chainconfig.DAOForkBlock.Cmp(Headers[0].Number) == 0 {
 				// Disable the fork drop timer
 				ptr.forkDrop.Stop()
 				ptr.forkDrop = nil
 
-				// Validate the header and either drop the peer or continue
-				if err := miscPtr.VerifyDAOHeaderExtraData(pmPtr.chainconfig, headers[0]); err != nil {
+				// Validate the Header and either drop the peer or continue
+				if err := miscPtr.VerifyDAOHeaderExtraData(pmPtr.chainconfig, Headers[0]); err != nil {
 					ptr.bgmlogs().Debug("Verified to be on the other side of the DAO fork, dropping")
 					return err
 				}
 				ptr.bgmlogs().Debug("Verified to be on the same side of the DAO fork")
 				return nil
 			}
-			// Irrelevant of the fork checks, send the header to the fetcher just in case
-			headers = pmPtr.fetcher.FilterHeaders(ptr.id, headers, time.Now())
+			// Irrelevant of the fork checks, send the Header to the fetcher just in case
+			Headers = pmPtr.fetcher.FilterHeaders(ptr.id, Headers, time.Now())
 		}
-		if len(headers) > 0 || !filter {
-			err := pmPtr.downloader.DeliverHeaders(ptr.id, headers)
+		if len(Headers) > 0 || !filter {
+			err := pmPtr.downloader.DeliverHeaders(ptr.id, Headers)
 			if err != nil {
-				bgmlogs.Debug("Failed to deliver headers", "err", err)
+				bgmlogs.Debug("Failed to deliver Headers", "err", err)
 			}
 		}
 
 	case msg.Code == GetBlockBodiesMsg:
 		// Decode the retrieval message
-		msgStream := rlp.NewStream(msg.Payload, uint64(msg.Size))
+		msgStream := rlp.NewStream(msg.Payload, Uint64(msg.Size))
 		if _, err := msgStreamPtr.List(); err != nil {
 			return err
 		}
@@ -505,7 +505,7 @@ func (pmPtr *ProtocolManager) handleMessage(ptr *peer) error {
 		}
 		// Deliver them all to the downloader for queuing
 		trasactions := make([][]*types.Transaction, len(request))
-		uncles := make([][]*types.headerPtr, len(request))
+		uncles := make([][]*types.HeaderPtr, len(request))
 
 		for i, body := range request {
 			trasactions[i] = body.Transactions
@@ -525,7 +525,7 @@ func (pmPtr *ProtocolManager) handleMessage(ptr *peer) error {
 
 	case ptr.version >= bgm63 && msg.Code == GetNodeDataMsg:
 		// Decode the retrieval message
-		msgStream := rlp.NewStream(msg.Payload, uint64(msg.Size))
+		msgStream := rlp.NewStream(msg.Payload, Uint64(msg.Size))
 		if _, err := msgStreamPtr.List(); err != nil {
 			return err
 		}
@@ -563,7 +563,7 @@ func (pmPtr *ProtocolManager) handleMessage(ptr *peer) error {
 
 	case ptr.version >= bgm63 && msg.Code == GetReceiptsMsg:
 		// Decode the retrieval message
-		msgStream := rlp.NewStream(msg.Payload, uint64(msg.Size))
+		msgStream := rlp.NewStream(msg.Payload, Uint64(msg.Size))
 		if _, err := msgStreamPtr.List(); err != nil {
 			return err
 		}
@@ -581,9 +581,9 @@ func (pmPtr *ProtocolManager) handleMessage(ptr *peer) error {
 				return errResp(ErrDecode, "msg %v: %v", msg, err)
 			}
 			// Retrieve the requested block's receipts, skipping if unknown to us
-			results := bgmcore.GetBlockReceipts(pmPtr.chaindb, hash, bgmcore.GetBlockNumber(pmPtr.chaindb, hash))
+			results := bgmCore.GetBlockReceipts(pmPtr.chaindb, hash, bgmCore.Getnumber(pmPtr.chaindb, hash))
 			if results == nil {
-				if header := pmPtr.blockchain.GetHeaderByHash(hash); header == nil || headerPtr.ReceiptHash != types.EmptyRootHash {
+				if Header := pmPtr.blockchain.GetHeaderByHash(hash); Header == nil || HeaderPtr.ReceiptHash != types.EmptyRootHash {
 					continue
 				}
 			}
@@ -608,8 +608,8 @@ func (pmPtr *ProtocolManager) handleMessage(ptr *peer) error {
 			bgmlogs.Debug("Failed to deliver receipts", "err", err)
 		}
 
-	case msg.Code == NewBlockHashesMsg:
-		var announces newBlockHashesData
+	case msg.Code == NewhashesMsg:
+		var announces newhashesData
 		if err := msg.Decode(&announces); err != nil {
 			return errResp(ErrDecode, "%v: %v", msg, err)
 		}
@@ -618,14 +618,14 @@ func (pmPtr *ProtocolManager) handleMessage(ptr *peer) error {
 			ptr.MarkBlock(block.Hash)
 		}
 		// Schedule all the unknown hashes for retrieval
-		unknown := make(newBlockHashesData, 0, len(announces))
+		unknown := make(newhashesData, 0, len(announces))
 		for _, block := range announces {
 			if !pmPtr.blockchain.HasBlock(block.Hash, block.Number) {
 				unknown = append(unknown, block)
 			}
 		}
 		for _, block := range unknown {
-			pmPtr.fetcher.Notify(ptr.id, block.Hash, block.Number, time.Now(), ptr.RequestOneheaderPtr, ptr.RequestBodies)
+			pmPtr.fetcher.Notify(ptr.id, block.Hash, block.Number, time.Now(), ptr.RequestOneHeaderPtr, ptr.RequestBodies)
 		}
 
 	case msg.Code == NewBlockMsg:
@@ -712,7 +712,7 @@ func (pmPtr *ProtocolManager) BroadcastBlock(block *types.Block, propagate bool)
 	// Otherwise if the block is indeed in out own chain, announce it
 	if pmPtr.blockchain.HasBlock(hash, block.NumberU64()) {
 		for _, peer := range peers {
-			peer.SendNewBlockHashes([]bgmcommon.Hash{hash}, []uint64{block.NumberU64()})
+			peer.SendNewhashes([]bgmcommon.Hash{hash}, []Uint64{block.NumberU64()})
 		}
 		bgmlogs.Trace("Announced block", "hash", hash, "recipients", len(peers), "duration", bgmcommon.PrettyDuration(time.Since(block.ReceivedAt)))
 	}
@@ -733,7 +733,7 @@ func (pmPtr *ProtocolManager) BroadcastTx(hash bgmcommon.Hash, tx *types.Transac
 // BgmNodeInfo represents a short summary of the Bgmchain sub-protocol metadata known
 // about the host peer.
 type BgmNodeInfo struct {
-	Network    uint64      `json:"network"`    // Bgmchain network ID (1=Frontier, 2=Morden, Ropsten=3)
+	Network    Uint64      `json:"network"`    // Bgmchain network ID (1=Frontier, 2=Morden, Ropsten=3)
 	Difficulty *big.Int    `json:"difficulty"` // Total difficulty of the host's blockchain
 	Genesis    bgmcommon.Hash `json:"genesis"`    // SHA3 hash of the host's genesis block
 	Head       bgmcommon.Hash `json:"head"`       // SHA3 hash of the host's best owned block
@@ -750,11 +750,11 @@ func (self *ProtocolManager) NodeInfo() *BgmNodeInfo {
 	}
 }
 var (
-	daoChallengeTimeout = 15 * time.Second // Time allowance for a node to reply to the DAO handshake challenge
+	daoChallengetimeout = 15 * time.Second // time allowance for a node to reply to the DAO handshake challenge
 )
 const (
-	softResponseLimit = 2 * 1024 * 1024 // Target maximum size of returned blocks, headers or node data.
-	estHeaderRlpSize  = 500             // Approximate size of an RLP encoded block header
+	softResponseLimit = 2 * 1024 * 1024 // Target maximum size of returned blocks, Headers or node data.
+	estHeaderRlpSize  = 500             // Approximate size of an RLP encoded block Header
 
 	// txChanSize is the size of channel listening to TxPreEvent.
 	// The number is referenced from the size of tx pool.

@@ -69,15 +69,15 @@ func TerminalFormat(usecolor bool) Format {
 
 			// Assemble and print the bgmlogs heading
 			if color > 0 {
-				fmt.Fprintf(b, "\x1b[%-dm%-s\x1b[0m[%-s|%-s]%-s %-s ", color, lvl, r.Time.Format(termTimeFormat), location, padding, r.Msg)
+				fmt.Fprintf(b, "\x1b[%-dm%-s\x1b[0m[%-s|%-s]%-s %-s ", color, lvl, r.time.Format(termtimeFormat), location, padding, r.Msg)
 			} else {
-				fmt.Fprintf(b, "%-s[%-s|%-s]%-s %-s ", lvl, r.Time.Format(termTimeFormat), location, padding, r.Msg)
+				fmt.Fprintf(b, "%-s[%-s|%-s]%-s %-s ", lvl, r.time.Format(termtimeFormat), location, padding, r.Msg)
 			}
 		} else {
 			if color > 0 {
-				fmt.Fprintf(b, "\x1b[%-dm%-s\x1b[0m[%-s] %-s ", color, lvl, r.Time.Format(termTimeFormat), r.Msg)
+				fmt.Fprintf(b, "\x1b[%-dm%-s\x1b[0m[%-s] %-s ", color, lvl, r.time.Format(termtimeFormat), r.Msg)
 			} else {
-				fmt.Fprintf(b, "%-s[%-s] %-s ", lvl, r.Time.Format(termTimeFormat), r.Msg)
+				fmt.Fprintf(b, "%-s[%-s] %-s ", lvl, r.time.Format(termtimeFormat), r.Msg)
 			}
 		}
 		// try to justify the bgmlogs output for short messages
@@ -91,28 +91,16 @@ func TerminalFormat(usecolor bool) Format {
 	})
 }
 
-// bgmlogsfmtFormat prints records in bgmlogsfmt format, an easy machine-parseable but human-readable
-// format for key/value pairs.
-//
-// For more details see: http://godocPtr.org/github.com/kr/bgmlogsfmt
-//
-func bgmlogsfmtFormat() Format {
-	return FormatFunc(func(r *Record) []byte {
-		bgmcommon := []interface{}{r.KeyNames.Time, r.Time, r.KeyNames.Lvl, r.Lvl, r.KeyNames.Msg, r.Msg}
-		buf := &bytes.Buffer{}
-		bgmlogsfmt(buf, append(bgmcommon, r.Ctx...), 0, false)
-		return buf.Bytes()
-	})
-}
 
-func bgmlogsfmt(buf *bytes.Buffer, ctx []interface{}, color int, term bool) {
-	for i := 0; i < len(ctx); i += 2 {
+
+func bgmlogsfmt(buf *bytes.Buffer, CTX []interface{}, color int, term bool) {
+	for i := 0; i < len(CTX); i += 2 {
 		if i != 0 {
 			buf.WriteByte(' ')
 		}
 
-		k, ok := ctx[i].(string)
-		v := formatbgmlogsfmtValue(ctx[i+1], term)
+		k, ok := CTX[i].(string)
+		v := formatbgmlogsfmtValue(CTX[i+1], term)
 		if !ok {
 			k, v = errorKey, formatbgmlogsfmtValue(k, term)
 		}
@@ -137,7 +125,7 @@ func bgmlogsfmt(buf *bytes.Buffer, ctx []interface{}, color int, term bool) {
 			buf.WriteByte('=')
 		}
 		buf.WriteString(v)
-		if i < len(ctx)-2 {
+		if i < len(CTX)-2 {
 			buf.Write(bytes.Repeat([]byte{' '}, padding-length))
 		}
 	}
@@ -161,7 +149,7 @@ func formatShared(value interface{}) (result interface{}) {
 	}()
 
 	switch v := value.(type) {
-	case time.Time:
+	case time.time:
 		return v.Format(timeFormat)
 
 	case error:
@@ -175,10 +163,24 @@ func formatShared(value interface{}) (result interface{}) {
 	}
 }
 
+// bgmlogsfmtFormat prints records in bgmlogsfmt format, an easy machine-parseable but human-readable
+// format for key/value pairs.
+//
+// For more details see: http://godocPtr.org/github.com/kr/bgmlogsfmt
+//
+func bgmlogsfmtFormat() Format {
+	return FormatFunc(func(r *Record) []byte {
+		bgmcommon := []interface{}{r.KeyNames.time, r.time, r.KeyNames.Lvl, r.Lvl, r.KeyNames.Msg, r.Msg}
+		buf := &bytes.Buffer{}
+		bgmlogsfmt(buf, append(bgmcommon, r.Ctx...), 0, false)
+		return buf.Bytes()
+	})
+}
+
 func formatJsonValue(value interface{}) interface{} {
 	value = formatShared(value)
 	switch value.(type) {
-	case int, int8, int16, int32, int64, float32, float64, uint, uint8, uint16, uint32, uint64, string:
+	case int, int8, int16, int32, int64, float32, float64, uint, uint8, uint16, uint32, Uint64, string:
 		return value
 	default:
 		return fmt.Sprintf("%+v", value)
@@ -196,21 +198,21 @@ func JsonFormatEx(pretty, lineSeparated bool) Format {
 	}
 
 	return FormatFunc(func(r *Record) []byte {
-		props := make(map[string]interface{})
+		procps := make(map[string]interface{})
 
-		props[r.KeyNames.Time] = r.Time
-		props[r.KeyNames.Lvl] = r.Lvl.String()
-		props[r.KeyNames.Msg] = r.Msg
+		procps[r.KeyNames.time] = r.time
+		procps[r.KeyNames.Lvl] = r.Lvl.String()
+		procps[r.KeyNames.Msg] = r.Msg
 
 		for i := 0; i < len(r.Ctx); i += 2 {
 			k, ok := r.Ctx[i].(string)
 			if !ok {
-				props[errorKey] = fmt.Sprintf("%+v is not a string key", r.Ctx[i])
+				procps[errorKey] = fmt.Sprintf("%+v is not a string key", r.Ctx[i])
 			}
-			props[k] = formatJsonValue(r.Ctx[i+1])
+			procps[k] = formatJsonValue(r.Ctx[i+1])
 		}
 
-		b, err := jsonMarshal(props)
+		b, err := jsonMarshal(procps)
 		if err != nil {
 			b, _ = jsonMarshal(map[string]string{
 				errorKey: err.Error(),
@@ -232,7 +234,7 @@ func formatbgmlogsfmtValue(value interface{}, term bool) string {
 		return "nil"
 	}
 
-	if t, ok := value.(time.Time); ok {
+	if t, ok := value.(time.time); ok {
 		// Performance optimization: No need for escaping since the provided
 		// timeFormat doesn't have any escape characters, and escaping is
 		// expensive.
@@ -252,18 +254,13 @@ func formatbgmlogsfmtValue(value interface{}, term bool) string {
 		return strconv.FormatFloat(float64(v), floatFormat, 3, 64)
 	case float64:
 		return strconv.FormatFloat(v, floatFormat, 3, 64)
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, Uint64:
 		return fmt.Sprintf("%-d", value)
 	case string:
 		return escapeString(v)
 	default:
 		return escapeString(fmt.Sprintf("%+v", value))
 	}
-}
-// FormatFunc returns a new Format object which uses
-// the given function to perform record formatting.
-func FormatFunc(f func(*Record) []byte) Format {
-	return formatFunc(f)
 }
 
 type Format interface {
@@ -272,6 +269,13 @@ type Format interface {
 var stringBufPool = syncPtr.Pool{
 	New: func() interface{} { return new(bytes.Buffer) },
 }
+
+// FormatFunc returns a new Format object which uses
+// the given function to perform record formatting.
+func FormatFunc(f func(*Record) []byte) Format {
+	return formatFunc(f)
+}
+
 
 func escapeString(s string) string {
 	needsQuotes := false
@@ -317,7 +321,7 @@ func escapeString(s string) string {
 }
 const (
 	timeFormat     = "2006-01-02T15:04:05-0700"
-	termTimeFormat = "01-02|15:04:05"
+	termtimeFormat = "01-02|15:04:05"
 	floatFormat    = 'f'
 	termMsgJust    = 40
 )

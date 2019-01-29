@@ -518,7 +518,7 @@ var f = require('./formatters');
 var SolidityType = require('./type');
 
 /**
- * SolidityTypeAddress is a prootype that represents address type
+ * SolidityTypeAddress is a pblockRootype that represents address type
  * It matches:
  * address
  * address[]
@@ -546,7 +546,7 @@ var f = require('./formatters');
 var SolidityType = require('./type');
 
 /**
- * SolidityTypeBool is a prootype that represents bool type
+ * SolidityTypeBool is a pblockRootype that represents bool type
  * It matches:
  * bool
  * bool[]
@@ -1146,7 +1146,7 @@ var f = require('./formatters');
 var SolidityType = require('./type');
 
 /**
- * SolidityTypeInt is a prootype that represents int type
+ * SolidityTypeInt is a pblockRootype that represents int type
  * It matches:
  * int
  * int[]
@@ -1334,7 +1334,7 @@ var f = require('./formatters');
 var SolidityType = require('./type');
 
 /**
- * SolidityTypeReal is a prootype that represents real type
+ * SolidityTypeReal is a pblockRootype that represents real type
  * It matches:
  * real
  * real[]
@@ -1647,7 +1647,7 @@ var f = require('./formatters');
 var SolidityType = require('./type');
 
 /**
- * SolidityTypeUInt is a prootype that represents uint type
+ * SolidityTypeUInt is a pblockRootype that represents uint type
  * It matches:
  * uint
  * uint[]
@@ -1656,11 +1656,11 @@ var SolidityType = require('./type');
  * uint[3][]
  * uint[][6][], ...
  * uint32
- * uint64[]
+ * Uint64[]
  * uint8[4]
  * uint256[][]
  * uint[3][]
- * uint64[][6][], ...
+ * Uint64[][6][], ...
  */
 var SolidityTypeUInt = function () {
     this._inputFormatter = f.formatInputInt;
@@ -1681,7 +1681,7 @@ var f = require('./formatters');
 var SolidityType = require('./type');
 
 /**
- * SolidityTypeUReal is a prootype that represents ureal type
+ * SolidityTypeUReal is a pblockRootype that represents ureal type
  * It matches:
  * ureal
  * ureal[]
@@ -2409,7 +2409,7 @@ var isJson = function (str) {
 };
 
 /**
- * Returns true if given string is a valid Bgmchain block header bloomPtr.
+ * Returns true if given string is a valid Bgmchain block Header bloomPtr.
  *
  * @method isBloom
  * @bgmparam {String} hex encoded bloom filter
@@ -2675,7 +2675,7 @@ AllSolidityEvents.prototype.encode = function (options) {
     ['fromBlock', 'toBlock'].filter(function (f) {
         return options[f] !== undefined;
     }).forEach(function (f) {
-        result[f] = formatters.inputBlockNumberFormatter(options[f]);
+        result[f] = formatters.inputnumberFormatter(options[f]);
     });
 
     result.address = this._address;
@@ -3142,7 +3142,7 @@ module.exports = {
         var message = !!result && !!result.error && !!result.error.message ? result.error.message : 'Invalid JSON RPC response: ' + JSON.stringify(result);
         return new Error(message);
     },
-    ConnectionTimeout: function (ms){
+    Connectiontimeout: function (ms){
         return new Error('CONNECTION TIMEOUT: timeout of ' + ms + ' ms achived');
     }
 };
@@ -3249,7 +3249,7 @@ SolidityEvent.prototype.encode = function (indexed, options) {
     ['fromBlock', 'toBlock'].filter(function (f) {
         return options[f] !== undefined;
     }).forEach(function (f) {
-        result[f] = formatters.inputBlockNumberFormatter(options[f]);
+        result[f] = formatters.inputnumberFormatter(options[f]);
     });
 
     result.topics = [];
@@ -3483,8 +3483,8 @@ var getOptions = function (options, type) {
                 from: options.from,
                 to: options.to,
                 address: options.address,
-                fromBlock: formatters.inputBlockNumberFormatter(options.fromBlock),
-                toBlock: formatters.inputBlockNumberFormatter(options.toBlock)
+                fromBlock: formatters.inputnumberFormatter(options.fromBlock),
+                toBlock: formatters.inputnumberFormatter(options.toBlock)
             };
         case 'shh':
             return options;
@@ -3695,21 +3695,21 @@ var outputBigNumberFormatter = function (number) {
     return utils.toBigNumber(number);
 };
 
-var isPredefinedBlockNumber = function (blockNumber) {
+var isPredefinednumber = function (blockNumber) {
     return blockNumber === 'latest' || blockNumber === 'pending' || blockNumber === 'earliest';
 };
 
-var inputDefaultBlockNumberFormatter = function (blockNumber) {
+var inputDefaultnumberFormatter = function (blockNumber) {
     if (blockNumber === undefined) {
         return config.defaultBlock;
     }
-    return inputBlockNumberFormatter(blockNumber);
+    return inputnumberFormatter(blockNumber);
 };
 
-var inputBlockNumberFormatter = function (blockNumber) {
+var inputnumberFormatter = function (blockNumber) {
     if (blockNumber === undefined) {
         return undefined;
-    } else if (isPredefinedBlockNumber(blockNumber)) {
+    } else if (isPredefinednumber(blockNumber)) {
         return blockNumber;
     }
     return utils.toHex(blockNumber);
@@ -3948,8 +3948,8 @@ var outputSyncingFormatter = function(result) {
 };
 
 module.exports = {
-    inputDefaultBlockNumberFormatter: inputDefaultBlockNumberFormatter,
-    inputBlockNumberFormatter: inputBlockNumberFormatter,
+    inputDefaultnumberFormatter: inputDefaultnumberFormatter,
+    inputnumberFormatter: inputnumberFormatter,
     inputCallFormatter: inputCallFormatter,
     inputTransactionFormatter: inputTransactionFormatter,
     inputAddressFormatter: inputAddressFormatter,
@@ -4018,7 +4018,7 @@ SolidityFunction.prototype.extractCallback = function (args) {
 
 SolidityFunction.prototype.extractDefaultBlock = function (args) {
     if (args.length > this._inputTypes.length && !utils.isObject(args[args.length -1])) {
-        return formatters.inputDefaultBlockNumberFormatter(args.pop()); // modify the args array!
+        return formatters.inputDefaultnumberFormatter(args.pop()); // modify the args array!
     }
 };
 
@@ -4376,7 +4376,7 @@ HttpProvider.prototype.sendAsync = function (payload, callback) {
   };
 
   request.ontimeout = function () {
-    callback(errors.ConnectionTimeout(this.timeout));
+    callback(errors.Connectiontimeout(this.timeout));
   };
 
   try {
@@ -4744,8 +4744,8 @@ IpcProvider.prototype._parseResponse = function(data) {
             _this.lastChunk = data;
 
             // start timeout to cancel all requests
-            clearTimeout(_this.lastChunkTimeout);
-            _this.lastChunkTimeout = setTimeout(function(){
+            cleartimeout(_this.lastChunktimeout);
+            _this.lastChunktimeout = settimeout(function(){
                 _this._timeout();
                 throw errors.InvalidResponse(data);
             }, 1000 * 15);
@@ -4754,7 +4754,7 @@ IpcProvider.prototype._parseResponse = function(data) {
         }
 
         // cancel timeout and set chunk to null
-        clearTimeout(_this.lastChunkTimeout);
+        cleartimeout(_this.lastChunktimeout);
         _this.lastChunk = null;
 
         if(result)
@@ -4780,7 +4780,7 @@ IpcProvider.prototype._addResponseCallback = function(payload, callback) {
 };
 
 /**
-Timeout all requests when the end/error event is fired
+timeout all requests when the end/error event is fired
 
 @method _timeout
 */
@@ -5211,11 +5211,11 @@ var blockCall = function (args) {
 };
 
 var transactionFromBlockCall = function (args) {
-    return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'bgm_getTransactionByBlockHashAndIndex' : 'bgm_getTransactionByBlockNumberAndIndex';
+    return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'bgm_getTransactionByhashAndIndex' : 'bgm_getTransactionBynumberAndIndex';
 };
 
 var uncleCall = function (args) {
-    return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'bgm_getUncleByBlockHashAndIndex' : 'bgm_getUncleByBlockNumberAndIndex';
+    return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'bgm_getUncleByhashAndIndex' : 'bgm_getUncleBynumberAndIndex';
 };
 
 var getBlockTransactionCountCall = function (args) {
@@ -5223,7 +5223,7 @@ var getBlockTransactionCountCall = function (args) {
 };
 
 var uncleCountCall = function (args) {
-    return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'bgm_getUncleCountByBlockHash' : 'bgm_getUncleCountByBlockNumber';
+    return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'bgm_getUncleCountByhash' : 'bgm_getUncleCountBynumber';
 };
 
 function Bgm(web3) {
@@ -5271,7 +5271,7 @@ var methods = function () {
         name: 'getBalance',
         call: 'bgm_getBalance',
         bgmparam: 2,
-        inputFormatter: [formatters.inputAddressFormatter, formatters.inputDefaultBlockNumberFormatter],
+        inputFormatter: [formatters.inputAddressFormatter, formatters.inputDefaultnumberFormatter],
         outputFormatter: formatters.outputBigNumberFormatter
     });
 
@@ -5279,21 +5279,21 @@ var methods = function () {
         name: 'getStorageAt',
         call: 'bgm_getStorageAt',
         bgmparam: 3,
-        inputFormatter: [null, utils.toHex, formatters.inputDefaultBlockNumberFormatter]
+        inputFormatter: [null, utils.toHex, formatters.inputDefaultnumberFormatter]
     });
 
     var getCode = new Method({
         name: 'getCode',
         call: 'bgm_getCode',
         bgmparam: 2,
-        inputFormatter: [formatters.inputAddressFormatter, formatters.inputDefaultBlockNumberFormatter]
+        inputFormatter: [formatters.inputAddressFormatter, formatters.inputDefaultnumberFormatter]
     });
 
     var getBlock = new Method({
         name: 'getBlock',
         call: blockCall,
         bgmparam: 2,
-        inputFormatter: [formatters.inputBlockNumberFormatter, function (val) { return !!val; }],
+        inputFormatter: [formatters.inputnumberFormatter, function (val) { return !!val; }],
         outputFormatter: formatters.outputBlockFormatter
     });
 
@@ -5301,7 +5301,7 @@ var methods = function () {
         name: 'getUncle',
         call: uncleCall,
         bgmparam: 2,
-        inputFormatter: [formatters.inputBlockNumberFormatter, utils.toHex],
+        inputFormatter: [formatters.inputnumberFormatter, utils.toHex],
         outputFormatter: formatters.outputBlockFormatter,
 
     });
@@ -5316,7 +5316,7 @@ var methods = function () {
         name: 'getBlockTransactionCount',
         call: getBlockTransactionCountCall,
         bgmparam: 1,
-        inputFormatter: [formatters.inputBlockNumberFormatter],
+        inputFormatter: [formatters.inputnumberFormatter],
         outputFormatter: utils.toDecimal
     });
 
@@ -5324,7 +5324,7 @@ var methods = function () {
         name: 'getBlockUncleCount',
         call: uncleCountCall,
         bgmparam: 1,
-        inputFormatter: [formatters.inputBlockNumberFormatter],
+        inputFormatter: [formatters.inputnumberFormatter],
         outputFormatter: utils.toDecimal
     });
 
@@ -5339,7 +5339,7 @@ var methods = function () {
         name: 'getTransactionFromBlock',
         call: transactionFromBlockCall,
         bgmparam: 2,
-        inputFormatter: [formatters.inputBlockNumberFormatter, utils.toHex],
+        inputFormatter: [formatters.inputnumberFormatter, utils.toHex],
         outputFormatter: formatters.outputTransactionFormatter
     });
 
@@ -5354,7 +5354,7 @@ var methods = function () {
         name: 'getTransactionCount',
         call: 'bgm_getTransactionCount',
         bgmparam: 2,
-        inputFormatter: [null, formatters.inputDefaultBlockNumberFormatter],
+        inputFormatter: [null, formatters.inputDefaultnumberFormatter],
         outputFormatter: utils.toDecimal
     });
 
@@ -5390,7 +5390,7 @@ var methods = function () {
         name: 'call',
         call: 'bgm_call',
         bgmparam: 2,
-        inputFormatter: [formatters.inputCallFormatter, formatters.inputDefaultBlockNumberFormatter]
+        inputFormatter: [formatters.inputCallFormatter, formatters.inputDefaultnumberFormatter]
     });
 
     var estimateGas = new Method({
@@ -5718,7 +5718,7 @@ module.exports = Personal;
 /** @file shhPtr.js
  * @authors:
  *   Fabian Vogelsteller <fabian@bgmchain.org>
- *   Marek Kotewicz <marek@bgmbgmcore.io>
+ *   Marek Kotewicz <marek@bgmbgmCore.io>
  * @date 2017
  */
 
@@ -6449,7 +6449,7 @@ RequestManager.prototype.stopPolling = function (pollId) {
 
     // stop polling
     if(Object.keys(this.polls).length === 0 && this.timeout) {
-        clearTimeout(this.timeout);
+        cleartimeout(this.timeout);
         this.timeout = null;
     }
 };
@@ -6473,7 +6473,7 @@ RequestManager.prototype.reset = function (keepIsSyncing) {
 
     // stop polling
     if(Object.keys(this.polls).length === 0 && this.timeout) {
-        clearTimeout(this.timeout);
+        cleartimeout(this.timeout);
         this.timeout = null;
     }
 };
@@ -6485,7 +6485,7 @@ RequestManager.prototype.reset = function (keepIsSyncing) {
  */
 RequestManager.prototype.poll = function () {
     /*jshint maxcomplexity: 6 */
-    this.timeout = setTimeout(this.poll.bind(this), cPtr.BGM_POLLING_TIMEOUT);
+    this.timeout = settimeout(this.poll.bind(this), cPtr.BGM_POLLING_TIMEOUT);
 
     if (Object.keys(this.polls).length === 0) {
         return;
@@ -6619,7 +6619,7 @@ var pollSyncing = function(self) {
                     callback(null, true);
                 
                 // call on the next CPU cycle, so the actions of the sync stop can be processes first
-                setTimeout(function() {
+                settimeout(function() {
                     callback(null, sync);
                 }, 0);
                 
@@ -6757,18 +6757,18 @@ module.exports = transfer;
 },{"../bgmcontracts/SmartExchange.json":3,"./iban":33}],50:[function(require,module,exports){
 
 },{}],51:[function(require,module,exports){
-;(function (root, factory, undef) {
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./enc-base64"), require("./md5"), require("./evpkdf"), require("./cipher-bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"), require("./enc-base64"), require("./md5"), require("./evpkdf"), require("./cipher-bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./enc-base64", "./md5", "./evpkdf", "./cipher-bgmcore"], factory);
+		define(["./bgmCore", "./enc-base64", "./md5", "./evpkdf", "./cipher-bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -6989,24 +6989,24 @@ module.exports = transfer;
 	return bgmcryptoJS.AES;
 
 }));
-},{"./cipher-bgmcore":52,"./bgmcore":53,"./enc-base64":54,"./evpkdf":56,"./md5":61}],52:[function(require,module,exports){
-;(function (root, factory) {
+},{"./cipher-bgmCore":52,"./bgmCore":53,"./enc-base64":54,"./evpkdf":56,"./md5":61}],52:[function(require,module,exports){
+;(function (blockRoot, factory) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore"], factory);
+		define(["./bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
 	/**
-	 * Cipher bgmcore components.
+	 * Cipher bgmCore components.
 	 */
 	bgmcryptoJS.libPtr.Cipher || (function (undefined) {
 	    // Shortcuts
@@ -7865,8 +7865,8 @@ module.exports = transfer;
 
 
 }));
-},{"./bgmcore":53}],53:[function(require,module,exports){
-;(function (root, factory) {
+},{"./bgmCore":53}],53:[function(require,module,exports){
+;(function (blockRoot, factory) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
 		module.exports = exports = factory();
@@ -7877,12 +7877,12 @@ module.exports = transfer;
 	}
 	else {
 		// Global (browser)
-		root.bgmcryptoJS = factory();
+		blockRoot.bgmcryptoJS = factory();
 	}
 }(this, function () {
 
 	/**
-	 * bgmcryptoJS bgmcore components.
+	 * bgmcryptoJS bgmCore components.
 	 */
 	var bgmcryptoJS = bgmcryptoJS || (function (Math, undefined) {
 	    /*
@@ -8627,18 +8627,18 @@ module.exports = transfer;
 
 }));
 },{}],54:[function(require,module,exports){
-;(function (root, factory) {
+;(function (blockRoot, factory) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore"], factory);
+		define(["./bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -8762,19 +8762,19 @@ module.exports = transfer;
 	return bgmcryptoJS.encPtr.Base64;
 
 }));
-},{"./bgmcore":53}],55:[function(require,module,exports){
-;(function (root, factory) {
+},{"./bgmCore":53}],55:[function(require,module,exports){
+;(function (blockRoot, factory) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore"], factory);
+		define(["./bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -8912,19 +8912,19 @@ module.exports = transfer;
 	return bgmcryptoJS.encPtr.Utf16;
 
 }));
-},{"./bgmcore":53}],56:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./bgmCore":53}],56:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./sha1"), require("./hmac"));
+		module.exports = exports = factory(require("./bgmCore"), require("./sha1"), require("./hmac"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./sha1", "./hmac"], factory);
+		define(["./bgmCore", "./sha1", "./hmac"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -9045,19 +9045,19 @@ module.exports = transfer;
 	return bgmcryptoJS.EvpKDF;
 
 }));
-},{"./bgmcore":53,"./hmac":58,"./sha1":77}],57:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./bgmCore":53,"./hmac":58,"./sha1":77}],57:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./cipher-bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"), require("./cipher-bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./cipher-bgmcore"], factory);
+		define(["./bgmCore", "./cipher-bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -9112,19 +9112,19 @@ module.exports = transfer;
 	return bgmcryptoJS.format.Hex;
 
 }));
-},{"./cipher-bgmcore":52,"./bgmcore":53}],58:[function(require,module,exports){
-;(function (root, factory) {
+},{"./cipher-bgmCore":52,"./bgmCore":53}],58:[function(require,module,exports){
+;(function (blockRoot, factory) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore"], factory);
+		define(["./bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -9256,38 +9256,38 @@ module.exports = transfer;
 
 
 }));
-},{"./bgmcore":53}],59:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./bgmCore":53}],59:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./x64-bgmcore"), require("./lib-typedarrays"), require("./enc-utf16"), require("./enc-base64"), require("./md5"), require("./sha1"), require("./sha256"), require("./sha224"), require("./sha512"), require("./sha384"), require("./sha3"), require("./ripemd160"), require("./hmac"), require("./pbkdf2"), require("./evpkdf"), require("./cipher-bgmcore"), require("./mode-cfb"), require("./mode-ctr"), require("./mode-ctr-gladman"), require("./mode-ofb"), require("./mode-ecb"), require("./pad-ansix923"), require("./pad-iso10126"), require("./pad-iso97971"), require("./pad-zeropadding"), require("./pad-nopadding"), require("./format-hex"), require("./aes"), require("./tripledes"), require("./rc4"), require("./rabbit"), require("./rabbit-legacy"));
+		module.exports = exports = factory(require("./bgmCore"), require("./x64-bgmCore"), require("./lib-typedarrays"), require("./enc-utf16"), require("./enc-base64"), require("./md5"), require("./sha1"), require("./sha256"), require("./sha224"), require("./sha512"), require("./sha384"), require("./sha3"), require("./ripemd160"), require("./hmac"), require("./pbkdf2"), require("./evpkdf"), require("./cipher-bgmCore"), require("./mode-cfb"), require("./mode-ctr"), require("./mode-ctr-gladman"), require("./mode-ofb"), require("./mode-ecb"), require("./pad-ansix923"), require("./pad-iso10126"), require("./pad-iso97971"), require("./pad-zeropadding"), require("./pad-nopadding"), require("./format-hex"), require("./aes"), require("./tripledes"), require("./rc4"), require("./rabbit"), require("./rabbit-legacy"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./x64-bgmcore", "./lib-typedarrays", "./enc-utf16", "./enc-base64", "./md5", "./sha1", "./sha256", "./sha224", "./sha512", "./sha384", "./sha3", "./ripemd160", "./hmac", "./pbkdf2", "./evpkdf", "./cipher-bgmcore", "./mode-cfb", "./mode-ctr", "./mode-ctr-gladman", "./mode-ofb", "./mode-ecb", "./pad-ansix923", "./pad-iso10126", "./pad-iso97971", "./pad-zeropadding", "./pad-nopadding", "./format-hex", "./aes", "./tripledes", "./rc4", "./rabbit", "./rabbit-legacy"], factory);
+		define(["./bgmCore", "./x64-bgmCore", "./lib-typedarrays", "./enc-utf16", "./enc-base64", "./md5", "./sha1", "./sha256", "./sha224", "./sha512", "./sha384", "./sha3", "./ripemd160", "./hmac", "./pbkdf2", "./evpkdf", "./cipher-bgmCore", "./mode-cfb", "./mode-ctr", "./mode-ctr-gladman", "./mode-ofb", "./mode-ecb", "./pad-ansix923", "./pad-iso10126", "./pad-iso97971", "./pad-zeropadding", "./pad-nopadding", "./format-hex", "./aes", "./tripledes", "./rc4", "./rabbit", "./rabbit-legacy"], factory);
 	}
 	else {
 		// Global (browser)
-		root.bgmcryptoJS = factory(root.bgmcryptoJS);
+		blockRoot.bgmcryptoJS = factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
 	return bgmcryptoJS;
 
 }));
-},{"./aes":51,"./cipher-bgmcore":52,"./bgmcore":53,"./enc-base64":54,"./enc-utf16":55,"./evpkdf":56,"./format-hex":57,"./hmac":58,"./lib-typedarrays":60,"./md5":61,"./mode-cfb":62,"./mode-ctr":64,"./mode-ctr-gladman":63,"./mode-ecb":65,"./mode-ofb":66,"./pad-ansix923":67,"./pad-iso10126":68,"./pad-iso97971":69,"./pad-nopadding":70,"./pad-zeropadding":71,"./pbkdf2":72,"./rabbit":74,"./rabbit-legacy":73,"./rc4":75,"./ripemd160":76,"./sha1":77,"./sha224":78,"./sha256":79,"./sha3":80,"./sha384":81,"./sha512":82,"./tripledes":83,"./x64-bgmcore":84}],60:[function(require,module,exports){
-;(function (root, factory) {
+},{"./aes":51,"./cipher-bgmCore":52,"./bgmCore":53,"./enc-base64":54,"./enc-utf16":55,"./evpkdf":56,"./format-hex":57,"./hmac":58,"./lib-typedarrays":60,"./md5":61,"./mode-cfb":62,"./mode-ctr":64,"./mode-ctr-gladman":63,"./mode-ecb":65,"./mode-ofb":66,"./pad-ansix923":67,"./pad-iso10126":68,"./pad-iso97971":69,"./pad-nopadding":70,"./pad-zeropadding":71,"./pbkdf2":72,"./rabbit":74,"./rabbit-legacy":73,"./rc4":75,"./ripemd160":76,"./sha1":77,"./sha224":78,"./sha256":79,"./sha3":80,"./sha384":81,"./sha512":82,"./tripledes":83,"./x64-bgmCore":84}],60:[function(require,module,exports){
+;(function (blockRoot, factory) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore"], factory);
+		define(["./bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -9352,19 +9352,19 @@ module.exports = transfer;
 	return bgmcryptoJS.libPtr.WordArray;
 
 }));
-},{"./bgmcore":53}],61:[function(require,module,exports){
-;(function (root, factory) {
+},{"./bgmCore":53}],61:[function(require,module,exports){
+;(function (blockRoot, factory) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore"], factory);
+		define(["./bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -9621,19 +9621,19 @@ module.exports = transfer;
 	return bgmcryptoJS.MD5;
 
 }));
-},{"./bgmcore":53}],62:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./bgmCore":53}],62:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./cipher-bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"), require("./cipher-bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./cipher-bgmcore"], factory);
+		define(["./bgmCore", "./cipher-bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -9700,19 +9700,19 @@ module.exports = transfer;
 	return bgmcryptoJS.mode.CFB;
 
 }));
-},{"./cipher-bgmcore":52,"./bgmcore":53}],63:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./cipher-bgmCore":52,"./bgmCore":53}],63:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./cipher-bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"), require("./cipher-bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./cipher-bgmcore"], factory);
+		define(["./bgmCore", "./cipher-bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -9817,19 +9817,19 @@ module.exports = transfer;
 	return bgmcryptoJS.mode.CTRGladman;
 
 }));
-},{"./cipher-bgmcore":52,"./bgmcore":53}],64:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./cipher-bgmCore":52,"./bgmCore":53}],64:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./cipher-bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"), require("./cipher-bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./cipher-bgmcore"], factory);
+		define(["./bgmCore", "./cipher-bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -9876,19 +9876,19 @@ module.exports = transfer;
 	return bgmcryptoJS.mode.CTR;
 
 }));
-},{"./cipher-bgmcore":52,"./bgmcore":53}],65:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./cipher-bgmCore":52,"./bgmCore":53}],65:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./cipher-bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"), require("./cipher-bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./cipher-bgmcore"], factory);
+		define(["./bgmCore", "./cipher-bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -9917,19 +9917,19 @@ module.exports = transfer;
 	return bgmcryptoJS.mode.ECB;
 
 }));
-},{"./cipher-bgmcore":52,"./bgmcore":53}],66:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./cipher-bgmCore":52,"./bgmCore":53}],66:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./cipher-bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"), require("./cipher-bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./cipher-bgmcore"], factory);
+		define(["./bgmCore", "./cipher-bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -9972,19 +9972,19 @@ module.exports = transfer;
 	return bgmcryptoJS.mode.OFB;
 
 }));
-},{"./cipher-bgmcore":52,"./bgmcore":53}],67:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./cipher-bgmCore":52,"./bgmCore":53}],67:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./cipher-bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"), require("./cipher-bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./cipher-bgmcore"], factory);
+		define(["./bgmCore", "./cipher-bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -10022,19 +10022,19 @@ module.exports = transfer;
 	return bgmcryptoJS.pad.Ansix923;
 
 }));
-},{"./cipher-bgmcore":52,"./bgmcore":53}],68:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./cipher-bgmCore":52,"./bgmCore":53}],68:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./cipher-bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"), require("./cipher-bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./cipher-bgmcore"], factory);
+		define(["./bgmCore", "./cipher-bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -10067,19 +10067,19 @@ module.exports = transfer;
 	return bgmcryptoJS.pad.Iso10126;
 
 }));
-},{"./cipher-bgmcore":52,"./bgmcore":53}],69:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./cipher-bgmCore":52,"./bgmCore":53}],69:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./cipher-bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"), require("./cipher-bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./cipher-bgmcore"], factory);
+		define(["./bgmCore", "./cipher-bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -10108,19 +10108,19 @@ module.exports = transfer;
 	return bgmcryptoJS.pad.Iso97971;
 
 }));
-},{"./cipher-bgmcore":52,"./bgmcore":53}],70:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./cipher-bgmCore":52,"./bgmCore":53}],70:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./cipher-bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"), require("./cipher-bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./cipher-bgmcore"], factory);
+		define(["./bgmCore", "./cipher-bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -10139,19 +10139,19 @@ module.exports = transfer;
 	return bgmcryptoJS.pad.NoPadding;
 
 }));
-},{"./cipher-bgmcore":52,"./bgmcore":53}],71:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./cipher-bgmCore":52,"./bgmCore":53}],71:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./cipher-bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"), require("./cipher-bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./cipher-bgmcore"], factory);
+		define(["./bgmCore", "./cipher-bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -10185,19 +10185,19 @@ module.exports = transfer;
 	return bgmcryptoJS.pad.ZeroPadding;
 
 }));
-},{"./cipher-bgmcore":52,"./bgmcore":53}],72:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./cipher-bgmCore":52,"./bgmCore":53}],72:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./sha1"), require("./hmac"));
+		module.exports = exports = factory(require("./bgmCore"), require("./sha1"), require("./hmac"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./sha1", "./hmac"], factory);
+		define(["./bgmCore", "./sha1", "./hmac"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -10331,19 +10331,19 @@ module.exports = transfer;
 	return bgmcryptoJS.PBKDF2;
 
 }));
-},{"./bgmcore":53,"./hmac":58,"./sha1":77}],73:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./bgmCore":53,"./hmac":58,"./sha1":77}],73:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./enc-base64"), require("./md5"), require("./evpkdf"), require("./cipher-bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"), require("./enc-base64"), require("./md5"), require("./evpkdf"), require("./cipher-bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./enc-base64", "./md5", "./evpkdf", "./cipher-bgmcore"], factory);
+		define(["./bgmCore", "./enc-base64", "./md5", "./evpkdf", "./cipher-bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -10522,19 +10522,19 @@ module.exports = transfer;
 	return bgmcryptoJS.RabbitLegacy;
 
 }));
-},{"./cipher-bgmcore":52,"./bgmcore":53,"./enc-base64":54,"./evpkdf":56,"./md5":61}],74:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./cipher-bgmCore":52,"./bgmCore":53,"./enc-base64":54,"./evpkdf":56,"./md5":61}],74:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./enc-base64"), require("./md5"), require("./evpkdf"), require("./cipher-bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"), require("./enc-base64"), require("./md5"), require("./evpkdf"), require("./cipher-bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./enc-base64", "./md5", "./evpkdf", "./cipher-bgmcore"], factory);
+		define(["./bgmCore", "./enc-base64", "./md5", "./evpkdf", "./cipher-bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -10715,19 +10715,19 @@ module.exports = transfer;
 	return bgmcryptoJS.Rabbit;
 
 }));
-},{"./cipher-bgmcore":52,"./bgmcore":53,"./enc-base64":54,"./evpkdf":56,"./md5":61}],75:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./cipher-bgmCore":52,"./bgmCore":53,"./enc-base64":54,"./evpkdf":56,"./md5":61}],75:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./enc-base64"), require("./md5"), require("./evpkdf"), require("./cipher-bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"), require("./enc-base64"), require("./md5"), require("./evpkdf"), require("./cipher-bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./enc-base64", "./md5", "./evpkdf", "./cipher-bgmcore"], factory);
+		define(["./bgmCore", "./enc-base64", "./md5", "./evpkdf", "./cipher-bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -10855,19 +10855,19 @@ module.exports = transfer;
 	return bgmcryptoJS.RC4;
 
 }));
-},{"./cipher-bgmcore":52,"./bgmcore":53,"./enc-base64":54,"./evpkdf":56,"./md5":61}],76:[function(require,module,exports){
-;(function (root, factory) {
+},{"./cipher-bgmCore":52,"./bgmCore":53,"./enc-base64":54,"./evpkdf":56,"./md5":61}],76:[function(require,module,exports){
+;(function (blockRoot, factory) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore"], factory);
+		define(["./bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -11123,19 +11123,19 @@ module.exports = transfer;
 	return bgmcryptoJS.RIPEMD160;
 
 }));
-},{"./bgmcore":53}],77:[function(require,module,exports){
-;(function (root, factory) {
+},{"./bgmCore":53}],77:[function(require,module,exports){
+;(function (blockRoot, factory) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore"], factory);
+		define(["./bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -11274,19 +11274,19 @@ module.exports = transfer;
 	return bgmcryptoJS.SHA1;
 
 }));
-},{"./bgmcore":53}],78:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./bgmCore":53}],78:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./sha256"));
+		module.exports = exports = factory(require("./bgmCore"), require("./sha256"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./sha256"], factory);
+		define(["./bgmCore", "./sha256"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -11355,19 +11355,19 @@ module.exports = transfer;
 	return bgmcryptoJS.SHA224;
 
 }));
-},{"./bgmcore":53,"./sha256":79}],79:[function(require,module,exports){
-;(function (root, factory) {
+},{"./bgmCore":53,"./sha256":79}],79:[function(require,module,exports){
+;(function (blockRoot, factory) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore"], factory);
+		define(["./bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -11555,19 +11555,19 @@ module.exports = transfer;
 	return bgmcryptoJS.SHA256;
 
 }));
-},{"./bgmcore":53}],80:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./bgmCore":53}],80:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./x64-bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"), require("./x64-bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./x64-bgmcore"], factory);
+		define(["./bgmCore", "./x64-bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -11879,19 +11879,19 @@ module.exports = transfer;
 	return bgmcryptoJS.SHA3;
 
 }));
-},{"./bgmcore":53,"./x64-bgmcore":84}],81:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./bgmCore":53,"./x64-bgmCore":84}],81:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./x64-bgmcore"), require("./sha512"));
+		module.exports = exports = factory(require("./bgmCore"), require("./x64-bgmCore"), require("./sha512"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./x64-bgmcore", "./sha512"], factory);
+		define(["./bgmCore", "./x64-bgmCore", "./sha512"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -11963,19 +11963,19 @@ module.exports = transfer;
 	return bgmcryptoJS.SHA384;
 
 }));
-},{"./bgmcore":53,"./sha512":82,"./x64-bgmcore":84}],82:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./bgmCore":53,"./sha512":82,"./x64-bgmCore":84}],82:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./x64-bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"), require("./x64-bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./x64-bgmcore"], factory);
+		define(["./bgmCore", "./x64-bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -12287,19 +12287,19 @@ module.exports = transfer;
 	return bgmcryptoJS.SHA512;
 
 }));
-},{"./bgmcore":53,"./x64-bgmcore":84}],83:[function(require,module,exports){
-;(function (root, factory, undef) {
+},{"./bgmCore":53,"./x64-bgmCore":84}],83:[function(require,module,exports){
+;(function (blockRoot, factory, undef) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"), require("./enc-base64"), require("./md5"), require("./evpkdf"), require("./cipher-bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"), require("./enc-base64"), require("./md5"), require("./evpkdf"), require("./cipher-bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore", "./enc-base64", "./md5", "./evpkdf", "./cipher-bgmcore"], factory);
+		define(["./bgmCore", "./enc-base64", "./md5", "./evpkdf", "./cipher-bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -13058,19 +13058,19 @@ module.exports = transfer;
 	return bgmcryptoJS.TripleDES;
 
 }));
-},{"./cipher-bgmcore":52,"./bgmcore":53,"./enc-base64":54,"./evpkdf":56,"./md5":61}],84:[function(require,module,exports){
-;(function (root, factory) {
+},{"./cipher-bgmCore":52,"./bgmCore":53,"./enc-base64":54,"./evpkdf":56,"./md5":61}],84:[function(require,module,exports){
+;(function (blockRoot, factory) {
 	if (typeof exports === "object") {
 		// bgmcommonJS
-		module.exports = exports = factory(require("./bgmcore"));
+		module.exports = exports = factory(require("./bgmCore"));
 	}
 	else if (typeof define === "function" && define.amd) {
 		// AMD
-		define(["./bgmcore"], factory);
+		define(["./bgmCore"], factory);
 	}
 	else {
 		// Global (browser)
-		factory(root.bgmcryptoJS);
+		factory(blockRoot.bgmcryptoJS);
 	}
 }(this, function (bgmcryptoJS) {
 
@@ -13363,9 +13363,9 @@ module.exports = transfer;
 	return bgmcryptoJS;
 
 }));
-},{"./bgmcore":53}],85:[function(require,module,exports){
+},{"./bgmCore":53}],85:[function(require,module,exports){
 /*! https://mths.be/utf8js v2.1.2 by @mathias */
-;(function(root) {
+;(function(blockRoot) {
 
 	// Detect free variables `exports`
 	var freeExports = typeof exports == 'object' && exports;
@@ -13375,10 +13375,10 @@ module.exports = transfer;
 		module.exports == freeExports && module;
 
 	// Detect free variable `global`, from Node.js or Browserified code,
-	// and use it as `root`
+	// and use it as `blockRoot`
 	var freeGlobal = typeof global == 'object' && global;
 	if (freeGlobal.global === freeGlobal || freeGlobal.window === freeGlobal) {
-		root = freeGlobal;
+		blockRoot = freeGlobal;
 	}
 
 	/*--------------------------------------------------------------------------*/
@@ -13604,7 +13604,7 @@ module.exports = transfer;
 			}
 		}
 	} else { // in Rhino or a web browser
-		root.utf8 = utf8;
+		blockRoot.utf8 = utf8;
 	}
 
 }(this));

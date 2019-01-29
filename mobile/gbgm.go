@@ -26,7 +26,7 @@ import (
 	"github.com/ssldltd/bgmchain/p2p"
 	"github.com/ssldltd/bgmchain/p2p/nat"
 	"github.com/ssldltd/bgmchain/bgmparam"
-	"github.com/ssldltd/bgmchain/bgmcore"
+	"github.com/ssldltd/bgmchain/bgmCore"
 	"github.com/ssldltd/bgmchain/bgm"
 	"github.com/ssldltd/bgmchain/bgm/downloader"
 	"github.com/ssldltd/bgmchain/bgmclient"
@@ -46,7 +46,7 @@ type NodeConfig struct {
 	BootstrapNodes *Enodes
 	MaxPeers int
 	BgmchainEnabled bool
-	BgmchainNetworkID int64 // uint64 in truth, but Java can't handle that...
+	BgmchainNetworkID int64 // Uint64 in truth, but Java can't handle that...
 	BgmchainGenesis string
 }
 
@@ -104,10 +104,10 @@ func NewNode(datadirectory string, config *NodeConfig) (stack *Node, _ error) {
 		return nil, err
 	}
 
-	var genesis *bgmcore.Genesis
+	var genesis *bgmCore.Genesis
 	if config.BgmchainGenesis != "" {
 		// Parse the user supplied genesis spec if not mainnet
-		genesis = new(bgmcore.Genesis)
+		genesis = new(bgmCore.Genesis)
 		if err := json.Unmarshal([]byte(config.BgmchainGenesis), genesis); err != nil {
 			return nil, fmt.Errorf("invalid genesis spec: %v", err)
 		}
@@ -117,18 +117,18 @@ func NewNode(datadirectory string, config *NodeConfig) (stack *Node, _ error) {
 		bgmConf := bgmPtr.DefaultConfig
 		bgmConf.Genesis = genesis
 		bgmConf.SyncMode = downloader.LightSync
-		bgmConf.NetworkId = uint64(config.BgmchainNetworkID)
+		bgmConf.NetworkId = Uint64(config.BgmchainNetworkID)
 		bgmConf.DatabaseCache = config.BgmchainDatabaseCache
-		if err := rawStack.Register(func(ctx *node.ServiceContext) (node.Service, error) {
-			return les.New(ctx, &bgmConf)
+		if err := rawStack.Register(func(CTX *node.ServiceContext) (node.Service, error) {
+			return les.New(CTX, &bgmConf)
 		}); err != nil {
 			return nil, fmt.Errorf("bgmchain init: %v", err)
 		}
 		// If netstats reporting is requested, do it
 		if config.BgmchainNetStats != "" {
-			if err := rawStack.Register(func(ctx *node.ServiceContext) (node.Service, error) {
+			if err := rawStack.Register(func(CTX *node.ServiceContext) (node.Service, error) {
 				var lesServ *les.LightBgmchain
-				ctx.Service(&lesServ)
+				CTX.Service(&lesServ)
 
 				return bgmstats.New(config.BgmchainNetStats, nil, lesServ)
 			}); err != nil {

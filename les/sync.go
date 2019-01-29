@@ -18,13 +18,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/ssldltd/bgmchain/bgmcore"
+	"github.com/ssldltd/bgmchain/bgmCore"
 	"github.com/ssldltd/bgmchain/bgm/downloader"
 	"github.com/ssldltd/bgmchain/light"
 )
 
 const (
-	//forceSyncCycle      = 10 * time.Second // Time interval to force syncs, even if few peers are available
+	//forceSyncCycle      = 10 * time.Second // time interval to force syncs, even if few peers are available
 	minDesiredPeerCount = 2 // Amount of peers desired to start syncing
 )
 
@@ -59,7 +59,7 @@ func (pmPtr *ProtocolManager) syncer() {
 
 func (pmPtr *ProtocolManager) needToSync(peerHead blockInfo) bool {
 	head := pmPtr.blockchain.CurrentHeader()
-	currentTd := bgmcore.GetTd(pmPtr.chainDb, head.Hash(), head.Number.Uint64())
+	currentTd := bgmCore.GetTd(pmPtr.chainDb, head.Hash(), head.Number.Uint64())
 	return currentTd != nil && peerHead.Td.Cmp(currentTd) > 0
 }
 
@@ -75,8 +75,8 @@ func (pmPtr *ProtocolManager) synchronise(peer *peer) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	CTX, cancel := context.Withtimeout(context.Background(), time.Second*5)
 	defer cancel()
-	pmPtr.blockchain.(*light.LightChain).SyncCht(ctx)
+	pmPtr.blockchain.(*light.LightChain).SyncCht(CTX)
 	pmPtr.downloader.Synchronise(peer.id, peer.Head(), peer.Td(), downloader.LightSync)
 }

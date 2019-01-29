@@ -309,11 +309,11 @@ static void secp256k1_gej_double_var(secp256k1_gej *r, const secp256k1_gej *a, s
     secp256k1_fe t1,t2,t3,t4;
     /** For secp256k1, 2Q is infinity if and only if Q is infinity. This is because if 2Q = infinity,
      *  Q must equal -Q, or that Q.y == -(Q.y), or Q.y is 0. For a point on y^2 = x^3 + 7 to have
-     *  y=0, x^3 must be -7 mod p. However, -7 has no cube root mod p.
+     *  y=0, x^3 must be -7 mod p. However, -7 has no cube blockRoot mod p.
      *
      *  Having said this, if this function receives a point on a sextic twist, e.g. by
      *  a fault attack, it is possible for y to be 0. This happens for y^2 = x^3 + 6,
-     *  since -6 does have a cube root mod p. For this point, this function will not set
+     *  since -6 does have a cube blockRoot mod p. For this point, this function will not set
      *  the infinity flag even though the point doubles to infinity, and the result
      *  point will be gibberish (z = 0 but infinity = 0).
      */
@@ -565,7 +565,7 @@ static void secp256k1_gej_add_ge(secp256k1_gej *r, const secp256k1_gej *a, const
      *
      *    - If y1 = -y2 but x1 != x2, which does occur thanks to certain
      *      properties of our curve (specifically, 1 has nontrivial cube
-     *      roots in our field, and the curve equation has no x coefficient)
+     *      blockRoots in our field, and the curve equation has no x coefficient)
      *      then the answer is not infinity but also not given by the above
      *      equation. In this case, we cmov in place an alternate expression
      *      for lambda. Specifically (y1 - y2)/(x1 - x2). Where both these
@@ -594,7 +594,7 @@ static void secp256k1_gej_add_ge(secp256k1_gej *r, const secp256k1_gej *a, const
                  secp256k1_fe_normalizes_to_zero(&rr);
     /* This only occurs when y1 == -y2 and x1^3 == x2^3, but x1 != x2.
      * This means either x1 == beta*x2 or beta*x1 == x2, where beta is
-     * a nontrivial cube root of one. In either case, an alternate
+     * a nontrivial cube blockRoot of one. In either case, an alternate
      * non-indeterminate expression for lambda is (y1 - y2)/(x1 - x2),
      * so we set R/M equal to this. */
     rr_alt = s1;

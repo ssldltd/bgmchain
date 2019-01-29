@@ -21,7 +21,7 @@ import (
 	"math/big"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 )
 
 // senderFromServer is a types.Signer that remembers the sender address returned by the RPC

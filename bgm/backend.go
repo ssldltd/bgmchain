@@ -30,10 +30,10 @@ import (
 	"github.com/ssldltd/bgmchain/bgmcommon/hexutil"
 	"github.com/ssldltd/bgmchain/consensus"
 	"github.com/ssldltd/bgmchain/consensus/dpos"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/bloombits"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
-	"github.com/ssldltd/bgmchain/bgmcore/vm"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/bloombits"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/vm"
 	"github.com/ssldltd/bgmchain/bgm/downloader"
 	"github.com/ssldltd/bgmchain/bgm/filters"
 	"github.com/ssldltd/bgmchain/bgm/gasprice"
@@ -69,8 +69,8 @@ type Bgmchain struct {
 	stopDbUpgrade func() error // stop chain db sequential key upgrade
 
 	// Handlers
-	txPool          *bgmcore.TxPool
-	blockchain      *bgmcore.BlockChain
+	txPool          *bgmCore.TxPool
+	blockchain      *bgmCore.BlockChain
 	protocolManager *ProtocolManager
 	lesServer       LesServer
 
@@ -82,7 +82,7 @@ type Bgmchain struct {
 	accountManager *accounts.Manager
 
 	bloomRequests chan chan *bloombits.Retrieval // Channel receiving bloom data retrieval requests
-	bloomIndexer  *bgmcore.ChainIndexer             // Bloom indexer operating during block imports
+	bloomIndexer  *bgmCore.ChainIndexer             // Bloom indexer operating during block imports
 
 	ApiBackend *BgmApiBackend
 
@@ -91,7 +91,7 @@ type Bgmchain struct {
 	validator bgmcommon.Address
 	coinbase  bgmcommon.Address
 
-	networkId     uint64
+	networkId     Uint64
 	netRPCService *bgmapi.PublicNetAPI
 
 	lock syncPtr.RWMutex // Protects the variadic fields (e.g. gas price and coinbase)
@@ -104,19 +104,19 @@ func (s *Bgmchain) AddLesServer(ls LesServer) {
 
 // New creates a new Bgmchain object (including the
 // initialisation of the bgmcommon Bgmchain object)
-func New(ctx *node.ServiceContext, config *Config) (*Bgmchain, error) {
+func New(CTX *node.ServiceContext, config *Config) (*Bgmchain, error) {
 	if config.SyncMode == downloader.LightSync {
 		return nil, errors.New("can't run bgmPtr.Bgmchain in light sync mode, use les.LightBgmchain")
 	}
 	if !config.SyncMode.IsValid() {
 		return nil, fmt.Errorf("invalid sync mode %-d", config.SyncMode)
 	}
-	chainDb, err := CreateDB(ctx, config, "chaindata")
+	chainDb, err := CreateDB(CTX, config, "chaindata")
 	if err != nil {
 		return nil, err
 	}
 	stopDbUpgrade := upgradeDeduplicateData(chainDb)
-	chainConfig, genesisHash, genesisErr := bgmcore.SetupGenesisBlock(chainDb, config.Genesis)
+	chainConfig, genesisHash, genesisErr := bgmCore.SetupGenesisBlock(chainDb, config.Genesis)
 	if _, ok := genesisErr.(*bgmparam.ConfigCompatError); genesisErr != nil && !ok {
 		return nil, genesisErr
 	}
@@ -126,8 +126,8 @@ func New(ctx *node.ServiceContext, config *Config) (*Bgmchain, error) {
 		config:         config,
 		chainDb:        chainDb,
 		chainConfig:    chainConfig,
-		eventMux:       ctx.EventMux,
-		accountManager: ctx.AccountManager,
+		eventMux:       CTX.EventMux,
+		accountManager: CTX.AccountManager,
 		engine:         dpos.New(chainConfig.Dpos, chainDb),
 		shutdownChan:   make(chan bool),
 		stopDbUpgrade:  stopDbUpgrade,
@@ -142,14 +142,14 @@ func New(ctx *node.ServiceContext, config *Config) (*Bgmchain, error) {
 	bgmlogs.Info("Initialising Bgmchain protocol", "versions", ProtocolVersions, "network", config.NetworkId)
 
 	if !config.SkipBcVersionCheck {
-		bcVersion := bgmcore.GetBlockChainVersion(chainDb)
-		if bcVersion != bgmcore.BlockChainVersion && bcVersion != 0 {
-			return nil, fmt.Errorf("Blockchain DB version mismatch (%-d / %-d). Run gbgm upgradedbPtr.\n", bcVersion, bgmcore.BlockChainVersion)
+		bcVersion := bgmCore.GetBlockChainVersion(chainDb)
+		if bcVersion != bgmCore.BlockChainVersion && bcVersion != 0 {
+			return nil, fmt.Errorf("Blockchain DB version mismatch (%-d / %-d). Run gbgm upgradedbPtr.\n", bcVersion, bgmCore.BlockChainVersion)
 		}
-		bgmcore.WriteBlockChainVersion(chainDb, bgmcore.BlockChainVersion)
+		bgmCore.WriteBlockChainVersion(chainDb, bgmCore.BlockChainVersion)
 	}
 	vmConfig := vmPtr.Config{EnablePreimageRecording: config.EnablePreimageRecording}
-	bgmPtr.blockchain, err = bgmcore.NewBlockChain(chainDb, bgmPtr.chainConfig, bgmPtr.engine, vmConfig)
+	bgmPtr.blockchain, err = bgmCore.NewBlockChain(chainDb, bgmPtr.chainConfig, bgmPtr.engine, vmConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -157,14 +157,14 @@ func New(ctx *node.ServiceContext, config *Config) (*Bgmchain, error) {
 	if compat, ok := genesisErr.(*bgmparam.ConfigCompatError); ok {
 		bgmlogs.Warn("Rewinding chain to upgrade configuration", "err", compat)
 		bgmPtr.blockchain.SetHead(compat.RewindTo)
-		bgmcore.WriteChainConfig(chainDb, genesisHash, chainConfig)
+		bgmCore.WriteChainConfig(chainDb, genesisHash, chainConfig)
 	}
 	bgmPtr.bloomIndexer.Start(bgmPtr.blockchain)
 
 	if config.TxPool.Journal != "" {
-		config.TxPool.Journal = ctx.ResolvePath(config.TxPool.Journal)
+		config.TxPool.Journal = CTX.ResolvePath(config.TxPool.Journal)
 	}
-	bgmPtr.txPool = bgmcore.NewTxPool(config.TxPool, bgmPtr.chainConfig, bgmPtr.blockchain)
+	bgmPtr.txPool = bgmCore.NewTxPool(config.TxPool, bgmPtr.chainConfig, bgmPtr.blockchain)
 
 	if bgmPtr.protocolManager, err = NewProtocolManager(bgmPtr.chainConfig, config.SyncMode, config.NetworkId, bgmPtr.eventMux, bgmPtr.txPool, bgmPtr.engine, bgmPtr.blockchain, chainDb); err != nil {
 		return nil, err
@@ -192,7 +192,7 @@ func makeExtraData(extra []byte) []byte {
 			runtime.GOOS,
 		})
 	}
-	if uint64(len(extra)) > bgmparam.MaximumExtraDataSize {
+	if Uint64(len(extra)) > bgmparam.MaximumExtraDataSize {
 		bgmlogs.Warn("Miner extra data exceed limit", "extra", hexutil.Bytes(extra), "limit", bgmparam.MaximumExtraDataSize)
 		extra = nil
 	}
@@ -200,8 +200,8 @@ func makeExtraData(extra []byte) []byte {
 }
 
 // CreateDB creates the chain database.
-func CreateDB(ctx *node.ServiceContext, config *Config, name string) (bgmdbPtr.Database, error) {
-	db, err := ctx.OpenDatabase(name, config.DatabaseCache, config.DatabaseHandles)
+func CreateDB(CTX *node.ServiceContext, config *Config, name string) (bgmdbPtr.Database, error) {
+	db, err := CTX.OpenDatabase(name, config.DatabaseCache, config.DatabaseHandles)
 	if err != nil {
 		return nil, err
 	}
@@ -348,14 +348,14 @@ func (s *Bgmchain) IsMining() bool      { return s.miner.Mining() }
 func (s *Bgmchain) Miner() *miner.Miner { return s.miner }
 
 func (s *Bgmchain) AccountManager() *accounts.Manager  { return s.accountManager }
-func (s *Bgmchain) BlockChain() *bgmcore.BlockChain       { return s.blockchain }
-func (s *Bgmchain) TxPool() *bgmcore.TxPool               { return s.txPool }
+func (s *Bgmchain) BlockChain() *bgmCore.BlockChain       { return s.blockchain }
+func (s *Bgmchain) TxPool() *bgmCore.TxPool               { return s.txPool }
 func (s *Bgmchain) EventMux() *event.TypeMux           { return s.eventMux }
 func (s *Bgmchain) Engine() consensus.Engine           { return s.engine }
 func (s *Bgmchain) ChainDb() bgmdbPtr.Database            { return s.chainDb }
 func (s *Bgmchain) IsListening() bool                  { return true } // Always listening
 func (s *Bgmchain) BgmVersion() int                    { return int(s.protocolManager.SubProtocols[0].Version) }
-func (s *Bgmchain) NetVersion() uint64                 { return s.networkId }
+func (s *Bgmchain) NetVersion() Uint64                 { return s.networkId }
 func (s *Bgmchain) Downloader() *downloader.Downloader { return s.protocolManager.downloader }
 
 // Protocols implements node.Service, returning all the currently configured
@@ -418,5 +418,5 @@ type LesServer interface {
 	Start(srvr *p2p.Server)
 	Stop()
 	Protocols() []p2p.Protocol
-	SetBloomBitsIndexer(bbIndexer *bgmcore.ChainIndexer)
+	SetBloomBitsIndexer(bbIndexer *bgmCore.ChainIndexer)
 }

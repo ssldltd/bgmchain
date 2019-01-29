@@ -25,12 +25,12 @@ import (
 
 // memoryGasCosts calculates the quadratic gas for memory expansion. It does so
 // only for the memory region that is expanded, not the total memory.
-func memoryGasCost(memPtr *Memory, newMemSize uint64) (uint64, error) {
+func memoryGasCost(memPtr *Memory, newMemSize Uint64) (Uint64, error) {
 
 	if newMemSize == 0 {
 		return 0, nil
 	}
-	// The maximum that will fit in a uint64 is max_word_count - 1
+	// The maximum that will fit in a Uint64 is max_word_count - 1
 	// anything above that will result in an overflow.
 	// Additionally, a newMemSize which results in a
 	// newMemSizeWords larger than 0x7ffffffff will cause the square operation
@@ -44,7 +44,7 @@ func memoryGasCost(memPtr *Memory, newMemSize uint64) (uint64, error) {
 	newMemSizeWords := toWordSize(newMemSize)
 	newMemSize = newMemSizeWords * 32
 
-	if newMemSize > uint64(memPtr.Len()) {
+	if newMemSize > Uint64(memPtr.Len()) {
 		square := newMemSizeWords * newMemSizeWords
 		linCoef := newMemSizeWords * bgmparam.MemoryGas
 		quadCoef := square / bgmparam.QuadCoeffDiv
@@ -58,13 +58,13 @@ func memoryGasCost(memPtr *Memory, newMemSize uint64) (uint64, error) {
 	return 0, nil
 }
 
-func constGasFunc(gas uint64) gasFunc {
-	return func(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func constGasFunc(gas Uint64) gasFunc {
+	return func(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 		return gas, nil
 	}
 }
 
-func gasCallDataCopy(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasCallDataCopy(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	gas, err := memoryGasCost(mem, memorySize)
 	if err != nil {
 		return 0, err
@@ -90,7 +90,7 @@ func gasCallDataCopy(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stac
 	return gas, nil
 }
 
-func gasReturnDataCopy(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasReturnDataCopy(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	gas, err := memoryGasCost(mem, memorySize)
 	if err != nil {
 		return 0, err
@@ -116,7 +116,7 @@ func gasReturnDataCopy(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, st
 	return gas, nil
 }
 
-func gasSStore(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasSStore(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	var (
 		y, x = stack.Back(1), stack.Back(0)
 		val  = evmPtr.StateDbPtr.GetState(contract.Address(), bgmcommon.BigToHash(x))
@@ -138,8 +138,8 @@ func gasSStore(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Sta
 	}
 }
 
-func makeGasbgmlogs(n uint64) gasFunc {
-	return func(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func makeGasbgmlogs(n Uint64) gasFunc {
+	return func(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 		requestedSize, overflow := bigUint64(stack.Back(1))
 		if overflow {
 			return 0, errGasUintOverflow
@@ -157,7 +157,7 @@ func makeGasbgmlogs(n uint64) gasFunc {
 			return 0, errGasUintOverflow
 		}
 
-		var memorySizeGas uint64
+		var memorySizeGas Uint64
 		if memorySizeGas, overflow = mathPtr.SafeMul(requestedSize, bgmparam.bgmlogsDataGas); overflow {
 			return 0, errGasUintOverflow
 		}
@@ -168,7 +168,7 @@ func makeGasbgmlogs(n uint64) gasFunc {
 	}
 }
 
-func gasSha3(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasSha3(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	var overflow bool
 	gas, err := memoryGasCost(mem, memorySize)
 	if err != nil {
@@ -192,7 +192,7 @@ func gasSha3(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack
 	return gas, nil
 }
 
-func gasCodeCopy(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasCodeCopy(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	gas, err := memoryGasCost(mem, memorySize)
 	if err != nil {
 		return 0, err
@@ -216,7 +216,7 @@ func gasCodeCopy(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *S
 	return gas, nil
 }
 
-func gasExtCodeCopy(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasExtCodeCopy(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	gas, err := memoryGasCost(mem, memorySize)
 	if err != nil {
 		return 0, err
@@ -242,7 +242,7 @@ func gasExtCodeCopy(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack
 	return gas, nil
 }
 
-func gasMLoad(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasMLoad(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	var overflow bool
 	gas, err := memoryGasCost(mem, memorySize)
 	if err != nil {
@@ -254,7 +254,7 @@ func gasMLoad(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stac
 	return gas, nil
 }
 
-func gasMStore8(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasMStore8(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	var overflow bool
 	gas, err := memoryGasCost(mem, memorySize)
 	if err != nil {
@@ -266,7 +266,7 @@ func gasMStore8(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *St
 	return gas, nil
 }
 
-func gasMStore(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasMStore(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	var overflow bool
 	gas, err := memoryGasCost(mem, memorySize)
 	if err != nil {
@@ -278,7 +278,7 @@ func gasMStore(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Sta
 	return gas, nil
 }
 
-func gasCreate(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasCreate(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	var overflow bool
 	gas, err := memoryGasCost(mem, memorySize)
 	if err != nil {
@@ -290,20 +290,20 @@ func gasCreate(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Sta
 	return gas, nil
 }
 
-func gasBalance(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasBalance(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	return gt.Balance, nil
 }
 
-func gasExtCodeSize(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasExtCodeSize(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	return gt.ExtcodeSize, nil
 }
 
-func gasSLoad(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasSLoad(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	return gt.SLoad, nil
 }
 
-func gasExp(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
-	expByteLen := uint64((stack.data[stack.len()-2].BitLen() + 7) / 8)
+func gasExp(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
+	expByteLen := Uint64((stack.data[stack.len()-2].BitLen() + 7) / 8)
 
 	var (
 		gas      = expByteLen * gt.ExpByte // no overflow check required. Max is 256 * ExpByte gas
@@ -315,12 +315,12 @@ func gasExp(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack,
 	return gas, nil
 }
 
-func gasCall(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasCall(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	var (
 		gas            = gt.Calls
 		transfersValue = stack.Back(2).Sign() != 0
 		address        = bgmcommon.BigToAddress(stack.Back(1))
-		eip158         = evmPtr.ChainConfig().IsEIP158(evmPtr.BlockNumber)
+		eip158         = evmPtr.ChainConfig().IsEIP158(evmPtr.number)
 	)
 	if eip158 {
 		if transfersValue && evmPtr.StateDbPtr.Empty(address) {
@@ -359,7 +359,7 @@ func gasCall(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack
 	return gas, nil
 }
 
-func gasCallCode(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasCallCode(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	gas := gt.Calls
 	if stack.Back(2).Sign() != 0 {
 		gas += bgmparam.CallValueTransferGas
@@ -391,22 +391,22 @@ func gasCallCode(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *S
 	return gas, nil
 }
 
-func gasReturn(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasReturn(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	return memoryGasCost(mem, memorySize)
 }
 
-func gasRevert(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasRevert(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	return memoryGasCost(mem, memorySize)
 }
 
-func gasSuicide(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
-	var gas uint64
+func gasSuicide(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
+	var gas Uint64
 	// EIP150 homestead gas reprice fork:
-	if evmPtr.ChainConfig().IsEIP150(evmPtr.BlockNumber) {
+	if evmPtr.ChainConfig().IsEIP150(evmPtr.number) {
 		gas = gt.Suicide
 		var (
 			address = bgmcommon.BigToAddress(stack.Back(0))
-			eip158  = evmPtr.ChainConfig().IsEIP158(evmPtr.BlockNumber)
+			eip158  = evmPtr.ChainConfig().IsEIP158(evmPtr.number)
 		)
 
 		if eip158 {
@@ -425,7 +425,7 @@ func gasSuicide(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *St
 	return gas, nil
 }
 
-func gasDelegateCall(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasDelegateCall(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	gas, err := memoryGasCost(mem, memorySize)
 	if err != nil {
 		return 0, err
@@ -452,7 +452,7 @@ func gasDelegateCall(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stac
 	return gas, nil
 }
 
-func gasStaticCall(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasStaticCall(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	gas, err := memoryGasCost(mem, memorySize)
 	if err != nil {
 		return 0, err
@@ -479,14 +479,14 @@ func gasStaticCall(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack 
 	return gas, nil
 }
 
-func gasPush(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasPush(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	return GasFastestStep, nil
 }
 
-func gasSwap(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasSwap(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	return GasFastestStep, nil
 }
 
-func gasDup(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize uint64) (uint64, error) {
+func gasDup(gt bgmparam.GasTable, evmPtr *EVM, contract *Contract, stack *Stack, memPtr *Memory, memorySize Uint64) (Uint64, error) {
 	return GasFastestStep, nil
 }

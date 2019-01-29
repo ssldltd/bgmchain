@@ -1509,7 +1509,7 @@ type SignTx struct {
 	InputsCount      *uint32 `protobuf:"varint,2,req,name=inputs_count,json=inputsCount" json:"inputs_count,omitempty"`
 	CoinName         *string `protobuf:"bytes,3,opt,name=coin_name,json=coinName,def=Bitcoin" json:"coin_name,omitempty"`
 	Version          *uint32 `protobuf:"varint,4,opt,name=version,def=1" json:"version,omitempty"`
-	LockTime         *uint32 `protobuf:"varint,5,opt,name=lock_time,json=lockTime,def=0" json:"lock_time,omitempty"`
+	Locktime         *uint32 `protobuf:"varint,5,opt,name=lock_time,json=locktime,def=0" json:"lock_time,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
@@ -1520,7 +1520,7 @@ func (*SignTx) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{45} 
 
 const Default_SignTx_CoinName string = "Bitcoin"
 const Default_SignTx_Version uint32 = 1
-const Default_SignTx_LockTime uint32 = 0
+const Default_SignTx_Locktime uint32 = 0
 
 func (mPtr *SignTx) GetOutputsCount() uint32 {
 	if m != nil && mPtr.OutputsCount != nil {
@@ -1550,11 +1550,11 @@ func (mPtr *SignTx) GetVersion() uint32 {
 	return Default_SignTx_Version
 }
 
-func (mPtr *SignTx) GetLockTime() uint32 {
-	if m != nil && mPtr.LockTime != nil {
-		return *mPtr.LockTime
+func (mPtr *SignTx) GetLocktime() uint32 {
+	if m != nil && mPtr.Locktime != nil {
+		return *mPtr.Locktime
 	}
-	return Default_SignTx_LockTime
+	return Default_SignTx_Locktime
 }
 
 // *
@@ -1571,7 +1571,7 @@ type SimpleSignTx struct {
 	Transactions     []*TransactionType `protobuf:"bytes,3,rep,name=transactions" json:"transactions,omitempty"`
 	CoinName         *string            `protobuf:"bytes,4,opt,name=coin_name,json=coinName,def=Bitcoin" json:"coin_name,omitempty"`
 	Version          *uint32            `protobuf:"varint,5,opt,name=version,def=1" json:"version,omitempty"`
-	LockTime         *uint32            `protobuf:"varint,6,opt,name=lock_time,json=lockTime,def=0" json:"lock_time,omitempty"`
+	Locktime         *uint32            `protobuf:"varint,6,opt,name=lock_time,json=locktime,def=0" json:"lock_time,omitempty"`
 	XXX_unrecognized []byte             `json:"-"`
 }
 
@@ -1582,7 +1582,7 @@ func (*SimpleSignTx) Descriptor() ([]byte, []int) { return fileDescriptor1, []in
 
 const Default_SimpleSignTx_CoinName string = "Bitcoin"
 const Default_SimpleSignTx_Version uint32 = 1
-const Default_SimpleSignTx_LockTime uint32 = 0
+const Default_SimpleSignTx_Locktime uint32 = 0
 
 func (mPtr *SimpleSignTx) GetInputs() []*TxInputType {
 	if m != nil {
@@ -1619,11 +1619,11 @@ func (mPtr *SimpleSignTx) GetVersion() uint32 {
 	return Default_SimpleSignTx_Version
 }
 
-func (mPtr *SimpleSignTx) GetLockTime() uint32 {
-	if m != nil && mPtr.LockTime != nil {
-		return *mPtr.LockTime
+func (mPtr *SimpleSignTx) GetLocktime() uint32 {
+	if m != nil && mPtr.Locktime != nil {
+		return *mPtr.Locktime
 	}
-	return Default_SimpleSignTx_LockTime
+	return Default_SimpleSignTx_Locktime
 }
 
 // *

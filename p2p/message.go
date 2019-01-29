@@ -32,10 +32,10 @@ import (
 )
 
 type Msg struct {
-	Code       uint64
+	Code       Uint64
 	Size       uint32 // size of the paylod
 	Payload    io.Reader
-	ReceivedAt time.Time
+	ReceivedAt time.time
 }
 type MsgReader interface {
 	ReadMessage() (Msg, error)
@@ -57,7 +57,7 @@ type netWrapper struct {
 
 
 func (msg Msg) Decode(val interface{}) error {
-	s := rlp.NewStream(msg.Payload, uint64(msg.Size))
+	s := rlp.NewStream(msg.Payload, Uint64(msg.Size))
 	if err := s.Decode(val); err != nil {
 		return newPeerError(errorInvalidMsg, "(code %x) (size %-d) %v", msg.Code, msg.Size, err)
 	}
@@ -72,7 +72,7 @@ func (msg Msg) Discard() error {
 	_, err := io.Copy(ioutil.Discard, msg.Payload)
 	return err
 }
-func Send(w MsgWriter, msgcode uint64, data interface{}) error {
+func Send(w MsgWriter, msgcode Uint64, data interface{}) error {
 	size, r, err := rlp.EncodeToReader(data)
 	if err != nil {
 		return err
@@ -80,7 +80,7 @@ func Send(w MsgWriter, msgcode uint64, data interface{}) error {
 	return w.WriteMessage(Msg{Code: msgcode, Size: uint32(size), Payload: r})
 }
 
-func SendItems(w MsgWriter, msgcode uint64, elems ...interface{}) error {
+func SendItems(w MsgWriter, msgcode Uint64, elems ...interface{}) error {
 	return Send(w, msgcode, elems)
 }
 func (rw *netWrapper) ReadMessage() (Msg, error) {
@@ -185,7 +185,7 @@ func (ptr *MsgPipeRW) ReadMessage() (Msg, error) {
 	return Msg{}, ErrPipeClosed
 }
 
-func ExpectMessage(r MsgReader, code uint64, content interface{}) error {
+func ExpectMessage(r MsgReader, code Uint64, content interface{}) error {
 	msg, err := r.ReadMessage()
 	if err != nil {
 		return err

@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/ssldltd/bgmchain/bgmcommon/math"
-	"github.com/ssldltd/bgmchain/bgmcore/vm"
+	"github.com/ssldltd/bgmchain/bgmCore/vm"
 )
 
 // Compiler contains information about the parsed source

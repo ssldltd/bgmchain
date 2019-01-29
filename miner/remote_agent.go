@@ -27,7 +27,7 @@ import (
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/consensus"
 	"github.com/ssldltd/bgmchain/consensus/bgmash"
-	"github.com/ssldltd/bgmchain/bgmcore/type"
+	"github.com/ssldltd/bgmchain/bgmCore/type"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 )
 
@@ -42,7 +42,7 @@ func NewRemoteAgent(chain consensus.ChainReader, engine consensus.Engine) *Remot
 	}
 }
 
-func (a *RemoteAgent) SubmitHashrate(id bgmcommon.Hash, rate uint64) {
+func (a *RemoteAgent) SubmitHashrate(id bgmcommon.Hash, rate Uint64) {
 	a.hashrateMu.Lock()
 	defer a.hashrateMu.Unlock()
 
@@ -111,8 +111,8 @@ func (a *RemoteAgent) GetWork() ([3]string, error) {
 	return res, errors.New("No work available yet, don't panicPtr.")
 }
 type hashrate struct {
-	ping time.Time
-	rate uint64
+	ping time.time
+	rate Uint64
 }
 
 type RemoteAgent struct {

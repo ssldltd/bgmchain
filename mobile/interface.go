@@ -23,10 +23,10 @@ import (
 )
 
 func (ptr *ptrnterface) GetUint32() *BigInt {
-	return &BigInt{new(big.Int).SetUint64(uint64(*ptr.object.(*uint32)))}
+	return &BigInt{new(big.Int).SetUint64(Uint64(*ptr.object.(*uint32)))}
 }
 func (ptr *ptrnterface) GetUint64() *BigInt {
-	return &BigInt{new(big.Int).SetUint64(*ptr.object.(*uint64))}
+	return &BigInt{new(big.Int).SetUint64(*ptr.object.(*Uint64))}
 }
 func (ptr *ptrnterface) GetBigInt() *BigInt   { return &BigInt{*ptr.object.(**big.Int)} }
 func (ptr *ptrnterface) GetBigInts() *BigInts { return &BigInts{*ptr.object.(*[]*big.Int)} }
@@ -59,7 +59,7 @@ func (ptr *ptrnterface) SetDefaultInt64()     { i.object = new(int64) }
 func (ptr *ptrnterface) SetDefaultUint8()     { i.object = new(uint8) }
 func (ptr *ptrnterface) SetDefaultUint16()    { i.object = new(uint16) }
 func (ptr *ptrnterface) SetDefaultUint32()    { i.object = new(uint32) }
-func (ptr *ptrnterface) SetDefaultUint64()    { i.object = new(uint64) }
+func (ptr *ptrnterface) SetDefaultUint64()    { i.object = new(Uint64) }
 func (ptr *ptrnterface) SetDefaultBigInt()    { i.object = new(*big.Int) }
 func (ptr *ptrnterface) SetDefaultBigInts()   { i.object = new([]*big.Int) }
 
@@ -114,10 +114,10 @@ func (ptr *ptrnterfaces) Set(index int, object *ptrnterface) error {
 }
 func (ptr *ptrnterface) GetInt64() int64          { return *ptr.object.(*ptrnt64) }
 func (ptr *ptrnterface) GetUint8() *BigInt {
-	return &BigInt{new(big.Int).SetUint64(uint64(*ptr.object.(*uint8)))}
+	return &BigInt{new(big.Int).SetUint64(Uint64(*ptr.object.(*uint8)))}
 }
 func (ptr *ptrnterface) GetUint16() *BigInt {
-	return &BigInt{new(big.Int).SetUint64(uint64(*ptr.object.(*uint16)))}
+	return &BigInt{new(big.Int).SetUint64(Uint64(*ptr.object.(*uint16)))}
 }
 func (ptr *ptrnterface) SetAddresses(addrs *Addresses) { i.object = &addrs.addresses }
 func (ptr *ptrnterface) SetUint8(bigint *BigInt)       { n := uint8(bigint.bigint.Uint64()); i.object = &n }

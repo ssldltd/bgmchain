@@ -18,7 +18,7 @@ import (
 	"math/big"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 )
 
 func NoopCanTransfer(db StateDB, from bgmcommon.Address, balance *big.Int) bool {
@@ -28,8 +28,8 @@ func NoopCanTransfer(db StateDB, from bgmcommon.Address, balance *big.Int) bool 
 
 type NoopStateDB struct{}
 func (NoopStateDB) GetBalance(bgmcommon.Address) *big.Int                                 { return nil }
-func (NoopStateDB) GetNonce(bgmcommon.Address) uint64                                     { return 0 }
-func (NoopStateDB) SetNonce(bgmcommon.Address, uint64)                                    {}
+func (NoopStateDB) GetNonce(bgmcommon.Address) Uint64                                     { return 0 }
+func (NoopStateDB) SetNonce(bgmcommon.Address, Uint64)                                    {}
 func (NoopStateDB) GetCodeHash(bgmcommon.Address) bgmcommon.Hash                             { return bgmcommon.Hash{} }
 func (NoopStateDB) GetCode(bgmcommon.Address) []byte                                      { return nil }
 func (NoopStateDB) SetCode(bgmcommon.Address, []byte)                                     {}

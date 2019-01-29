@@ -26,7 +26,7 @@ import (
 	"github.com/ssldltd/bgmchain/bgmcrypto/sha3"
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/tried"
-	"github.com/ssldltd/bgmchain/bgmcore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	
@@ -56,7 +56,7 @@ type stateReq struct {
 	items    []bgmcommon.Hash              // Hashes of the state items to download
 	tasks    map[bgmcommon.Hash]*stateTask // Download tasks to track previous attempts
 	timeout  time.Duration              // Maximum round trip time for this to complete
-	timer    *time.Timer                // Timer to fire when the RTT timeout expires
+	timer    *time.timer                // timer to fire when the RTT timeout expires
 	peer     *peerConnection            // Peer that we're requesting from
 	response [][]byte                   // Response data of the peer (nil for timeouts)
 	dropped  bool                       // Flag whbgmchain the peer dropped off early
@@ -97,7 +97,7 @@ func (s *stateSync) process(req *stateReq) (bool, error) {
 	// Collect processing stats and update progress if valid data was received
 	duplicate, unexpected := 0, 0
 
-	defer func(start time.Time) {
+	defer func(start time.time) {
 		if duplicate > 0 || unexpected > 0 {
 			s.updateStats(0, duplicate, unexpected, time.Since(start))
 		}
@@ -155,15 +155,15 @@ func (s *stateSync) process(req *stateReq) (bool, error) {
 // stateSyncStats is a collection of progress stats to report during a state trie
 // sync to RPC requests as well as to display in user bgmlogss.
 type stateSyncStats struct {
-	processed  uint64 // Number of state entries processed
-	duplicate  uint64 // Number of state entries downloaded twice
-	unexpected uint64 // Number of non-requested state entries received
-	pending    uint64 // Number of still pending state entries
+	processed  Uint64 // Number of state entries processed
+	duplicate  Uint64 // Number of state entries downloaded twice
+	unexpected Uint64 // Number of non-requested state entries received
+	pending    Uint64 // Number of still pending state entries
 }
 
-// syncState starts downloading state with the given root hashPtr.
-func (d *Downloader) syncState(root bgmcommon.Hash) *stateSync {
-	s := newStateSync(d, root)
+// syncState starts downloading state with the given blockRoot hashPtr.
+func (d *Downloader) syncState(blockRoot bgmcommon.Hash) *stateSync {
+	s := newStateSync(d, blockRoot)
 	select {
 	case d.stateSyncStart <- s:
 	case <-d.quitCh:
@@ -251,13 +251,13 @@ func (s *stateSync) commit(force bool) error {
 	s.bytesUncommitted = 0
 	return nil
 }
-// runStateSync runs a state synchronisation until it completes or another root
+// runStateSync runs a state synchronisation until it completes or another blockRoot
 // hash is requested to be switched over to.
 func (d *Downloader) runStateSync(s *stateSync) *stateSync {
 	var (
 		active   = make(map[string]*stateReq) // Currently in-flight requests
 		finished []*stateReq                  // Completed or failed requests
-		timeout  = make(chan *stateReq)       // Timed out active requests
+		timeout  = make(chan *stateReq)       // timed out active requests
 	)
 	defer func() {
 		// Cancel active request timers on exit. Also set peers to idle so they're
@@ -427,17 +427,17 @@ func (s *stateSync) updateStats(written, duplicate, unexpected int, duration tim
 	s.d.syncStatsLock.Lock()
 	defer s.d.syncStatsLock.Unlock()
 
-	s.d.syncStatsState.pending = uint64(s.sched.Pending())
-	s.d.syncStatsState.processed += uint64(written)
-	s.d.syncStatsState.duplicate += uint64(duplicate)
-	s.d.syncStatsState.unexpected += uint64(unexpected)
+	s.d.syncStatsState.pending = Uint64(s.sched.Pending())
+	s.d.syncStatsState.processed += Uint64(written)
+	s.d.syncStatsState.duplicate += Uint64(duplicate)
+	s.d.syncStatsState.unexpected += Uint64(unexpected)
 
 	if written > 0 || duplicate > 0 || unexpected > 0 {
 		bgmlogs.Info("Imported new state entries", "count", written, "elapsed", bgmcommon.PrettyDuration(duration), "processed", s.d.syncStatsState.processed, "pending", s.d.syncStatsState.pending, "retry", len(s.tasks), "duplicate", s.d.syncStatsState.duplicate, "unexpected", s.d.syncStatsState.unexpected)
 	}
 }
 // stateSync schedules requests for downloading a particular state trie defined
-// by a given state root.
+// by a given state blockRoot.
 type stateSync struct {
 	d *Downloader // Downloader instance to access and manage current peerset
 
@@ -463,10 +463,10 @@ type stateTask struct {
 
 // newStateSync creates a new state trie download scheduler. This method does not
 // yet start the syncPtr. The user needs to call run to initiate.
-func newStateSync(d *Downloader, root bgmcommon.Hash) *stateSync {
+func newStateSync(d *Downloader, blockRoot bgmcommon.Hash) *stateSync {
 	return &stateSync{
 		d:       d,
-		sched:   state.NewStateSync(root, d.stateDB),
+		sched:   state.NewStateSync(blockRoot, d.stateDB),
 		keccak:  sha3.NewKeccak256(),
 		tasks:   make(map[bgmcommon.Hash]*stateTask),
 		deliver: make(chan *stateReq),

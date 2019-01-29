@@ -20,7 +20,7 @@ import (
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmcommon/hexutil"
-	"github.com/ssldltd/bgmchain/bgmcore"
+	"github.com/ssldltd/bgmchain/bgmCore"
 	"github.com/ssldltd/bgmchain/bgm/downloader"
 	"github.com/ssldltd/bgmchain/bgm/gasprice"
 )
@@ -28,8 +28,8 @@ import (
 // MarshalTOML marshals as TOML.
 func (c Config) MarshalTOML() (interface{}, error) {
 	type Config struct {
-		Genesis                 *bgmcore.Genesis `toml:",omitempty"`
-		NetworkId               uint64
+		Genesis                 *bgmCore.Genesis `toml:",omitempty"`
+		NetworkId               Uint64
 		SyncMode                downloader.SyncMode
 		LightServ               int  `toml:",omitempty"`
 		LightPeers              int  `toml:",omitempty"`
@@ -41,7 +41,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		MinerThreads            int            `toml:",omitempty"`
 		ExtraData               hexutil.Bytes  `toml:",omitempty"`
 		GasPrice                *big.Int
-		TxPool                  bgmcore.TxPoolConfig
+		TxPool                  bgmCore.TxPoolConfig
 		GPO                     gasprice.Config
 		EnablePreimageRecording bool
 		DocRoot                 string `toml:"-"`
@@ -78,8 +78,8 @@ func (c Config) MarshalTOML() (interface{}, error) {
 // UnmarshalTOML unmarshals from TOML.
 func (cPtr *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	type Config struct {
-		Genesis                 *bgmcore.Genesis `toml:",omitempty"`
-		NetworkId               *uint64
+		Genesis                 *bgmCore.Genesis `toml:",omitempty"`
+		NetworkId               *Uint64
 		SyncMode                *downloader.SyncMode
 		LightServ               *int  `toml:",omitempty"`
 		LightPeers              *int  `toml:",omitempty"`
@@ -91,7 +91,7 @@ func (cPtr *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		MinerThreads            *int            `toml:",omitempty"`
 		ExtraData               *hexutil.Bytes  `toml:",omitempty"`
 		GasPrice                *big.Int
-		TxPool                  *bgmcore.TxPoolConfig
+		TxPool                  *bgmCore.TxPoolConfig
 		GPO                     *gasprice.Config
 		EnablePreimageRecording *bool
 		DocRoot                 *string `toml:"-"`

@@ -23,8 +23,8 @@ import (
 	"sort"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/state"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmcrypto"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 	"github.com/ssldltd/bgmchain/trie"
@@ -45,14 +45,14 @@ func (ecPtr *EpochContext) kickoutValidator(epoch int64) error {
 	// while the first block time wouldn't always align with epoch interval,
 	// so caculate the first epoch duartion with first block time instead of epoch interval,
 	// prevent the validators were kickout incorrectly.
-	if ecPtr.TimeStamp-timeOfFirstBlock < epochInterval {
-		epochDuration = ecPtr.TimeStamp - timeOfFirstBlock
+	if ecPtr.timeStamp-timeOfFirstBlock < epochInterval {
+		epochDuration = ecPtr.timeStamp - timeOfFirstBlock
 	}
 
 	needKickoutValidators := sortableAddresses{}
 	for _, validator := range validators {
 		key := make([]byte, 8)
-		binary.BigEndian.PutUint64(key, uint64(epoch))
+		binary.BigEndian.PutUint64(key, Uint64(epoch))
 		key = append(key, validator.Bytes()...)
 		cnt := int64(0)
 		if cntBytes := ecPtr.DposContext.MintCntTrie().Get(key); cntBytes != nil {
@@ -100,7 +100,7 @@ func (ecPtr *EpochContext) lookupValidator(now int64) (validator bgmcommon.Addre
 	validator = bgmcommon.Address{}
 	offset := now % epochInterval
 	if offset%blockInterval != 0 {
-		return bgmcommon.Address{}, errorInvalidMintBlockTime
+		return bgmcommon.Address{}, errorInvalidMintBlocktime
 	}
 	offset /= blockInterval
 
@@ -116,7 +116,7 @@ func (ecPtr *EpochContext) lookupValidator(now int64) (validator bgmcommon.Addre
 	return validators[offset], nil
 }
 type EpochContext struct {
-	TimeStamp   int64
+	timeStamp   int64
 	DposContext *types.DposContext
 	statedb     *state.StateDB
 }
@@ -145,14 +145,14 @@ func (ecPtr *EpochContext) countVotes() (votes map[bgmcommon.Address]*big.Int, e
 		}
 		for existDelegator {
 			delegator := delegateIterator.Value
-			sbgmcore, ok := votes[candidateAddr]
+			sbgmCore, ok := votes[candidateAddr]
 			if !ok {
-				sbgmcore = new(big.Int)
+				sbgmCore = new(big.Int)
 			}
 			delegatorAddr := bgmcommon.BytesToAddress(delegator)
 			WeiUnitght := statedbPtr.GetBalance(delegatorAddr)
-			sbgmcore.Add(sbgmcore, WeiUnitght)
-			votes[candidateAddr] = sbgmcore
+			sbgmCore.Add(sbgmCore, WeiUnitght)
+			votes[candidateAddr] = sbgmCore
 			existDelegator = delegateIterator.Next()
 		}
 		existCandidate = iterCandidate.Next()
@@ -161,9 +161,9 @@ func (ecPtr *EpochContext) countVotes() (votes map[bgmcommon.Address]*big.Int, e
 }
 
 func (ecPtr *EpochContext) tryElect(genesis, parent *types.Header) error {
-	genesisEpoch := genesis.Time.Int64() / epochInterval
-	prevEpoch := parent.Time.Int64() / epochInterval
-	currentEpoch := ecPtr.TimeStamp / epochInterval
+	genesisEpoch := genesis.time.Int64() / epochInterval
+	prevEpoch := parent.time.Int64() / epochInterval
+	currentEpoch := ecPtr.timeStamp / epochInterval
 
 	prevEpochIsGenesis := prevEpoch == genesisEpoch
 	if prevEpochIsGenesis && prevEpoch < currentEpoch {
@@ -171,7 +171,7 @@ func (ecPtr *EpochContext) tryElect(genesis, parent *types.Header) error {
 	}
 
 	prevEpochBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(prevEpochBytes, uint64(prevEpoch))
+	binary.BigEndian.PutUint64(prevEpochBytes, Uint64(prevEpoch))
 	iter := trie.NewIterator(ecPtr.DposContext.MintCntTrie().PrefixIterator(prevEpochBytes))
 	for i := prevEpoch; i < currentEpoch; i++ {
 		// if prevEpoch is not genesis, kickout not active candidate

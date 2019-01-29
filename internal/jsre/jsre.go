@@ -44,9 +44,9 @@ It provides some helper functions to
 */
 
 
-// jsTimer is a single timer instance with a callback function
-type jsTimer struct {
-	timer    *time.Timer
+// jstimer is a single timer instance with a callback function
+type jstimer struct {
+	timer    *time.timer
 	duration time.Duration
 	interval bool
 	call     otto.FunctionCall
@@ -101,15 +101,15 @@ func (self *JSRE) runEventLoop() {
 	r := randomSource()
 	vmPtr.SetRandomSource(r.Float64)
 
-	registry := map[*jsTimer]*jsTimer{}
-	ready := make(chan *jsTimer)
+	registry := map[*jstimer]*jstimer{}
+	ready := make(chan *jstimer)
 
-	newTimer := func(call otto.FunctionCall, interval bool) (*jsTimer, otto.Value) {
+	newtimer := func(call otto.FunctionCall, interval bool) (*jstimer, otto.Value) {
 		delay, _ := call.Argument(1).ToInteger()
 		if 0 >= delay {
 			delay = 1
 		}
-		timer := &jsTimer{
+		timer := &jstimer{
 			duration: time.Duration(delay) * time.Millisecond,
 			call:     call,
 			interval: interval,
@@ -127,31 +127,31 @@ func (self *JSRE) runEventLoop() {
 		return timer, value
 	}
 
-	setTimeout := func(call otto.FunctionCall) otto.Value {
-		_, value := newTimer(call, false)
+	settimeout := func(call otto.FunctionCall) otto.Value {
+		_, value := newtimer(call, false)
 		return value
 	}
 
 	setInterval := func(call otto.FunctionCall) otto.Value {
-		_, value := newTimer(call, true)
+		_, value := newtimer(call, true)
 		return value
 	}
 
-	clearTimeout := func(call otto.FunctionCall) otto.Value {
+	cleartimeout := func(call otto.FunctionCall) otto.Value {
 		timer, _ := call.Argument(0).Export()
-		if timer, ok := timer.(*jsTimer); ok {
+		if timer, ok := timer.(*jstimer); ok {
 			timer.timer.Stop()
 			delete(registry, timer)
 		}
 		return otto.UndefinedValue()
 	}
-	vmPtr.Set("_setTimeout", setTimeout)
+	vmPtr.Set("_settimeout", settimeout)
 	vmPtr.Set("_setInterval", setInterval)
-	vmPtr.Run(`var setTimeout = function(args) {
+	vmPtr.Run(`var settimeout = function(args) {
 		if (arguments.length < 1) {
-			throw typeErroror("Failed to execute 'setTimeout': 1 argument required, but only 0 present.");
+			throw typeErroror("Failed to execute 'settimeout': 1 argument required, but only 0 present.");
 		}
-		return _setTimeout.apply(this, arguments);
+		return _settimeout.apply(this, arguments);
 	}`)
 	vmPtr.Run(`var setInterval = function(args) {
 		if (arguments.length < 1) {
@@ -159,8 +159,8 @@ func (self *JSRE) runEventLoop() {
 		}
 		return _setInterval.apply(this, arguments);
 	}`)
-	vmPtr.Set("clearTimeout", clearTimeout)
-	vmPtr.Set("clearInterval", clearTimeout)
+	vmPtr.Set("cleartimeout", cleartimeout)
+	vmPtr.Set("clearInterval", cleartimeout)
 
 	var waitForCallbacks bool
 

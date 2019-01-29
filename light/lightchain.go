@@ -23,8 +23,8 @@ import (
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/consensus"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/event"
 	"github.com/ssldltd/bgmchain/bgmlogs"
@@ -39,10 +39,10 @@ var (
 )
 
 // LightChain represents a canonical chain that by default only handles block
-// headers, downloading block bodies and recChaints on demand through an ODR
-// interface. It only does header validation during chain insertion.
+// Headers, downloading block bodies and recChaints on demand through an ODR
+// interface. It only does Header validation during chain insertion.
 type LightChain struct {
-	hc            *bgmcore.HeaderChain
+	hc            *bgmCore.HeaderChain
 	chainDb       bgmdbPtr.Database
 	odr           OdrBackend
 	chainFeed     event.Feed
@@ -68,7 +68,7 @@ type LightChain struct {
 }
 
 // NewLightChain returns a fully initialised light chain using information
-// available in the database. It initialises the default Bgmchain header
+// available in the database. It initialises the default Bgmchain Header
 // validator.
 func NewLightChain(odr OdrBackend, config *bgmparam.ChainConfig, engine consensus.Engine) (*LightChain, error) {
 	bodyCache, _ := lru.New(bodyCacheLimit)
@@ -85,13 +85,13 @@ func NewLightChain(odr OdrBackend, config *bgmparam.ChainConfig, engine consensu
 		engine:       engine,
 	}
 	var err error
-	bcPtr.hc, err = bgmcore.NewHeaderChain(odr.Database(), config, bcPtr.engine, bcPtr.getProcInterrupt)
+	bcPtr.hc, err = bgmCore.NewHeaderChain(odr.Database(), config, bcPtr.engine, bcPtr.getProcInterrupt)
 	if err != nil {
 		return nil, err
 	}
 	bcPtr.genesisBlock, _ = bcPtr.GetBlockByNumber(NoOdr, 0)
 	if bcPtr.genesisBlock == nil {
-		return nil, bgmcore.ErrNoGenesis
+		return nil, bgmCore.ErrNoGenesis
 	}
 	if cp, ok := trustedCheckpoints[bcPtr.genesisBlock.Hash()]; ok {
 		bcPtr.addTrustedCheckpoint(cp)
@@ -101,10 +101,10 @@ func NewLightChain(odr OdrBackend, config *bgmparam.ChainConfig, engine consensu
 		return nil, err
 	}
 	// Check the current state of the block hashes and make sure that we do not have any of the bad blocks in our chain
-	for hash := range bgmcore.BadHashes {
-		if header := bcPtr.GetHeaderByHash(hash); header != nil {
-			bgmlogs.Error("Found bad hash, rewinding chain", "number", headerPtr.Number, "hash", headerPtr.ParentHash)
-			bcPtr.SetHead(headerPtr.Number.Uint64() - 1)
+	for hash := range bgmCore.BadHashes {
+		if Header := bcPtr.GetHeaderByHash(hash); Header != nil {
+			bgmlogs.Error("Found bad hash, rewinding chain", "number", HeaderPtr.Number, "hash", HeaderPtr.ParentHash)
+			bcPtr.SetHead(HeaderPtr.Number.Uint64() - 1)
 			bgmlogs.Error("Chain rewind was successful, resuming normal operation")
 		}
 	}
@@ -139,26 +139,26 @@ func (self *LightChain) Odr() OdrBackend {
 // loadLastState loads the last known chain state from the database. This method
 // assumes that the chain manager mutex is held.
 func (self *LightChain) loadLastState() error {
-	if head := bgmcore.GetHeadHeaderHash(self.chainDb); head == (bgmcommon.Hash{}) {
+	if head := bgmCore.GetHeadHeaderHash(self.chainDb); head == (bgmcommon.Hash{}) {
 		// Corrupt or empty database, init from scratch
 		self.Reset()
 	} else {
-		if header := self.GetHeaderByHash(head); header != nil {
-			self.hcPtr.SetCurrentHeader(header)
+		if Header := self.GetHeaderByHash(head); Header != nil {
+			self.hcPtr.SetCurrentHeader(Header)
 		}
 	}
 
 	// Issue a status bgmlogs and return
-	header := self.hcPtr.CurrentHeader()
-	headerTd := self.GetTd(headerPtr.Hash(), headerPtr.Number.Uint64())
-	bgmlogs.Info("Loaded most recent local header", "number", headerPtr.Number, "hash", headerPtr.Hash(), "td", headerTd)
+	Header := self.hcPtr.CurrentHeader()
+	HeaderTd := self.GetTd(HeaderPtr.Hash(), HeaderPtr.Number.Uint64())
+	bgmlogs.Info("Loaded most recent local Header", "number", HeaderPtr.Number, "hash", HeaderPtr.Hash(), "td", HeaderTd)
 
 	return nil
 }
 
 // SetHead rewinds the local chain to a new head. Everything above the new
 // head will be deleted and the new one set.
-func (bcPtr *LightChain) SetHead(head uint64) {
+func (bcPtr *LightChain) SetHead(head Uint64) {
 	bcPtr.mu.Lock()
 	defer bcPtr.mu.Unlock()
 
@@ -174,8 +174,8 @@ func (self *LightChain) GasLimit() *big.Int {
 	return self.hcPtr.CurrentHeader().GasLimit
 }
 
-// LastBlockHash return the hash of the HEAD block.
-func (self *LightChain) LastBlockHash() bgmcommon.Hash {
+// Lasthash return the hash of the HEAD block.
+func (self *LightChain) Lasthash() bgmcommon.Hash {
 	self.mu.RLock()
 	defer self.mu.RUnlock()
 
@@ -188,9 +188,9 @@ func (self *LightChain) Status() (td *big.Int, currentBlock bgmcommon.Hash, gene
 	self.mu.RLock()
 	defer self.mu.RUnlock()
 
-	header := self.hcPtr.CurrentHeader()
-	hash := headerPtr.Hash()
-	return self.GetTd(hash, headerPtr.Number.Uint64()), hash, self.genesisBlock.Hash()
+	Header := self.hcPtr.CurrentHeader()
+	hash := HeaderPtr.Hash()
+	return self.GetTd(hash, HeaderPtr.Number.Uint64()), hash, self.genesisBlock.Hash()
 }
 
 // Reset purges the entire blockchain, restoring it to its genesis state.
@@ -208,10 +208,10 @@ func (bcPtr *LightChain) ResetWithGenesisBlock(genesis *types.Block) {
 	defer bcPtr.mu.Unlock()
 
 	// Prepare the genesis block and reinitialise the chain
-	if err := bgmcore.WriteTd(bcPtr.chainDb, genesis.Hash(), genesis.NumberU64(), genesis.Difficulty()); err != nil {
+	if err := bgmCore.WriteTd(bcPtr.chainDb, genesis.Hash(), genesis.NumberU64(), genesis.Difficulty()); err != nil {
 		bgmlogs.Crit("Failed to write genesis block TD", "err", err)
 	}
-	if err := bgmcore.WriteBlock(bcPtr.chainDb, genesis); err != nil {
+	if err := bgmCore.WriteBlock(bcPtr.chainDb, genesis); err != nil {
 		bgmlogs.Crit("Failed to write genesis block", "err", err)
 	}
 	bcPtr.genesisBlock = genesis
@@ -231,13 +231,13 @@ func (bcPtr *LightChain) Genesis() *types.Block {
 
 // GetBody retrieves a block body (transactions and uncles) from the database
 // or ODR service by hash, caching it if found.
-func (self *LightChain) GetBody(ctx context.Context, hash bgmcommon.Hash) (*types.Body, error) {
+func (self *LightChain) GetBody(CTX context.Context, hash bgmcommon.Hash) (*types.Body, error) {
 	// Short circuit if the body's already in the cache, retrieve otherwise
 	if cached, ok := self.bodyCache.Get(hash); ok {
 		body := cached.(*types.Body)
 		return body, nil
 	}
-	body, err := GetBody(ctx, self.odr, hash, self.hcPtr.GetBlockNumber(hash))
+	body, err := GetBody(CTX, self.odr, hash, self.hcPtr.Getnumber(hash))
 	if err != nil {
 		return nil, err
 	}
@@ -248,12 +248,12 @@ func (self *LightChain) GetBody(ctx context.Context, hash bgmcommon.Hash) (*type
 
 // GetBodyRLP retrieves a block body in RLP encoding from the database or
 // ODR service by hash, caching it if found.
-func (self *LightChain) GetBodyRLP(ctx context.Context, hash bgmcommon.Hash) (rlp.RawValue, error) {
+func (self *LightChain) GetBodyRLP(CTX context.Context, hash bgmcommon.Hash) (rlp.RawValue, error) {
 	// Short circuit if the body's already in the cache, retrieve otherwise
 	if cached, ok := self.bodyRLPCache.Get(hash); ok {
 		return cached.(rlp.RawValue), nil
 	}
-	body, err := GetBodyRLP(ctx, self.odr, hash, self.hcPtr.GetBlockNumber(hash))
+	body, err := GetBodyRLP(CTX, self.odr, hash, self.hcPtr.Getnumber(hash))
 	if err != nil {
 		return nil, err
 	}
@@ -264,19 +264,19 @@ func (self *LightChain) GetBodyRLP(ctx context.Context, hash bgmcommon.Hash) (rl
 
 // HasBlock checks if a block is fully present in the database or not, caching
 // it if present.
-func (bcPtr *LightChain) HasBlock(hash bgmcommon.Hash, number uint64) bool {
+func (bcPtr *LightChain) HasBlock(hash bgmcommon.Hash, number Uint64) bool {
 	blk, _ := bcPtr.GetBlock(NoOdr, hash, number)
 	return blk != nil
 }
 
 // GetBlock retrieves a block from the database or ODR service by hash and number,
 // caching it if found.
-func (self *LightChain) GetBlock(ctx context.Context, hash bgmcommon.Hash, number uint64) (*types.Block, error) {
+func (self *LightChain) GetBlock(CTX context.Context, hash bgmcommon.Hash, number Uint64) (*types.Block, error) {
 	// Short circuit if the block's already in the cache, retrieve otherwise
 	if block, ok := self.blockCache.Get(hash); ok {
 		return block.(*types.Block), nil
 	}
-	block, err := GetBlock(ctx, self.odr, hash, number)
+	block, err := GetBlock(CTX, self.odr, hash, number)
 	if err != nil {
 		return nil, err
 	}
@@ -287,18 +287,18 @@ func (self *LightChain) GetBlock(ctx context.Context, hash bgmcommon.Hash, numbe
 
 // GetBlockByHash retrieves a block from the database or ODR service by hash,
 // caching it if found.
-func (self *LightChain) GetBlockByHash(ctx context.Context, hash bgmcommon.Hash) (*types.Block, error) {
-	return self.GetBlock(ctx, hash, self.hcPtr.GetBlockNumber(hash))
+func (self *LightChain) GetBlockByHash(CTX context.Context, hash bgmcommon.Hash) (*types.Block, error) {
+	return self.GetBlock(CTX, hash, self.hcPtr.Getnumber(hash))
 }
 
 // GetBlockByNumber retrieves a block from the database or ODR service by
 // number, caching it (associated with its hash) if found.
-func (self *LightChain) GetBlockByNumber(ctx context.Context, number uint64) (*types.Block, error) {
-	hash, err := GetCanonicalHash(ctx, self.odr, number)
+func (self *LightChain) GetBlockByNumber(CTX context.Context, number Uint64) (*types.Block, error) {
+	hash, err := GetCanonicalHash(CTX, self.odr, number)
 	if hash == (bgmcommon.Hash{}) || err != nil {
 		return nil, err
 	}
-	return self.GetBlock(ctx, hash, number)
+	return self.GetBlock(CTX, hash, number)
 }
 
 // Stop stops the blockchain service. If any imports are currently in progress
@@ -334,27 +334,27 @@ func (self *LightChain) Rollback(chain []bgmcommon.Hash) {
 func (self *LightChain) postChainEvents(events []interface{}) {
 	for _, event := range events {
 		switch ev := event.(type) {
-		case bgmcore.ChainEvent:
-			if self.LastBlockHash() == ev.Hash {
-				self.chainHeadFeed.Send(bgmcore.ChainHeadEvent{Block: ev.Block})
+		case bgmCore.ChainEvent:
+			if self.Lasthash() == ev.Hash {
+				self.chainHeadFeed.Send(bgmCore.ChainHeadEvent{Block: ev.Block})
 			}
 			self.chainFeed.Send(ev)
 		}
 	}
 }
 
-// InsertHeaderChain attempts to insert the given header chain in to the local
+// InsertHeaderChain attempts to insert the given Header chain in to the local
 // chain, possibly creating a reorg. If an error is returned, it will return the
-// index number of the failing header as well an error describing what went wrong.
+// index number of the failing Header as well an error describing what went wrong.
 //
 // The verify bgmparameter can be used to fine tune whbgmchain nonce verification
 // should be done or not. The reason behind the optional check is because some
-// of the header retrieval mechanisms already need to verfy nonces, as well as
+// of the Header retrieval mechanisms already need to verfy nonces, as well as
 // because nonces can be verified sparsely, not needing to check eachPtr.
 //
 // In the case of a light chain, InsertHeaderChain also creates and posts light
 // chain events when necessary.
-func (self *LightChain) InsertHeaderChain(chain []*types.headerPtr, checkFreq int) (int, error) {
+func (self *LightChain) InsertHeaderChain(chain []*types.HeaderPtr, checkFreq int) (int, error) {
 	start := time.Now()
 	if i, err := self.hcPtr.ValidateHeaderChain(chain, checkFreq); err != nil {
 		return i, err
@@ -371,19 +371,19 @@ func (self *LightChain) InsertHeaderChain(chain []*types.headerPtr, checkFreq in
 	defer self.wg.Done()
 
 	var events []interface{}
-	whFunc := func(headerPtr *types.Header) error {
+	whFunc := func(HeaderPtr *types.Header) error {
 		self.mu.Lock()
 		defer self.mu.Unlock()
 
-		status, err := self.hcPtr.WriteHeader(header)
+		status, err := self.hcPtr.WriteHeader(Header)
 
 		switch status {
-		case bgmcore.CanonStatTy:
-			bgmlogs.Debug("Inserted new header", "number", headerPtr.Number, "hash", headerPtr.Hash())
-			events = append(events, bgmcore.ChainEvent{Block: types.NewBlockWithHeader(header), Hash: headerPtr.Hash()})
+		case bgmCore.CanonStatTy:
+			bgmlogs.Debug("Inserted new Header", "number", HeaderPtr.Number, "hash", HeaderPtr.Hash())
+			events = append(events, bgmCore.ChainEvent{Block: types.NewBlockWithHeader(Header), Hash: HeaderPtr.Hash()})
 
-		case bgmcore.SideStatTy:
-			bgmlogs.Debug("Inserted forked header", "number", headerPtr.Number, "hash", headerPtr.Hash())
+		case bgmCore.SideStatTy:
+			bgmlogs.Debug("Inserted forked Header", "number", HeaderPtr.Number, "hash", HeaderPtr.Hash())
 		}
 		return err
 	}
@@ -392,8 +392,8 @@ func (self *LightChain) InsertHeaderChain(chain []*types.headerPtr, checkFreq in
 	return i, err
 }
 
-// CurrentHeader retrieves the current head header of the canonical chain. The
-// header is retrieved from the HeaderChain's internal cache.
+// CurrentHeader retrieves the current head Header of the canonical chain. The
+// Header is retrieved from the HeaderChain's internal cache.
 func (self *LightChain) CurrentHeader() *types.Header {
 	self.mu.RLock()
 	defer self.mu.RUnlock()
@@ -403,7 +403,7 @@ func (self *LightChain) CurrentHeader() *types.Header {
 
 // GetTd retrieves a block's total difficulty in the canonical chain from the
 // database by hash and number, caching it if found.
-func (self *LightChain) GetTd(hash bgmcommon.Hash, number uint64) *big.Int {
+func (self *LightChain) GetTd(hash bgmcommon.Hash, number Uint64) *big.Int {
 	return self.hcPtr.GetTd(hash, number)
 }
 
@@ -413,46 +413,46 @@ func (self *LightChain) GetTdByHash(hash bgmcommon.Hash) *big.Int {
 	return self.hcPtr.GetTdByHash(hash)
 }
 
-// GetHeader retrieves a block header from the database by hash and number,
+// GetHeader retrieves a block Header from the database by hash and number,
 // caching it if found.
-func (self *LightChain) GetHeader(hash bgmcommon.Hash, number uint64) *types.Header {
+func (self *LightChain) GetHeader(hash bgmcommon.Hash, number Uint64) *types.Header {
 	return self.hcPtr.GetHeader(hash, number)
 }
 
-// GetHeaderByHash retrieves a block header from the database by hash, caching it if
+// GetHeaderByHash retrieves a block Header from the database by hash, caching it if
 // found.
 func (self *LightChain) GetHeaderByHash(hash bgmcommon.Hash) *types.Header {
 	return self.hcPtr.GetHeaderByHash(hash)
 }
 
-// HasHeader checks if a block header is present in the database or not, caching
+// HasHeader checks if a block Header is present in the database or not, caching
 // it if present.
-func (bcPtr *LightChain) HasHeader(hash bgmcommon.Hash, number uint64) bool {
+func (bcPtr *LightChain) HasHeader(hash bgmcommon.Hash, number Uint64) bool {
 	return bcPtr.hcPtr.HasHeader(hash, number)
 }
 
-// GetBlockHashesFromHash retrieves a number of block hashes starting at a given
+// GethashesFromHash retrieves a number of block hashes starting at a given
 // hash, fetching towards the genesis block.
-func (self *LightChain) GetBlockHashesFromHash(hash bgmcommon.Hash, max uint64) []bgmcommon.Hash {
-	return self.hcPtr.GetBlockHashesFromHash(hash, max)
+func (self *LightChain) GethashesFromHash(hash bgmcommon.Hash, max Uint64) []bgmcommon.Hash {
+	return self.hcPtr.GethashesFromHash(hash, max)
 }
 
-// GetHeaderByNumber retrieves a block header from the database by number,
+// GetHeaderByNumber retrieves a block Header from the database by number,
 // caching it (associated with its hash) if found.
-func (self *LightChain) GetHeaderByNumber(number uint64) *types.Header {
+func (self *LightChain) GetHeaderByNumber(number Uint64) *types.Header {
 	return self.hcPtr.GetHeaderByNumber(number)
 }
 
-// GetHeaderByNumberOdr retrieves a block header from the database or network
+// GetHeaderByNumberOdr retrieves a block Header from the database or network
 // by number, caching it (associated with its hash) if found.
-func (self *LightChain) GetHeaderByNumberOdr(ctx context.Context, number uint64) (*types.headerPtr, error) {
-	if header := self.hcPtr.GetHeaderByNumber(number); header != nil {
-		return headerPtr, nil
+func (self *LightChain) GetHeaderByNumberOdr(CTX context.Context, number Uint64) (*types.HeaderPtr, error) {
+	if Header := self.hcPtr.GetHeaderByNumber(number); Header != nil {
+		return HeaderPtr, nil
 	}
-	return GetHeaderByNumber(ctx, self.odr, number)
+	return GetHeaderByNumber(CTX, self.odr, number)
 }
 
-func (self *LightChain) SyncCht(ctx context.Context) bool {
+func (self *LightChain) SyncCht(CTX context.Context) bool {
 	if self.odr.ChtIndexer() == nil {
 		return false
 	}
@@ -460,11 +460,11 @@ func (self *LightChain) SyncCht(ctx context.Context) bool {
 	chtCount, _, _ := self.odr.ChtIndexer().Sections()
 	if headNum+1 < chtCount*ChtFrequency {
 		num := chtCount*ChtFrequency - 1
-		headerPtr, err := GetHeaderByNumber(ctx, self.odr, num)
-		if header != nil && err == nil {
+		HeaderPtr, err := GetHeaderByNumber(CTX, self.odr, num)
+		if Header != nil && err == nil {
 			self.mu.Lock()
-			if self.hcPtr.CurrentHeader().Number.Uint64() < headerPtr.Number.Uint64() {
-				self.hcPtr.SetCurrentHeader(header)
+			if self.hcPtr.CurrentHeader().Number.Uint64() < HeaderPtr.Number.Uint64() {
+				self.hcPtr.SetCurrentHeader(Header)
 			}
 			self.mu.Unlock()
 			return true
@@ -485,12 +485,12 @@ func (self *LightChain) UnlockChain() {
 }
 
 // SubscribeChainEvent registers a subscription of ChainEvent.
-func (self *LightChain) SubscribeChainEvent(ch chan<- bgmcore.ChainEvent) event.Subscription {
+func (self *LightChain) SubscribeChainEvent(ch chan<- bgmCore.ChainEvent) event.Subscription {
 	return self.scope.Track(self.chainFeed.Subscribe(ch))
 }
 
 // SubscribeChainHeadEvent registers a subscription of ChainHeadEvent.
-func (self *LightChain) SubscribeChainHeadEvent(ch chan<- bgmcore.ChainHeadEvent) event.Subscription {
+func (self *LightChain) SubscribeChainHeadEvent(ch chan<- bgmCore.ChainHeadEvent) event.Subscription {
 	return self.scope.Track(self.chainHeadFeed.Subscribe(ch))
 }
 
@@ -501,7 +501,7 @@ func (self *LightChain) SubscribebgmlogssEvent(ch chan<- []*types.bgmlogs) event
 }
 
 // SubscribeRemovedbgmlogssEvent implement the interface of filters.Backend
-// LightChain does not send bgmcore.RemovedbgmlogssEvent, so return an empty subscription.
-func (self *LightChain) SubscribeRemovedbgmlogssEvent(ch chan<- bgmcore.RemovedbgmlogssEvent) event.Subscription {
+// LightChain does not send bgmCore.RemovedbgmlogssEvent, so return an empty subscription.
+func (self *LightChain) SubscribeRemovedbgmlogssEvent(ch chan<- bgmCore.RemovedbgmlogssEvent) event.Subscription {
 	return self.scope.Track(new(event.Feed).Subscribe(ch))
 }

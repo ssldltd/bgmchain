@@ -24,7 +24,7 @@ import (
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/consensus"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 )
 
@@ -33,9 +33,9 @@ import (
 func (bgmashPtr *Bgmash) Seal(chain consensus.ChainReader, block *types.Block, stop <-chan struct{}) (*types.Block, error) {
 	// If we're running a fake PoW, simply return a 0 nonce immediately
 	if bgmashPtr.fakeMode {
-		header := block.Header()
-		headerPtr.Nonce, headerPtr.MixDigest = types.BlockNonce{}, bgmcommon.Hash{}
-		return block.WithSeal(header), nil
+		Header := block.Header()
+		HeaderPtr.Nonce, HeaderPtr.MixDigest = types.BlockNonce{}, bgmcommon.Hash{}
+		return block.WithSeal(Header), nil
 	}
 	// If we're running a shared PoW, delegate sealing to it
 	if bgmashPtr.shared != nil {
@@ -65,10 +65,10 @@ func (bgmashPtr *Bgmash) Seal(chain consensus.ChainReader, block *types.Block, s
 	var pend syncPtr.WaitGroup
 	for i := 0; i < threads; i++ {
 		pend.Add(1)
-		go func(id int, nonce uint64) {
+		go func(id int, nonce Uint64) {
 			defer pend.Done()
 			bgmashPtr.mine(block, id, nonce, abort, found)
-		}(i, uint64(bgmashPtr.rand.Int63()))
+		}(i, Uint64(bgmashPtr.rand.Int63()))
 	}
 	// Wait until sealing is terminated or a nonce is found
 	var result *types.Block
@@ -92,14 +92,14 @@ func (bgmashPtr *Bgmash) Seal(chain consensus.ChainReader, block *types.Block, s
 
 // mine is the actual proof-of-work miner that searches for a nonce starting from
 // seed that results in correct final block difficulty.
-func (bgmashPtr *Bgmash) mine(block *types.Block, id int, seed uint64, abort chan struct{}, found chan *types.Block) {
-	// Extract some data from the header
+func (bgmashPtr *Bgmash) mine(block *types.Block, id int, seed Uint64, abort chan struct{}, found chan *types.Block) {
+	// Extract some data from the Header
 	var (
-		header = block.Header()
-		hash   = headerPtr.HashNoNonce().Bytes()
-		target = new(big.Int).Div(maxUint256, headerPtr.Difficulty)
+		Header = block.Header()
+		hash   = HeaderPtr.HashNoNonce().Bytes()
+		target = new(big.Int).Div(maxUint256, HeaderPtr.Difficulty)
 
-		number  = headerPtr.Number.Uint64()
+		number  = HeaderPtr.Number.Uint64()
 		dataset = bgmashPtr.dataset(number)
 	)
 	// Start generating random nonces until we abort or find a good one
@@ -127,14 +127,14 @@ func (bgmashPtr *Bgmash) mine(block *types.Block, id int, seed uint64, abort cha
 			// Compute the PoW value of this nonce
 			digest, result := hashimotoFull(dataset, hash, nonce)
 			if new(big.Int).SetBytes(result).Cmp(target) <= 0 {
-				// Correct nonce found, create a new header with it
-				header = types.CopyHeader(header)
-				headerPtr.Nonce = types.EncodeNonce(nonce)
-				headerPtr.MixDigest = bgmcommon.BytesToHash(digest)
+				// Correct nonce found, create a new Header with it
+				Header = types.CopyHeader(Header)
+				HeaderPtr.Nonce = types.EncodeNonce(nonce)
+				HeaderPtr.MixDigest = bgmcommon.BytesToHash(digest)
 
 				// Seal and return a block (if still needed)
 				select {
-				case found <- block.WithSeal(header):
+				case found <- block.WithSeal(Header):
 					bgmlogsger.Trace("Bgmash nonce found and reported", "attempts", nonce-seed, "nonce", nonce)
 				case <-abort:
 					bgmlogsger.Trace("Bgmash nonce found but discarded", "attempts", nonce-seed, "nonce", nonce)

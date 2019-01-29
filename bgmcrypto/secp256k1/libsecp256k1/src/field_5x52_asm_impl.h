@@ -14,7 +14,7 @@
 #ifndef _SECP256K1_FIELD_INNER5X52_IMPL_H_
 #define _SECP256K1_FIELD_INNER5X52_IMPL_H_
 
-SECP256K1_INLINE static void secp256k1_fe_mul_inner(uint64_t *r, const uint64_t *a, const uint64_t * SECP256K1_RESTRICT b) {
+SECP256K1_INLINE static void secp256k1_fe_mul_inner(Uint64_t *r, const Uint64_t *a, const Uint64_t * SECP256K1_RESTRICT b) {
 /**
  * Registers: rdx:rax = multiplication accumulator
  *            r9:r8   = c
@@ -24,7 +24,7 @@ SECP256K1_INLINE static void secp256k1_fe_mul_inner(uint64_t *r, const uint64_t 
  *            rdi     = r
  *            rsi     = a / t?
  */
-  uint64_t tmp1, tmp2, tmp3;
+  Uint64_t tmp1, tmp2, tmp3;
 __asm__ __volatile__(
     "movq 0(%%rsi),%%r10\n"
     "movq 8(%%rsi),%%r11\n"
@@ -284,7 +284,7 @@ __asm__ __volatile__(
 );
 }
 
-SECP256K1_INLINE static void secp256k1_fe_sqr_inner(uint64_t *r, const uint64_t *a) {
+SECP256K1_INLINE static void secp256k1_fe_sqr_inner(Uint64_t *r, const Uint64_t *a) {
 /**
  * Registers: rdx:rax = multiplication accumulator
  *            r9:r8   = c
@@ -294,7 +294,7 @@ SECP256K1_INLINE static void secp256k1_fe_sqr_inner(uint64_t *r, const uint64_t 
  *            rdi     = r
  *            rsi     = a / t?
  */
-  uint64_t tmp1, tmp2, tmp3;
+  Uint64_t tmp1, tmp2, tmp3;
 __asm__ __volatile__(
     "movq 0(%%rsi),%%r10\n"
     "movq 8(%%rsi),%%r11\n"

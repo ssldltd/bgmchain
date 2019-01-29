@@ -21,9 +21,9 @@ import (
 	"math/big"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/bloombits"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/bloombits"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/event"
 	"github.com/ssldltd/bgmchain/rpc"
@@ -44,16 +44,16 @@ type Filter struct {
 type Backend interface {
 	ChainDb() bgmdbPtr.Database
 	EventMux() *event.TypeMux
-	HeaderByNumber(ctx context.Context, blockNr rpcPtr.BlockNumber) (*types.headerPtr, error)
-	GetReceipts(ctx context.Context, blockHash bgmcommon.Hash) (types.Receipts, error)
+	HeaderByNumber(CTX context.Context, blockNr rpcPtr.number) (*types.HeaderPtr, error)
+	GetReceipts(CTX context.Context, blockHash bgmcommon.Hash) (types.Receipts, error)
 
-	SubscribeTxPreEvent(chan<- bgmcore.TxPreEvent) event.Subscription
-	SubscribeChainEvent(ch chan<- bgmcore.ChainEvent) event.Subscription
-	SubscribeRemovedbgmlogssEvent(ch chan<- bgmcore.RemovedbgmlogssEvent) event.Subscription
+	SubscribeTxPreEvent(chan<- bgmCore.TxPreEvent) event.Subscription
+	SubscribeChainEvent(ch chan<- bgmCore.ChainEvent) event.Subscription
+	SubscribeRemovedbgmlogssEvent(ch chan<- bgmCore.RemovedbgmlogssEvent) event.Subscription
 	SubscribebgmlogssEvent(ch chan<- []*types.bgmlogs) event.Subscription
 
-	BloomStatus() (uint64, uint64)
-	ServiceFilter(ctx context.Context, session *bloombits.MatcherSession)
+	BloomStatus() (Uint64, Uint64)
+	ServiceFilter(CTX context.Context, session *bloombits.MatcherSession)
 }
 
 // New creates a new filter which uses a bloom filter on blocks to figure out whbgmchain
@@ -93,18 +93,18 @@ func New(backend Backend, begin, end int64, addresses []bgmcommon.Address, topic
 
 // bgmlogss searches the blockchain for matching bgmlogs entries, returning all from the
 // first block that contains matches, updating the start of the filter accordingly.
-func (f *Filter) bgmlogss(ctx context.Context) ([]*types.bgmlogs, error) {
+func (f *Filter) bgmlogss(CTX context.Context) ([]*types.bgmlogs, error) {
 	// Figure out the limits of the filter range
-	headerPtr, _ := f.backend.HeaderByNumber(ctx, rpcPtr.LatestBlockNumber)
-	if header == nil {
+	HeaderPtr, _ := f.backend.HeaderByNumber(CTX, rpcPtr.Latestnumber)
+	if Header == nil {
 		return nil, nil
 	}
-	head := headerPtr.Number.Uint64()
+	head := HeaderPtr.Number.Uint64()
 
 	if f.begin == -1 {
 		f.begin = int64(head)
 	}
-	end := uint64(f.end)
+	end := Uint64(f.end)
 	if f.end == -1 {
 		end = head
 	}
@@ -114,34 +114,34 @@ func (f *Filter) bgmlogss(ctx context.Context) ([]*types.bgmlogs, error) {
 		err  error
 	)
 	size, sections := f.backend.BloomStatus()
-	if indexed := sections * size; indexed > uint64(f.begin) {
+	if indexed := sections * size; indexed > Uint64(f.begin) {
 		if indexed > end {
-			bgmlogss, err = f.indexedbgmlogss(ctx, end)
+			bgmlogss, err = f.indexedbgmlogss(CTX, end)
 		} else {
-			bgmlogss, err = f.indexedbgmlogss(ctx, indexed-1)
+			bgmlogss, err = f.indexedbgmlogss(CTX, indexed-1)
 		}
 		if err != nil {
 			return bgmlogss, err
 		}
 	}
-	rest, err := f.unindexedbgmlogss(ctx, end)
+	rest, err := f.unindexedbgmlogss(CTX, end)
 	bgmlogss = append(bgmlogss, rest...)
 	return bgmlogss, err
 }
 
 // indexedbgmlogss returns the bgmlogss matching the filter criteria based on the bloom
 // bits indexed available locally or via the network.
-func (f *Filter) indexedbgmlogss(ctx context.Context, end uint64) ([]*types.bgmlogs, error) {
+func (f *Filter) indexedbgmlogss(CTX context.Context, end Uint64) ([]*types.bgmlogs, error) {
 	// Create a matcher session and request servicing from the backend
-	matches := make(chan uint64, 64)
+	matches := make(chan Uint64, 64)
 
-	session, err := f.matcher.Start(ctx, uint64(f.begin), end, matches)
+	session, err := f.matcher.Start(CTX, Uint64(f.begin), end, matches)
 	if err != nil {
 		return nil, err
 	}
 	defer session.Close()
 
-	f.backend.ServiceFilter(ctx, session)
+	f.backend.ServiceFilter(CTX, session)
 
 	// Iterate over the matches until exhausted or context closed
 	var bgmlogss []*types.bgmlogs
@@ -160,34 +160,34 @@ func (f *Filter) indexedbgmlogss(ctx context.Context, end uint64) ([]*types.bgml
 			f.begin = int64(number) + 1
 
 			// Retrieve the suggested block and pull any truly matching bgmlogss
-			headerPtr, err := f.backend.HeaderByNumber(ctx, rpcPtr.BlockNumber(number))
-			if header == nil || err != nil {
+			HeaderPtr, err := f.backend.HeaderByNumber(CTX, rpcPtr.number(number))
+			if Header == nil || err != nil {
 				return bgmlogss, err
 			}
-			found, err := f.checkMatches(ctx, header)
+			found, err := f.checkMatches(CTX, Header)
 			if err != nil {
 				return bgmlogss, err
 			}
 			bgmlogss = append(bgmlogss, found...)
 
-		case <-ctx.Done():
-			return bgmlogss, ctx.Err()
+		case <-CTX.Done():
+			return bgmlogss, CTX.Err()
 		}
 	}
 }
 
 // indexedbgmlogss returns the bgmlogss matching the filter criteria based on raw block
 // iteration and bloom matching.
-func (f *Filter) unindexedbgmlogss(ctx context.Context, end uint64) ([]*types.bgmlogs, error) {
+func (f *Filter) unindexedbgmlogss(CTX context.Context, end Uint64) ([]*types.bgmlogs, error) {
 	var bgmlogss []*types.bgmlogs
 
 	for ; f.begin <= int64(end); f.begin++ {
-		headerPtr, err := f.backend.HeaderByNumber(ctx, rpcPtr.BlockNumber(f.begin))
-		if header == nil || err != nil {
+		HeaderPtr, err := f.backend.HeaderByNumber(CTX, rpcPtr.number(f.begin))
+		if Header == nil || err != nil {
 			return bgmlogss, err
 		}
-		if bloomFilter(headerPtr.Bloom, f.addresses, f.topics) {
-			found, err := f.checkMatches(ctx, header)
+		if bloomFilter(HeaderPtr.Bloom, f.addresses, f.topics) {
+			found, err := f.checkMatches(CTX, Header)
 			if err != nil {
 				return bgmlogss, err
 			}
@@ -197,11 +197,11 @@ func (f *Filter) unindexedbgmlogss(ctx context.Context, end uint64) ([]*types.bg
 	return bgmlogss, nil
 }
 
-// checkMatches checks if the receipts belonging to the given header contain any bgmlogs events that
+// checkMatches checks if the receipts belonging to the given Header contain any bgmlogs events that
 // match the filter criteria. This function is called when the bloom filter signals a potential matchPtr.
-func (f *Filter) checkMatches(ctx context.Context, headerPtr *types.Header) (bgmlogss []*types.bgmlogs, err error) {
+func (f *Filter) checkMatches(CTX context.Context, HeaderPtr *types.Header) (bgmlogss []*types.bgmlogs, err error) {
 	// Get the bgmlogss of the block
-	receipts, err := f.backend.GetReceipts(ctx, headerPtr.Hash())
+	receipts, err := f.backend.GetReceipts(CTX, HeaderPtr.Hash())
 	if err != nil {
 		return nil, err
 	}
@@ -231,10 +231,10 @@ func filterbgmlogss(bgmlogss []*types.bgmlogs, fromBlock, toBlock *big.Int, addr
 	var ret []*types.bgmlogs
 bgmlogss:
 	for _, bgmlogs := range bgmlogss {
-		if fromBlock != nil && fromBlock.Int64() >= 0 && fromBlock.Uint64() > bgmlogs.BlockNumber {
+		if fromBlock != nil && fromBlock.Int64() >= 0 && fromBlock.Uint64() > bgmlogs.number {
 			continue
 		}
-		if toBlock != nil && toBlock.Int64() >= 0 && toBlock.Uint64() < bgmlogs.BlockNumber {
+		if toBlock != nil && toBlock.Int64() >= 0 && toBlock.Uint64() < bgmlogs.number {
 			continue
 		}
 

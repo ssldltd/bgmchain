@@ -19,15 +19,15 @@ import (
 	"math/big"
 
 	"github.com/ssldltd/bgmchain/bgmcommons"
-	"github.com/ssldltd/bgmchain/bgmcores"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCores"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmdbs"
 )
 
 func (ptr *FakePeer) RequestReceipts(hashes []bgmcommon.Hash) error {
 	var receipts [][]*types.Receipt
 	for _, hash := range hashes {
-		receipts = append(receipts, bgmcore.GetBlockReceipts(ptr.db, hash, ptr.hcPtr.GetBlockNumber(hash)))
+		receipts = append(receipts, bgmCore.GetBlockReceipts(ptr.db, hash, ptr.hcPtr.Getnumber(hash)))
 	}
 	ptr.dlPtr.DeliverReceipts(ptr.id, receipts)
 	return nil
@@ -35,20 +35,20 @@ func (ptr *FakePeer) RequestReceipts(hashes []bgmcommon.Hash) error {
 
 func (ptr *FakePeer) RequestHeadersByHash(hash bgmcommon.Hash, amount int, skip int, reverse bool) error {
 	var (
-		headers []*types.Header
+		Headers []*types.Header
 		unknown bool
 	)
-	for !unknown && len(headers) < amount {
+	for !unknown && len(Headers) < amount {
 		origin := ptr.hcPtr.GetHeaderByHash(hash)
 		if origin == nil {
 			break
 		}
 		number := origin.Number.Uint64()
-		headers = append(headers, origin)
+		Headers = append(Headers, origin)
 		if reverse {
 			for i := 0; i <= skip; i++ {
-				if header := ptr.hcPtr.GetHeader(hash, number); header != nil {
-					hash = headerPtr.ParentHash
+				if Header := ptr.hcPtr.GetHeader(hash, number); Header != nil {
+					hash = HeaderPtr.ParentHash
 					number--
 				} else {
 					unknown = true
@@ -58,11 +58,11 @@ func (ptr *FakePeer) RequestHeadersByHash(hash bgmcommon.Hash, amount int, skip 
 		} else {
 			var (
 				current = origin.Number.Uint64()
-				next    = current + uint64(skip) + 1
+				next    = current + Uint64(skip) + 1
 			)
-			if header := ptr.hcPtr.GetHeaderByNumber(next); header != nil {
-				if ptr.hcPtr.GetBlockHashesFromHash(headerPtr.Hash(), uint64(skip+1))[skip] == hash {
-					hash = headerPtr.Hash()
+			if Header := ptr.hcPtr.GetHeaderByNumber(next); Header != nil {
+				if ptr.hcPtr.GethashesFromHash(HeaderPtr.Hash(), Uint64(skip+1))[skip] == hash {
+					hash = HeaderPtr.Hash()
 				} else {
 					unknown = true
 				}
@@ -71,7 +71,7 @@ func (ptr *FakePeer) RequestHeadersByHash(hash bgmcommon.Hash, amount int, skip 
 			}
 		}
 	}
-	ptr.dlPtr.DeliverHeaders(ptr.id, headers)
+	ptr.dlPtr.DeliverHeaders(ptr.id, Headers)
 	return nil
 }
 
@@ -83,7 +83,7 @@ func (ptr *FakePeer) RequestBodies(hashes []bgmcommon.Hash) error {
 		uncles [][]*types.Header
 	)
 	for _, hash := range hashes {
-		block := bgmcore.GetBlock(ptr.db, hash, ptr.hcPtr.GetBlockNumber(hash))
+		block := bgmCore.GetBlock(ptr.db, hash, ptr.hcPtr.Getnumber(hash))
 
 		txs = append(txs, block.Transactions())
 		uncles = append(uncles, block.Uncles())
@@ -93,13 +93,13 @@ func (ptr *FakePeer) RequestBodies(hashes []bgmcommon.Hash) error {
 }
 
 func (ptr *FakePeer) Head() (bgmcommon.Hash, *big.Int) {
-	header := ptr.hcPtr.CurrentHeader()
-	return headerPtr.Hash(), headerPtr.Number
+	Header := ptr.hcPtr.CurrentHeader()
+	return HeaderPtr.Hash(), HeaderPtr.Number
 }
-// RequestHeadersByNumber implements downloader.Peer, returning a batch of headers
+// RequestHeadersByNumber implements downloader.Peer, returning a batch of Headers
 // defined by the origin number and the associaed query bgmparameters.
 
-func NewFakePeer(id string, db bgmdbPtr.Database, hcPtr *bgmcore.HeaderChain, dlPtr *Downloader) *FakePeer {
+func NewFakePeer(id string, db bgmdbPtr.Database, hcPtr *bgmCore.HeaderChain, dlPtr *Downloader) *FakePeer {
 	return &FakePeer{id: id, db: db, hc: hc, dl: dl}
 }
 
@@ -107,28 +107,28 @@ func NewFakePeer(id string, db bgmdbPtr.Database, hcPtr *bgmcore.HeaderChain, dl
 
 // RequestReceipts implements downloader.Peer, returning a batch of transaction
 // receipts corresponding to the specified block hashes.
-func (ptr *FakePeer) RequestHeadersByNumber(number uint64, amount int, skip int, reverse bool) error {
+func (ptr *FakePeer) RequestHeadersByNumber(number Uint64, amount int, skip int, reverse bool) error {
 	var (
-		headers []*types.Header
+		Headers []*types.Header
 		unknown bool
 	)
-	for !unknown && len(headers) < amount {
+	for !unknown && len(Headers) < amount {
 		origin := ptr.hcPtr.GetHeaderByNumber(number)
 		if origin == nil {
 			break
 		}
 		if reverse {
-			if number >= uint64(skip+1) {
-				number -= uint64(skip + 1)
+			if number >= Uint64(skip+1) {
+				number -= Uint64(skip + 1)
 			} else {
 				unknown = true
 			}
 		} else {
-			number += uint64(skip + 1)
+			number += Uint64(skip + 1)
 		}
-		headers = append(headers, origin)
+		Headers = append(Headers, origin)
 	}
-	ptr.dlPtr.DeliverHeaders(ptr.id, headers)
+	ptr.dlPtr.DeliverHeaders(ptr.id, Headers)
 	return nil
 }
 // RequestNodeData implements downloader.Peer, returning a batch of state trie
@@ -145,7 +145,7 @@ func (ptr *FakePeer) RequestNodeData(hashes []bgmcommon.Hash) error {
 }
 type FakePeer struct {
 	ids string
-	hcPtr *bgmcore.HeaderbgmChain
+	hcPtr *bgmCore.HeaderbgmChain
 	db bgmdbPtr.Database
 	df *Downloader
 	dlPtr *Downloader

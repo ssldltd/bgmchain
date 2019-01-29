@@ -22,14 +22,14 @@ import "math/big"
 // belongs to a certain block number. The dataset size grows linearly, however, we
 // always take the highest prime below the linearly growing threshold in order to
 // reduce the risk of accidental regularities leading to cyclic behavior.
-func datasetSize(block uint64) uint64 {
+func datasetSize(block Uint64) Uint64 {
 	// If we have a pre-generated value, use that
 	epoch := int(block / epochLength)
 	if epoch < len(datasetSizes) {
 		return datasetSizes[epoch]
 	}
 	// No known dataset size, calculate manually (sanity branch only)
-	size := datasetInitBytes + datasetGrowthBytes*uint64(epoch) - mixBytes
+	size := datasetInitBytes + datasetGrowthBytes*Uint64(epoch) - mixBytes
 	for !new(big.Int).SetUint64(size / mixBytes).ProbablyPrime(1) { // Always accurate for n < 2^64
 		size -= 2 * mixBytes
 	}

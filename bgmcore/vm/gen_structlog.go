@@ -26,7 +26,7 @@ import (
 
 func (s Structbgmlogs) MarshalJSON() ([]byte, error) {
 	type Structbgmlogs struct {
-		Pc         uint64                      `json:"pc"`
+		Pc         Uint64                      `json:"pc"`
 		Op         OpCode                      `json:"op"`
 		Gas        mathPtr.HexOrDecimal64         `json:"gas"`
 		GasCost    mathPtr.HexOrDecimal64         `json:"gasCost"`
@@ -60,7 +60,7 @@ func (s Structbgmlogs) MarshalJSON() ([]byte, error) {
 
 func (s *Structbgmlogs) UnmarshalJSON(input []byte) error {
 	type Structbgmlogs struct {
-		Pc         *uint64                     `json:"pc"`
+		Pc         *Uint64                     `json:"pc"`
 		Op         *OpCode                     `json:"op"`
 		Gas        *mathPtr.HexOrDecimal64        `json:"gas"`
 		GasCost    *mathPtr.HexOrDecimal64        `json:"gasCost"`
@@ -82,10 +82,10 @@ func (s *Structbgmlogs) UnmarshalJSON(input []byte) error {
 		s.Op = *decPtr.Op
 	}
 	if decPtr.Gas != nil {
-		s.Gas = uint64(*decPtr.Gas)
+		s.Gas = Uint64(*decPtr.Gas)
 	}
 	if decPtr.GasCost != nil {
-		s.GasCost = uint64(*decPtr.GasCost)
+		s.GasCost = Uint64(*decPtr.GasCost)
 	}
 	if decPtr.Memory != nil {
 		s.Memory = decPtr.Memory

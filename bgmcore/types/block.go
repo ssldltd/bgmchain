@@ -40,14 +40,14 @@ var (
 // A BlockNonce is a 64-bit hash which proves (combined with the
 type BlockNonce [8]byte
 
-func EncodeNonce(i uint64) BlockNonce {
+func EncodeNonce(i Uint64) BlockNonce {
 	var n BlockNonce
 	binary.BigEndian.PutUint64(n[:], i)
 	return n
 }
 
 // Uint64 returns the integer value of a block nonce.
-func (n BlockNonce) Uint64() uint64 {
+func (n BlockNonce) Uint64() Uint64 {
 	return binary.BigEndian.Uint64(n[:])
 }
 
@@ -63,9 +63,9 @@ func (n BlockNonce) MarshalText() ([]byte, error) {
 
 
 
-//go:generate gencodec -type Header -field-override headerMarshaling -out gen_header_json.go
+//go:generate gencodec -type Header -field-override HeaderMarshaling -out gen_Header_json.go
 
-// Header represents a block header in the Bgmchain blockchain.
+// Header represents a block Header in the Bgmchain blockchain.
 type Header struct {
 	ParentHash  bgcomon.Hash       `json:"parentHash"       gencodec:"required"`
 	UncleHash   bgcomon.Hash       `json:"sha3Uncles"       gencodec:"required"`
@@ -78,7 +78,7 @@ type Header struct {
 	Number      *big.Int          `json:"number"           gencodec:"required"`
 	GasLimit    *big.Int          `json:"gasLimit"         gencodec:"required"`
 	GasUsed     *big.Int          `json:"gasUsed"          gencodec:"required"`
-	Time        *big.Int          `json:"timestamp"        gencodec:"required"`
+	time        *big.Int          `json:"timestamp"        gencodec:"required"`
 	Extra       []byte            `json:"extraData"        gencodec:"required"`
 	MixDigest   bgcomon.Hash       `json:"mixHash"          gencodec:"required"`
 	Nonce       BlockNonce        `json:"nonce"            gencodec:"required"`
@@ -88,17 +88,17 @@ type Header struct {
 }
 
 // field type overrides for gencodec
-type headerMarshaling struct {
+type HeaderMarshaling struct {
 	Difficulty *hexutil.Big
 	GasUsed    *hexutil.Big
-	Time       *hexutil.Big
+	time       *hexutil.Big
 	Extra      hexutil.Bytes
 	Number     *hexutil.Big
 	GasLimit   *hexutil.Big
 	Hash       bgcomon.Hash `json:"hash"` // adds call to Hash() in MarshalJSON
 }
 
-// Hash returns the block hash of the headerPtr, which is simply the keccak256 hash of its
+// Hash returns the block hash of the HeaderPtr, which is simply the keccak256 hash of its
 func (hPtr *Header) Hash() bgcomon.Hash {
 	return rlpHash(h)
 }
@@ -114,7 +114,7 @@ func (hPtr *Header) HashNoNonce() bgcomon.Hash {
 		hPtr.Number,
 		hPtr.GasLimit,
 		hPtr.GasUsed,
-		hPtr.Time,
+		hPtr.time,
 		hPtr.Extra,
 		hPtr.Coinbase,
 		hPtr.Root,
@@ -140,7 +140,7 @@ type Body struct {
 
 // Block represents an entire block in the Bgmchain blockchain.
 type Block struct {
-	header       *Header
+	Header       *Header
 	uncles       []*Header
 	transactions Transactions
 
@@ -149,12 +149,12 @@ type Block struct {
 	size atomicPtr.Value
 	// These fields are used by package bgm to track
 	// inter-peer block relay.
-	ReceivedAt   time.Time
+	ReceivedAt   time.time
 	ReceivedFrom interface{}
 
 	DposContext *DposContext
 	
-	// Td is used by package bgmcore to store the total difficulty
+	// Td is used by package bgmCore to store the total difficulty
 	// of the chain up to and including the block.
 	td *big.Int
 
@@ -176,7 +176,7 @@ type StorageBlock Block
 
 // "external" block encoding. used for bgm protocol, etcPtr.
 type extblock struct {
-	headerPtr *Header
+	HeaderPtr *Header
 	Txs    []*Transaction
 	Uncles []*Header
 }
@@ -184,44 +184,44 @@ type extblock struct {
 // [deprecated by bgm/63]
 // "storage" block encoding. used for database.
 type storageblock struct {
-	headerPtr *Header
+	HeaderPtr *Header
 	Txs    []*Transaction
 	Uncles []*Header
 	TD     *big.Int
 }
 
 // NewBlock creates a new block. The input data is copied,
-// changes to header and to the field values will not affect the
+// changes to Header and to the field values will not affect the
 // block.
 //
-// The values of TxHash, UncleHash, ReceiptHash and Bloom in header
+// The values of TxHash, UncleHash, ReceiptHash and Bloom in Header
 // are ignored and set to values derived from the given txs, uncles
 // and receipts.
-func NewBlock(headerPtr *headerPtr, txs []*Transaction, uncles []*headerPtr, receipts []*Receipt) *Block {
-	b := &Block{header: CopyHeader(header), td: new(big.Int)}
+func NewBlock(HeaderPtr *HeaderPtr, txs []*Transaction, uncles []*HeaderPtr, receipts []*Receipt) *Block {
+	b := &Block{Header: CopyHeader(Header), td: new(big.Int)}
 
 	// TODO: panic if len(txs) != len(receipts)
 	if len(txs) == 0 {
-		bPtr.headerPtr.TxHash = EmptyRootHash
+		bPtr.HeaderPtr.TxHash = EmptyRootHash
 	} else {
-		bPtr.headerPtr.TxHash = DeriveSha(Transactions(txs))
+		bPtr.HeaderPtr.TxHash = DeriveSha(Transactions(txs))
 		bPtr.transactions = make(Transactions, len(txs))
 		copy(bPtr.transactions, txs)
 	}
 	if len(uncles) == 0 {
-		bPtr.headerPtr.UncleHash = EmptyUncleHash
+		bPtr.HeaderPtr.UncleHash = EmptyUncleHash
 	} else {
-		bPtr.headerPtr.UncleHash = CalcUncleHash(uncles)
-		bPtr.uncles = make([]*headerPtr, len(uncles))
+		bPtr.HeaderPtr.UncleHash = CalcUncleHash(uncles)
+		bPtr.uncles = make([]*HeaderPtr, len(uncles))
 		for i := range uncles {
 			bPtr.uncles[i] = CopyHeader(uncles[i])
 		}
 	}
 	if len(receipts) == 0 {
-		bPtr.headerPtr.ReceiptHash = EmptyRootHash
+		bPtr.HeaderPtr.ReceiptHash = EmptyRootHash
 	} else {
-		bPtr.headerPtr.ReceiptHash = DeriveSha(Receipts(receipts))
-		bPtr.headerPtr.Bloom = CreateBloom(receipts)
+		bPtr.HeaderPtr.ReceiptHash = DeriveSha(Receipts(receipts))
+		bPtr.HeaderPtr.Bloom = CreateBloom(receipts)
 	}
 
 	
@@ -229,19 +229,19 @@ func NewBlock(headerPtr *headerPtr, txs []*Transaction, uncles []*headerPtr, rec
 	return b
 }
 
-// NewBlockWithHeader creates a block with the given header data. The
-// header data is copied, changes to header and to the field values
+// NewBlockWithHeader creates a block with the given Header data. The
+// Header data is copied, changes to Header and to the field values
 // will not affect the block.
-func NewBlockWithHeader(headerPtr *Header) *Block {
-	return &Block{header: CopyHeader(header)}
+func NewBlockWithHeader(HeaderPtr *Header) *Block {
+	return &Block{Header: CopyHeader(Header)}
 }
 
-// CopyHeader creates a deep copy of a block header to prevent side effects from
-// modifying a header variable.
+// CopyHeader creates a deep copy of a block Header to prevent side effects from
+// modifying a Header variable.
 func CopyHeader(hPtr *Header) *Header {
 	cpy := *h
-	if cpy.Time = new(big.Int); hPtr.Time != nil {
-		cpy.Time.Set(hPtr.Time)
+	if cpy.time = new(big.Int); hPtr.time != nil {
+		cpy.time.Set(hPtr.time)
 	}
 	if cpy.Difficulty = new(big.Int); hPtr.Difficulty != nil {
 		cpy.Difficulty.Set(hPtr.Difficulty)
@@ -261,7 +261,7 @@ func CopyHeader(hPtr *Header) *Header {
 	}
 	
 
-	// add dposContextProto to header
+	// add dposContextProto to Header
 	cpy.DposContext = &DposContextProto{}
 	if hPtr.DposContext != nil {
 		cpy.DposContext = hPtr.DposContext
@@ -271,7 +271,7 @@ func CopyHeader(hPtr *Header) *Header {
 // EncodeRLP serializes b into the Bgmchain RLP block format.
 func (bPtr *Block) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, extblock{
-		Header: bPtr.headerPtr,
+		Header: bPtr.HeaderPtr,
 		Txs:    bPtr.transactions,
 		Uncles: bPtr.uncles,
 	})
@@ -283,7 +283,7 @@ func (bPtr *Block) DecodeRLP(s *rlp.Stream) error {
 	if err := s.Decode(&eb); err != nil {
 		return err
 	}
-	bPtr.headerPtr, bPtr.uncles, bPtr.transactions = ebPtr.headerPtr, ebPtr.Uncles, ebPtr.Txs
+	bPtr.HeaderPtr, bPtr.uncles, bPtr.transactions = ebPtr.HeaderPtr, ebPtr.Uncles, ebPtr.Txs
 	bPtr.size.Store(bgcomon.StorageSize(rlp.ListSize(size)))
 	return nil
 }
@@ -296,7 +296,7 @@ func (bPtr *StorageBlock) DecodeRLP(s *rlp.Stream) error {
 	if err := s.Decode(&sb); err != nil {
 		return err
 	}
-	bPtr.headerPtr, bPtr.uncles, bPtr.transactions, bPtr.td = sbPtr.headerPtr, sbPtr.Uncles, sbPtr.Txs, sbPtr.TD
+	bPtr.HeaderPtr, bPtr.uncles, bPtr.transactions, bPtr.td = sbPtr.HeaderPtr, sbPtr.Uncles, sbPtr.Txs, sbPtr.TD
 	return nil
 }
 
@@ -313,34 +313,34 @@ func (bPtr *Block) Transaction(hash bgcomon.Hash) *Transaction {
 	}
 	return nil
 }
-func (bPtr *Block) Bloom() Bloom              { return bPtr.headerPtr.Bloom }
-func (bPtr *Block) Validator() bgcomon.Address { return bPtr.headerPtr.Validator }
-func (bPtr *Block) Coinbase() bgcomon.Address  { return bPtr.headerPtr.Coinbase }
-func (bPtr *Block) Root() bgcomon.Hash         { return bPtr.headerPtr.Root }
-func (bPtr *Block) ParentHash() bgcomon.Hash   { return bPtr.headerPtr.ParentHash }
-func (bPtr *Block) TxHash() bgcomon.Hash       { return bPtr.headerPtr.TxHash }
-func (bPtr *Block) ReceiptHash() bgcomon.Hash  { return bPtr.headerPtr.ReceiptHash }
-func (bPtr *Block) UncleHash() bgcomon.Hash    { return bPtr.headerPtr.UncleHash }
-func (bPtr *Block) Extra() []byte             { return bgcomon.CopyBytes(bPtr.headerPtr.Extra) }
-func (bPtr *Block) Number() *big.Int     { return new(big.Int).Set(bPtr.headerPtr.Number) }
-func (bPtr *Block) GasLimit() *big.Int   { return new(big.Int).Set(bPtr.headerPtr.GasLimit) }
-func (bPtr *Block) GasUsed() *big.Int    { return new(big.Int).Set(bPtr.headerPtr.GasUsed) }
-func (bPtr *Block) Difficulty() *big.Int { return new(big.Int).Set(bPtr.headerPtr.Difficulty) }
-func (bPtr *Block) Time() *big.Int       { return new(big.Int).Set(bPtr.headerPtr.Time) }
+func (bPtr *Block) Bloom() Bloom              { return bPtr.HeaderPtr.Bloom }
+func (bPtr *Block) Validator() bgcomon.Address { return bPtr.HeaderPtr.Validator }
+func (bPtr *Block) Coinbase() bgcomon.Address  { return bPtr.HeaderPtr.Coinbase }
+func (bPtr *Block) Root() bgcomon.Hash         { return bPtr.HeaderPtr.Root }
+func (bPtr *Block) ParentHash() bgcomon.Hash   { return bPtr.HeaderPtr.ParentHash }
+func (bPtr *Block) TxHash() bgcomon.Hash       { return bPtr.HeaderPtr.TxHash }
+func (bPtr *Block) ReceiptHash() bgcomon.Hash  { return bPtr.HeaderPtr.ReceiptHash }
+func (bPtr *Block) UncleHash() bgcomon.Hash    { return bPtr.HeaderPtr.UncleHash }
+func (bPtr *Block) Extra() []byte             { return bgcomon.CopyBytes(bPtr.HeaderPtr.Extra) }
+func (bPtr *Block) Number() *big.Int     { return new(big.Int).Set(bPtr.HeaderPtr.Number) }
+func (bPtr *Block) GasLimit() *big.Int   { return new(big.Int).Set(bPtr.HeaderPtr.GasLimit) }
+func (bPtr *Block) GasUsed() *big.Int    { return new(big.Int).Set(bPtr.HeaderPtr.GasUsed) }
+func (bPtr *Block) Difficulty() *big.Int { return new(big.Int).Set(bPtr.HeaderPtr.Difficulty) }
+func (bPtr *Block) time() *big.Int       { return new(big.Int).Set(bPtr.HeaderPtr.time) }
 
-func (bPtr *Block) NumberU64() uint64         { return bPtr.headerPtr.Number.Uint64() }
-func (bPtr *Block) MixDigest() bgcomon.Hash    { return bPtr.headerPtr.MixDigest }
-func (bPtr *Block) Nonce() uint64             { return binary.BigEndian.Uint64(bPtr.headerPtr.Nonce[:]) }
+func (bPtr *Block) NumberU64() Uint64         { return bPtr.HeaderPtr.Number.Uint64() }
+func (bPtr *Block) MixDigest() bgcomon.Hash    { return bPtr.HeaderPtr.MixDigest }
+func (bPtr *Block) Nonce() Uint64             { return binary.BigEndian.Uint64(bPtr.HeaderPtr.Nonce[:]) }
 
 func (bPtr *Block) DposCtx() *DposContext { return bPtr.DposContext }
 
 func (bPtr *Block) HashNoNonce() bgcomon.Hash {
-	return bPtr.headerPtr.HashNoNonce()
+	return bPtr.HeaderPtr.HashNoNonce()
 }
 
-func (bPtr *Block) Header() *Header { return CopyHeader(bPtr.header) }
+func (bPtr *Block) Header() *Header { return CopyHeader(bPtr.Header) }
 
-// Body returns the non-header content of the block.
+// Body returns the non-Header content of the block.
 func (bPtr *Block) Body() *Body { return &Body{bPtr.transactions, bPtr.uncles} }
 
 
@@ -365,13 +365,13 @@ func (bPtr *Block) Size() bgcomon.StorageSize {
 type writeCounter bgcomon.StorageSize
 
 
-// WithSeal returns a new block with the data from b but the header replaced with
+// WithSeal returns a new block with the data from b but the Header replaced with
 // the sealed one.
-func (bPtr *Block) WithSeal(headerPtr *Header) *Block {
-	cpy := *header
+func (bPtr *Block) WithSeal(HeaderPtr *Header) *Block {
+	cpy := *Header
 
 	return &Block{
-		header:       &cpy,
+		Header:       &cpy,
 		transactions: bPtr.transactions,
 		uncles:       bPtr.uncles,
 
@@ -382,13 +382,13 @@ func (bPtr *Block) WithSeal(headerPtr *Header) *Block {
 
 
 
-// Hash returns the keccak256 hash of b's headerPtr.
+// Hash returns the keccak256 hash of b's HeaderPtr.
 // The hash is computed on the first call and cached thereafter.
 func (bPtr *Block) Hash() bgcomon.Hash {
 	if hash := bPtr.hashPtr.Load(); hash != nil {
 		return hashPtr.(bgcomon.Hash)
 	}
-	v := bPtr.headerPtr.Hash()
+	v := bPtr.HeaderPtr.Hash()
 	bPtr.hashPtr.Store(v)
 	return v
 }
@@ -402,15 +402,15 @@ Transactions:
 Uncles:
 %v
 }
-`, bPtr.Number(), bPtr.Size(), bPtr.headerPtr.HashNoNonce(), bPtr.headerPtr, bPtr.transactions, bPtr.uncles)
+`, bPtr.Number(), bPtr.Size(), bPtr.HeaderPtr.HashNoNonce(), bPtr.HeaderPtr, bPtr.transactions, bPtr.uncles)
 	return str
 }
 // WithBody returns a new block with the given transaction and uncle contents.
 func (bPtr *Block) WithBody(transactions []*Transaction, uncles []*Header) *Block {
 	block := &Block{
-		header:       CopyHeader(bPtr.header),
+		Header:       CopyHeader(bPtr.Header),
 		transactions: make([]*Transaction, len(transactions)),
-		uncles:       make([]*headerPtr, len(uncles)),
+		uncles:       make([]*HeaderPtr, len(uncles)),
 	}
 	copy(block.transactions, transactions)
 	for i := range uncles {
@@ -430,7 +430,7 @@ func (hPtr *Header) String() string {
 	Number:		    %v
 	GasLimit:	    %v
 	GasUsed:	    %v
-	Time:		    %v
+	time:		    %v
 	Extra:		    %-s
 	MixDigest:      %x
 	Coinbase:	    %x
@@ -439,7 +439,7 @@ func (hPtr *Header) String() string {
 	ReceiptSha:	    %x
     
 	Nonce:		    %x
-]`, hPtr.Hash(), hPtr.ParentHash, hPtr.UncleHash, hPtr.Validator, hPtr.Coinbase, hPtr.Root, hPtr.TxHash, hPtr.ReceiptHash, hPtr.DposContext, hPtr.Bloom, hPtr.Difficulty, hPtr.Number, hPtr.GasLimit, hPtr.GasUsed, hPtr.Time, hPtr.Extra, hPtr.MixDigest, hPtr.Nonce)
+]`, hPtr.Hash(), hPtr.ParentHash, hPtr.UncleHash, hPtr.Validator, hPtr.Coinbase, hPtr.Root, hPtr.TxHash, hPtr.ReceiptHash, hPtr.DposContext, hPtr.Bloom, hPtr.Difficulty, hPtr.Number, hPtr.GasLimit, hPtr.GasUsed, hPtr.time, hPtr.Extra, hPtr.MixDigest, hPtr.Nonce)
 }
 
 type Blocks []*Block
@@ -465,4 +465,4 @@ type blockSorter struct {
 	by     func(b1, b2 *Block) bool
 }
 
-func Number(b1, b2 *Block) bool { return b1.headerPtr.Number.Cmp(b2.headerPtr.Number) < 0 }
+func Number(b1, b2 *Block) bool { return b1.HeaderPtr.Number.Cmp(b2.HeaderPtr.Number) < 0 }

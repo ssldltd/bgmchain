@@ -21,8 +21,8 @@ import (
 	"math/big"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmdb"
 )
 
@@ -33,10 +33,10 @@ var NoOdr = context.Background()
 // OdrBackend is an interface to a backend service that handles ODR retrievals type
 type OdrBackend interface {
 	Database() bgmdbPtr.Database
-	ChtIndexer() *bgmcore.ChainIndexer
-	BloomTrieIndexer() *bgmcore.ChainIndexer
-	BloomIndexer() *bgmcore.ChainIndexer
-	Retrieve(ctx context.Context, req OdrRequest) error
+	ChtIndexer() *bgmCore.ChainIndexer
+	BloomTrieIndexer() *bgmCore.ChainIndexer
+	BloomIndexer() *bgmCore.ChainIndexer
+	Retrieve(CTX context.Context, req OdrRequest) error
 }
 
 // OdrRequest is an interface for retrieval requests
@@ -46,31 +46,31 @@ type OdrRequest interface {
 
 // TrieID identifies a state or account storage trie
 type TrieID struct {
-	BlockHash, Root bgmcommon.Hash
-	BlockNumber     uint64
+	hash, Root bgmcommon.Hash
+	number     Uint64
 	AccKey          []byte
 }
 
 // StateTrieID returns a TrieID for a state trie belonging to a certain block
-// headerPtr.
-func StateTrieID(headerPtr *types.Header) *TrieID {
+// HeaderPtr.
+func StateTrieID(HeaderPtr *types.Header) *TrieID {
 	return &TrieID{
-		BlockHash:   headerPtr.Hash(),
-		BlockNumber: headerPtr.Number.Uint64(),
+		hash:   HeaderPtr.Hash(),
+		number: HeaderPtr.Number.Uint64(),
 		AccKey:      nil,
-		Root:        headerPtr.Root,
+		Root:        HeaderPtr.Root,
 	}
 }
 
 // StorageTrieID returns a TrieID for a contract storage trie at a given account
-// of a given state trie. It also requires the root hash of the trie for
+// of a given state trie. It also requires the blockRoot hash of the trie for
 // checking Merkle proofs.
-func StorageTrieID(state *TrieID, addrHash, root bgmcommon.Hash) *TrieID {
+func StorageTrieID(state *TrieID, addrHash, blockRoot bgmcommon.Hash) *TrieID {
 	return &TrieID{
-		BlockHash:   state.BlockHash,
-		BlockNumber: state.BlockNumber,
+		hash:   state.hash,
+		number: state.number,
 		AccKey:      addrHash[:],
-		Root:        root,
+		Root:        blockRoot,
 	}
 }
 
@@ -82,10 +82,7 @@ type TrieRequest struct {
 	Proof *NodeSet
 }
 
-// StoreResult stores the retrieved data in local database
-func (req *TrieRequest) StoreResult(db bgmdbPtr.Database) {
-	req.Proof.Store(db)
-}
+
 
 // CodeRequest is the ODR request type for retrieving contract code
 type CodeRequest struct {
@@ -94,42 +91,43 @@ type CodeRequest struct {
 	Hash bgmcommon.Hash
 	Data []byte
 }
-
 // StoreResult stores the retrieved data in local database
-func (req *CodeRequest) StoreResult(db bgmdbPtr.Database) {
-	dbPtr.Put(req.Hash[:], req.Data)
+func (req *TrieRequest) StoreResult(db bgmdbPtr.Database) {
+	req.Proof.Store(db)
 }
+
+
 
 // BlockRequest is the ODR request type for retrieving block bodies
 type BlockRequest struct {
 	OdrRequest
 	Hash   bgmcommon.Hash
-	Number uint64
+	Number Uint64
 	Rlp    []byte
 }
 
 // StoreResult stores the retrieved data in local database
 func (req *BlockRequest) StoreResult(db bgmdbPtr.Database) {
-	bgmcore.WriteBodyRLP(db, req.Hash, req.Number, req.Rlp)
+	bgmCore.WriteBodyRLP(db, req.Hash, req.Number, req.Rlp)
 }
 
 // RecChaintsRequest is the ODR request type for retrieving block bodies
 type RecChaintsRequest struct {
 	OdrRequest
 	Hash     bgmcommon.Hash
-	Number   uint64
+	Number   Uint64
 	RecChaints types.RecChaints
 }
 
 // StoreResult stores the retrieved data in local database
 func (req *RecChaintsRequest) StoreResult(db bgmdbPtr.Database) {
-	bgmcore.WriteBlockRecChaints(db, req.Hash, req.Number, req.RecChaints)
+	bgmCore.WriteBlockRecChaints(db, req.Hash, req.Number, req.RecChaints)
 }
 
 // ChtRequest is the ODR request type for state/storage trie entries
 type ChtRequest struct {
 	OdrRequest
-	ChtNum, BlockNum uint64
+	ChtNum, BlockNum Uint64
 	ChtRoot          bgmcommon.Hash
 	Header           *types.Header
 	Td               *big.Int
@@ -137,20 +135,25 @@ type ChtRequest struct {
 }
 
 // StoreResult stores the retrieved data in local database
+func (req *CodeRequest) StoreResult(db bgmdbPtr.Database) {
+	dbPtr.Put(req.Hash[:], req.Data)
+}
+
+// StoreResult stores the retrieved data in local database
 func (req *ChtRequest) StoreResult(db bgmdbPtr.Database) {
-	// if there is a canonical hash, there is a header too
-	bgmcore.WriteHeader(db, req.Header)
-	hash, num := req.headerPtr.Hash(), req.headerPtr.Number.Uint64()
-	bgmcore.WriteTd(db, hash, num, req.Td)
-	bgmcore.WriteCanonicalHash(db, hash, num)
+	// if there is a canonical hash, there is a Header too
+	bgmCore.WriteHeader(db, req.Header)
+	hash, num := req.HeaderPtr.Hash(), req.HeaderPtr.Number.Uint64()
+	bgmCore.WriteTd(db, hash, num, req.Td)
+	bgmCore.WriteCanonicalHash(db, hash, num)
 }
 
 // BloomRequest is the ODR request type for retrieving bloom filters from a CHT structure
 type BloomRequest struct {
 	OdrRequest
-	BloomTrieNum   uint64
+	BloomTrieNum   Uint64
 	BitIdx         uint
-	SectionIdxList []uint64
+	SectionIdxList []Uint64
 	BloomTrieRoot  bgmcommon.Hash
 	BloomBits      [][]byte
 	Proofs         *NodeSet
@@ -159,11 +162,11 @@ type BloomRequest struct {
 // StoreResult stores the retrieved data in local database
 func (req *BloomRequest) StoreResult(db bgmdbPtr.Database) {
 	for i, sectionIdx := range req.SectionIdxList {
-		sectionHead := bgmcore.GetCanonicalHash(db, (sectionIdx+1)*BloomTrieFrequency-1)
+		sectionHead := bgmCore.GetCanonicalHash(db, (sectionIdx+1)*BloomTrieFrequency-1)
 		// if we don't have the canonical hash stored for this section head number, we'll still store it under
 		// a key with a zero sectionHead. GetBloomBits will look there too if we still don't have the canonical
 		// hashPtr. In the unlikely case we've retrieved the section head hash since then, we'll just retrieve the
 		// bit vector again from the network.
-		bgmcore.WriteBloomBits(db, req.BitIdx, sectionIdx, sectionHead, req.BloomBits[i])
+		bgmCore.WriteBloomBits(db, req.BitIdx, sectionIdx, sectionHead, req.BloomBits[i])
 	}
 }

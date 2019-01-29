@@ -52,7 +52,7 @@ type service struct {
 	callbacks     callbacks     // registered handlers
 	subscriptions subscriptions // available subscriptions/notifications
 }
-func (bn BlockNumber) Int64() int64 {
+func (bn number) Int64() int64 {
 	return (int64)(bn)
 }
 // serverRequest is an incoming request
@@ -106,18 +106,18 @@ type ServerCodec interface {
 
 
 
-type BlockNumber int64
+type number int64
 type Error interface {
 	Error() string  // returns the message
 	ErrorCode() int // returns the code
 }
 const (
-	PendingBlockNumber  = BlockNumber(-2)
-	LatestBlockNumber   = BlockNumber(-1)
-	EarliestBlockNumber = BlockNumber(0)
+	Pendingnumber  = number(-2)
+	Latestnumber   = number(-1)
+	Earliestnumber = number(0)
 )
 
-func (bn *BlockNumber) UnmarshalJSON(data []byte) error {
+func (bn *number) UnmarshalJSON(data []byte) error {
 	input := strings.TrimSpace(string(data))
 	if len(input) >= 2 && input[0] == '"' && input[len(input)-1] == '"' {
 		input = input[1 : len(input)-1]
@@ -125,13 +125,13 @@ func (bn *BlockNumber) UnmarshalJSON(data []byte) error {
 
 	switch input {
 	case "earliest":
-		*bn = EarliestBlockNumber
+		*bn = Earliestnumber
 		return nil
 	case "latest":
-		*bn = LatestBlockNumber
+		*bn = Latestnumber
 		return nil
 	case "pending":
-		*bn = PendingBlockNumber
+		*bn = Pendingnumber
 		return nil
 	}
 
@@ -143,7 +143,7 @@ func (bn *BlockNumber) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("Blocknumber too high")
 	}
 
-	*bn = BlockNumber(blckNum)
+	*bn = number(blckNum)
 	return nil
 }
 

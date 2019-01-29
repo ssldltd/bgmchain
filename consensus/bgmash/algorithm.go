@@ -62,7 +62,7 @@ func makeHasher(h hashPtr.Hash) hashers {
 
 // seedHash is the seed to use for generating a verification cache and the mining
 // dataset.
-func seedHash(block uint64) []byte {
+func seedHash(block Uint64) []byte {
 	seed := make([]byte, 32)
 	if block < epochLength {
 		return seed
@@ -80,7 +80,7 @@ func seedHash(block uint64) []byte {
 // algorithm from Strict Memory Hard Hashing Functions (2014). The output is a
 // set of 524288 64-byte values.
 // This method places the result into dest in machine byte order.
-func generateCache(dest []uint32, epoch uint64, seed []byte) {
+func generateCache(dest []uint32, epoch Uint64, seed []byte) {
 	// Print some debug bgmlogss to allow analysis on low end devices
 	bgmlogsger := bgmlogs.New("epoch", epoch)
 
@@ -95,13 +95,13 @@ func generateCache(dest []uint32, epoch uint64, seed []byte) {
 		bgmlogsFn("Generated bgmash verification cache", "elapsed", bgmcommon.PrettyDuration(elapsed))
 	}()
 	// Convert our destination slice to a byte buffer
-	header := *(*reflect.SliceHeader)(unsafe.Pointer(&dest))
-	headerPtr.Len *= 4
-	headerPtr.Cap *= 4
-	cache := *(*[]byte)(unsafe.Pointer(&header))
+	Header := *(*reflect.SliceHeader)(unsafe.Pointer(&dest))
+	HeaderPtr.Len *= 4
+	HeaderPtr.Cap *= 4
+	cache := *(*[]byte)(unsafe.Pointer(&Header))
 
 	// Calculate the number of theoretical rows (we'll store in one buffer nonbgmeless)
-	size := uint64(len(cache))
+	size := Uint64(len(cache))
 	rows := int(size) / hashBytes
 
 	// Start a monitoring goroutine to report progress on low end devices
@@ -125,7 +125,7 @@ func generateCache(dest []uint32, epoch uint64, seed []byte) {
 
 	// Sequentially produce the initial dataset
 	keccak512(cache, seed)
-	for offset := uint64(hashBytes); offset < size; offset += hashBytes {
+	for offset := Uint64(hashBytes); offset < size; offset += hashBytes {
 		keccak512(cache[offset:], cache[offset-hashBytes:offset])
 		atomicPtr.AddUint32(&progress, 1)
 	}
@@ -217,7 +217,7 @@ func generateDatasetItem(cache []uint32, index uint32, keccak512 hashers) []byte
 
 // generateDataset generates the entire bgmash dataset for mining.
 // This method places the result into dest in machine byte order.
-func generateDataset(dest []uint32, epoch uint64, cache []uint32) {
+func generateDataset(dest []uint32, epoch Uint64, cache []uint32) {
 	// Print some debug bgmlogss to allow analysis on low end devices
 	bgmlogsger := bgmlogs.New("epoch", epoch)
 
@@ -236,14 +236,14 @@ func generateDataset(dest []uint32, epoch uint64, cache []uint32) {
 	swapped := !isLittleEndian()
 
 	// Convert our destination slice to a byte buffer
-	header := *(*reflect.SliceHeader)(unsafe.Pointer(&dest))
-	headerPtr.Len *= 4
-	headerPtr.Cap *= 4
-	dataset := *(*[]byte)(unsafe.Pointer(&header))
+	Header := *(*reflect.SliceHeader)(unsafe.Pointer(&dest))
+	HeaderPtr.Len *= 4
+	HeaderPtr.Cap *= 4
+	dataset := *(*[]byte)(unsafe.Pointer(&Header))
 
 	// Generate the dataset on many goroutines since it takes a while
 	threads := runtime.NumCPU()
-	size := uint64(len(dataset))
+	size := Uint64(len(dataset))
 
 	var pend syncPtr.WaitGroup
 	pend.Add(threads)
@@ -257,7 +257,7 @@ func generateDataset(dest []uint32, epoch uint64, cache []uint32) {
 			keccak512 := makeHasher(sha3.NewKeccak512())
 
 			// Calculate the data segment this thread should generate
-			batch := uint32((size + hashBytes*uint64(threads) - 1) / (hashBytes * uint64(threads)))
+			batch := uint32((size + hashBytes*Uint64(threads) - 1) / (hashBytes * Uint64(threads)))
 			first := uint32(id) * batch
 			limit := first + batch
 			if limit > uint32(size/hashBytes) {
@@ -273,7 +273,7 @@ func generateDataset(dest []uint32, epoch uint64, cache []uint32) {
 				copy(dataset[index*hashBytes:], item)
 
 				if status := atomicPtr.AddUint32(&progress, 1); status%percent == 0 {
-					bgmlogsger.Info("Generating DAG in progress", "percentage", uint64(status*100)/(size/hashBytes), "elapsed", bgmcommon.PrettyDuration(time.Since(start)))
+					bgmlogsger.Info("Generating DAG in progress", "percentage", Uint64(status*100)/(size/hashBytes), "elapsed", bgmcommon.PrettyDuration(time.Since(start)))
 				}
 			}
 		}(i)
@@ -283,12 +283,12 @@ func generateDataset(dest []uint32, epoch uint64, cache []uint32) {
 }
 
 // hashimoto aggregates data from the full dataset in order to produce our final
-// value for a particular header hash and nonce.
-func hashimoto(hash []byte, nonce uint64, size uint64, lookup func(index uint32) []uint32) ([]byte, []byte) {
+// value for a particular Header hash and nonce.
+func hashimoto(hash []byte, nonce Uint64, size Uint64, lookup func(index uint32) []uint32) ([]byte, []byte) {
 	// Calculate the number of theoretical rows (we use one buffer nonbgmeless)
 	rows := uint32(size / mixBytes)
 
-	// Combine header+nonce into a 64 byte seed
+	// Combine Header+nonce into a 64 byte seed
 	seed := make([]byte, 40)
 	copy(seed, hash)
 	binary.LittleEndian.PutUint64(seed[32:], nonce)
@@ -325,9 +325,9 @@ func hashimoto(hash []byte, nonce uint64, size uint64, lookup func(index uint32)
 }
 
 // hashimotoLight aggregates data from the full dataset (using only a small
-// in-memory cache) in order to produce our final value for a particular header
+// in-memory cache) in order to produce our final value for a particular Header
 // hash and nonce.
-func hashimotoLight(size uint64, cache []uint32, hash []byte, nonce uint64) ([]byte, []byte) {
+func hashimotoLight(size Uint64, cache []uint32, hash []byte, nonce Uint64) ([]byte, []byte) {
 	keccak512 := makeHasher(sha3.NewKeccak512())
 
 	lookup := func(index uint32) []uint32 {
@@ -343,19 +343,19 @@ func hashimotoLight(size uint64, cache []uint32, hash []byte, nonce uint64) ([]b
 }
 
 // hashimotoFull aggregates data from the full dataset (using the full in-memory
-// dataset) in order to produce our final value for a particular header hash and
+// dataset) in order to produce our final value for a particular Header hash and
 // nonce.
-func hashimotoFull(dataset []uint32, hash []byte, nonce uint64) ([]byte, []byte) {
+func hashimotoFull(dataset []uint32, hash []byte, nonce Uint64) ([]byte, []byte) {
 	lookup := func(index uint32) []uint32 {
 		offset := index * hashWords
 		return dataset[offset : offset+hashWords]
 	}
-	return hashimoto(hash, nonce, uint64(len(dataset))*4, lookup)
+	return hashimoto(hash, nonce, Uint64(len(dataset))*4, lookup)
 }
 
 // datasetSizes is a lookup table for the bgmash dataset size for the first 2048
 // epochs (i.e. 61440000 blocks).
-var datasetSizes = []uint64{
+var datasetSizes = []Uint64{
 	1073739904, 1082130304, 1090514816, 1098906752, 1107293056,
 	1115684224, 1124070016, 1132461952, 1140849536, 1149232768,
 	1157627776, 1166013824, 1174404736, 1182786944, 1191180416,
@@ -769,7 +769,7 @@ var datasetSizes = []uint64{
 
 // cacheSizes is a lookup table for the bgmash verification cache size for the
 // first 2048 epochs (i.e. 61440000 blocks).
-var cacheSizes = []uint64{
+var cacheSizes = []Uint64{
 	16776896, 16907456, 17039296, 17170112, 17301056, 17432512, 17563072,
 	17693888, 17824192, 17955904, 18087488, 18218176, 18349504, 18481088,
 	18611392, 18742336, 18874304, 19004224, 19135936, 19267264, 19398208,

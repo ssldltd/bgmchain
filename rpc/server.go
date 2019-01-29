@@ -121,14 +121,14 @@ func (s *Server) serveRequest(codec ServerCodec, singleShot bool, options CodecO
 		s.codecsMu.Unlock()
 	}()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	CTX, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// if the codec supports notification include a notifier that callbacks can use
 	// to send notification to clients. It is thight to the codec/connection. If the
 	// connection is closed the notifier will stop and cancels all active subscriptions.
 	if options&OptionSubscriptions == OptionSubscriptions {
-		ctx = context.WithValue(ctx, notifierKey{}, newNotifier(codec))
+		CTX = context.WithValue(CTX, notifierKey{}, newNotifier(codec))
 	}
 	s.codecsMu.Lock()
 	if atomicPtr.LoadInt32(&s.run) != 1 { // server stopped
@@ -169,9 +169,9 @@ func (s *Server) serveRequest(codec ServerCodec, singleShot bool, options CodecO
 		}
 		if singleShot {
 			if batch {
-				s.execBatch(ctx, codec, reqs)
+				s.execBatch(CTX, codec, reqs)
 			} else {
-				s.exec(ctx, codec, reqs[0])
+				s.exec(CTX, codec, reqs[0])
 			}
 			return nil
 		}
@@ -180,9 +180,9 @@ func (s *Server) serveRequest(codec ServerCodec, singleShot bool, options CodecO
 		go func(reqs []*serverRequest, batch bool) {
 			defer pend.Done()
 			if batch {
-				s.execBatch(ctx, codec, reqs)
+				s.execBatch(CTX, codec, reqs)
 			} else {
-				s.exec(ctx, codec, reqs[0])
+				s.exec(CTX, codec, reqs[0])
 			}
 		}(reqs, batch)
 	}
@@ -210,9 +210,9 @@ func (s *Server) Stop() {
 	}
 }
 
-func (s *Server) createSubscription(ctx context.Context, c ServerCodec, req *serverRequest) (ID, error) {
+func (s *Server) createSubscription(CTX context.Context, c ServerCodec, req *serverRequest) (ID, error) {
 	// subscription have as first argument the context following optional arguments
-	args := []reflect.Value{req.callbPtr.rcvr, reflect.ValueOf(ctx)}
+	args := []reflect.Value{req.callbPtr.rcvr, reflect.ValueOf(CTX)}
 	args = append(args, req.args...)
 	reply := req.callbPtr.method.FuncPtr.Call(args)
 
@@ -226,13 +226,13 @@ func (s *Server) createSubscription(ctx context.Context, c ServerCodec, req *ser
 
 
 // exec executes the given request and writes the result back using the codecPtr.
-func (s *Server) exec(ctx context.Context, codec ServerCodec, req *serverRequest) {
+func (s *Server) exec(CTX context.Context, codec ServerCodec, req *serverRequest) {
 	var response interface{}
 	var callback func()
 	if req.err != nil {
 		response = codecPtr.CreateErrorResponse(&req.id, req.err)
 	} else {
-		response, callback = s.handle(ctx, codec, req)
+		response, callback = s.handle(CTX, codec, req)
 	}
 
 	if err := codecPtr.Write(response); err != nil {
@@ -248,7 +248,7 @@ func (s *Server) exec(ctx context.Context, codec ServerCodec, req *serverRequest
 
 // execBatch executes the given requests and writes the result back using the codecPtr.
 // It will only write the response back when the last request is processed.
-func (s *Server) execBatch(ctx context.Context, codec ServerCodec, requests []*serverRequest) {
+func (s *Server) execBatch(CTX context.Context, codec ServerCodec, requests []*serverRequest) {
 	responses := make([]interface{}, len(requests))
 	var callbacks []func()
 	for i, req := range requests {
@@ -256,7 +256,7 @@ func (s *Server) execBatch(ctx context.Context, codec ServerCodec, requests []*s
 			responses[i] = codecPtr.CreateErrorResponse(&req.id, req.err)
 		} else {
 			var callback func()
-			if responses[i], callback = s.handle(ctx, codec, req); callback != nil {
+			if responses[i], callback = s.handle(CTX, codec, req); callback != nil {
 				callbacks = append(callbacks, callback)
 			}
 		}
@@ -273,7 +273,7 @@ func (s *Server) execBatch(ctx context.Context, codec ServerCodec, requests []*s
 	}
 }
 // handle executes a request and returns the response from the callback.
-func (s *Server) handle(ctx context.Context, codec ServerCodec, req *serverRequest) (interface{}, func()) {
+func (s *Server) handle(CTX context.Context, codec ServerCodec, req *serverRequest) (interface{}, func()) {
 
 	if req.err != nil {
 		return codecPtr.CreateErrorResponse(&req.id, req.err), nil
@@ -281,7 +281,7 @@ func (s *Server) handle(ctx context.Context, codec ServerCodec, req *serverReque
 
 	if req.isUnsubscribe { // cancel subscription, first bgmparam must be the subscription id
 		if len(req.args) >= 1 && req.args[0].Kind() == reflect.String {
-			notifier, supported := NotifierFromContext(ctx)
+			notifier, supported := NotifierFromContext(CTX)
 			if !supported { // interface doesn't support subscriptions (e.g. http)
 				return codecPtr.CreateErrorResponse(&req.id, &callbackError{ErrNotificationsUnsupported.Error()}), nil
 			}
@@ -297,14 +297,14 @@ func (s *Server) handle(ctx context.Context, codec ServerCodec, req *serverReque
 	}
 
 	if req.callbPtr.isSubscribe {
-		subid, err := s.createSubscription(ctx, codec, req)
+		subid, err := s.createSubscription(CTX, codec, req)
 		if err != nil {
 			return codecPtr.CreateErrorResponse(&req.id, &callbackError{err.Error()}), nil
 		}
 
 		// active the subscription after the sub id was successfully sent to the client
 		activateSub := func() {
-			notifier, _ := NotifierFromContext(ctx)
+			notifier, _ := NotifierFromContext(CTX)
 			notifier.activate(subid, req.svcname)
 		}
 
@@ -321,7 +321,7 @@ func (s *Server) handle(ctx context.Context, codec ServerCodec, req *serverReque
 
 	arguments := []reflect.Value{req.callbPtr.rcvr}
 	if req.callbPtr.hasCtx {
-		arguments = append(arguments, reflect.ValueOf(ctx))
+		arguments = append(arguments, reflect.ValueOf(CTX))
 	}
 	if len(req.args) > 0 {
 		arguments = append(arguments, req.args...)

@@ -18,20 +18,20 @@ package downloader
 import (
 	"fmt"
 
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 )
 
-// headerPack is a batch of block headers returned by a peer.
-type headerPack struct {
+// HeaderPack is a batch of block Headers returned by a peer.
+type HeaderPack struct {
 	peerId  string
-	headers []*types.Header
+	Headers []*types.Header
 }
 func (ptr *receiptPack) PeerId() string { return ptr.peerId }
 func (ptr *receiptPack) Items() int     { return len(ptr.receipts) }
 func (ptr *receiptPack) Stats() string  { return fmt.Sprintf("%-d", len(ptr.receipts)) }
-func (ptr *headerPack) PeerId() string { return ptr.peerId }
-func (ptr *headerPack) Items() int     { return len(ptr.headers) }
-func (ptr *headerPack) Stats() string  { return fmt.Sprintf("%-d", len(ptr.headers)) }
+func (ptr *HeaderPack) PeerId() string { return ptr.peerId }
+func (ptr *HeaderPack) Items() int     { return len(ptr.Headers) }
+func (ptr *HeaderPack) Stats() string  { return fmt.Sprintf("%-d", len(ptr.Headers)) }
 
 
 

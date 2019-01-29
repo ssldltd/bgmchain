@@ -140,7 +140,7 @@ type NodesNetGuts struct {
 	pingTopics        []Topic          // topic set sent by us in last ping
 	deferredQueries   []*findNodesQuery // queries that can't be sent yet
 	pendingNeighbours *findNodesQuery   // current query, waiting for reply
-	queryTimeouts     int
+	querytimeouts     int
 }
 
 func (n *NodesNetGuts) deferQuery(q *findNodesQuery) {
@@ -179,7 +179,7 @@ func (q *findNodesQuery) start(net *Network) bool {
 	}
 	if q.remote.state.canQuery && q.remote.pendingNeighbours == nil {
 		net.conn.sendFindNodesHash(q.remote, q.target)
-		net.timedEvent(respTimeout, q.remote, neighboursTimeout)
+		net.timedEvent(resptimeout, q.remote, neighbourstimeout)
 		q.remote.pendingNeighbours = q
 		return true
 	}
@@ -215,9 +215,9 @@ const (
 	// Non-packet events.
 	// Event values in this category are allocated outside
 	// the packet type range (packet types are encoded as a single byte).
-	pongTimeout NodesEvent = iota + 256
-	pingTimeout
-	neighboursTimeout
+	pongtimeout NodesEvent = iota + 256
+	pingtimeout
+	neighbourstimeout
 )
 
 // Nodes State Machine.
@@ -258,7 +258,7 @@ func init() {
 				n.pendingNeighbours.reply <- nil
 				n.pendingNeighbours = nil
 			}
-			n.queryTimeouts = 0
+			n.querytimeouts = 0
 		},
 		handle: func(net *Network, n *Nodes, ev NodesEvent, pkt *ingressPacket) (*NodesState, error) {
 			switch ev {
@@ -285,7 +285,7 @@ func init() {
 			case pongPacket:
 				err := net.handleKnownPong(n, pkt)
 				return remoteverifywait, err
-			case pongTimeout:
+			case pongtimeout:
 				return unknown, nil
 			default:
 				return verifyinit, errorInvalidEvent
@@ -303,7 +303,7 @@ func init() {
 			case pongPacket:
 				err := net.handleKnownPong(n, pkt)
 				return known, err
-			case pongTimeout:
+			case pongtimeout:
 				return unknown, nil
 			default:
 				return verifywait, errorInvalidEvent
@@ -314,14 +314,14 @@ func init() {
 	remoteverifywait = &NodesState{
 		name: "remoteverifywait",
 		enter: func(net *Network, n *Nodes) {
-			net.timedEvent(respTimeout, n, pingTimeout)
+			net.timedEvent(resptimeout, n, pingtimeout)
 		},
 		handle: func(net *Network, n *Nodes, ev NodesEvent, pkt *ingressPacket) (*NodesState, error) {
 			switch ev {
 			case pingPacket:
 				net.handlePing(n, pkt)
 				return remoteverifywait, nil
-			case pingTimeout:
+			case pingtimeout:
 				return known, nil
 			default:
 				return remoteverifywait, errorInvalidEvent
@@ -333,7 +333,7 @@ func init() {
 		name:     "known",
 		canQuery: true,
 		enter: func(net *Network, n *Nodes) {
-			n.queryTimeouts = 0
+			n.querytimeouts = 0
 			n.startNextQuery(net)
 			// Insert into the table and start revalidation of the last Nodes
 			// in the bucket if it is full.
@@ -369,7 +369,7 @@ func init() {
 				// Nodes is still alive.
 				err := net.handleKnownPong(n, pkt)
 				return known, err
-			case pongTimeout:
+			case pongtimeout:
 				net.tabPtr.deleteReplace(n)
 				return unresponsive, nil
 			case pingPacket:
@@ -460,7 +460,7 @@ func (net *Network) transition(n *Nodes, next *NodesState) {
 
 func (net *Network) timedEvent(d time.Duration, n *Nodes, ev NodesEvent) {
 	timeout := timeoutEvent{ev, n}
-	net.timeoutTimers[timeout] = time.AfterFunc(d, func() {
+	net.timeouttimers[timeout] = time.AfterFunc(d, func() {
 		select {
 		case net.timeout <- timeout:
 		case <-net.closed:
@@ -468,11 +468,11 @@ func (net *Network) timedEvent(d time.Duration, n *Nodes, ev NodesEvent) {
 	})
 }
 
-func (net *Network) abortTimedEvent(n *Nodes, ev NodesEvent) {
-	timer := net.timeoutTimers[timeoutEvent{ev, n}]
+func (net *Network) aborttimedEvent(n *Nodes, ev NodesEvent) {
+	timer := net.timeouttimers[timeoutEvent{ev, n}]
 	if timer != nil {
 		timer.Stop()
-		delete(net.timeoutTimers, timeoutEvent{ev, n})
+		delete(net.timeouttimers, timeoutEvent{ev, n})
 	}
 }
 
@@ -485,7 +485,7 @@ func (net *Network) ping(n *Nodes, addr *net.UDPAddr) {
 	debugbgmlogs(fmt.Sprintf("ping(Nodes = %x)", n.ID[:8]))
 	n.pingTopics = net.ticketStore.regTopicSet()
 	n.pingEcho = net.conn.sendPing(n, addr, n.pingTopics)
-	net.timedEvent(respTimeout, n, pongTimeout)
+	net.timedEvent(resptimeout, n, pongtimeout)
 }
 
 func (net *Network) handlePing(n *Nodes, pkt *ingressPacket) {
@@ -497,7 +497,7 @@ func (net *Network) handlePing(n *Nodes, pkt *ingressPacket) {
 	pong := &pong{
 		To:         makeEndpoint(n.addr(), n.TCP), // TODO: maybe use known TCP port from DB
 		ReplyTok:   pkt.hash,
-		Expiration: uint64(time.Now().Add(expiration).Unix()),
+		Expiration: Uint64(time.Now().Add(expiration).Unix()),
 	}
 	ticketToPong(t, pong)
 	net.conn.send(n, pongPacket, pong)
@@ -505,7 +505,7 @@ func (net *Network) handlePing(n *Nodes, pkt *ingressPacket) {
 
 func (net *Network) handleKnownPong(n *Nodes, pkt *ingressPacket) error {
 	debugbgmlogs(fmt.Sprintf("handleKnownPong(Nodes = %x)", n.ID[:8]))
-	net.abortTimedEvent(n, pongTimeout)
+	net.aborttimedEvent(n, pongtimeout)
 	now := mclock.Now()
 	ticket, err := pongToTicket(now, n.pingTopics, n, pkt)
 	if err == nil {
@@ -530,13 +530,13 @@ func (net *Network) handleQueryEvent(n *Nodes, ev NodesEvent, pkt *ingressPacket
 	case neighborsPacket:
 		err := net.handleNeighboursPacket(n, pkt)
 		return n.state, err
-	case neighboursTimeout:
+	case neighbourstimeout:
 		if n.pendingNeighbours != nil {
 			n.pendingNeighbours.reply <- nil
 			n.pendingNeighbours = nil
 		}
-		n.queryTimeouts++
-		if n.queryTimeouts > maxFindNodesFailures && n.state == known {
+		n.querytimeouts++
+		if n.querytimeouts > maxFindNodesFailures && n.state == known {
 			return contested, errors.New("too many timeouts")
 		}
 		return n.state, nil
@@ -574,8 +574,8 @@ func (net *Network) handleQueryEvent(n *Nodes, ev NodesEvent, pkt *ingressPacket
 	case topicNodessPacket:
 		p := pkt.data.(*topicNodess)
 		if net.ticketStore.gotTopicNodess(n, ptr.Echo, ptr.Nodess) {
-			n.queryTimeouts++
-			if n.queryTimeouts > maxFindNodesFailures && n.state == known {
+			n.querytimeouts++
+			if n.querytimeouts > maxFindNodesFailures && n.state == known {
 				return contested, errors.New("too many timeouts")
 			}
 		}
@@ -658,7 +658,7 @@ type Network struct {
 	ticketStore   *ticketStore
 	nursery       []*Nodes
 	Nodess         map[NodesID]*Nodes // tracks active Nodess with state != known
-	timeoutTimers map[timeoutEvent]*time.Timer
+	timeouttimers map[timeoutEvent]*time.timer
 
 	// Revalidation queues.
 	// Nodess put on these queues will be pinged eventually.
@@ -739,7 +739,7 @@ func newbgmNetwork(conn transport, ourPubkey ecdsa.PublicKey, natm nat.Interface
 		closeReq:         make(chan struct{}),
 		read:             make(chan ingressPacket, 100),
 		timeout:          make(chan timeoutEvent),
-		timeoutTimers:    make(map[timeoutEvent]*time.Timer),
+		timeouttimers:    make(map[timeoutEvent]*time.timer),
 		tableOpReq:       make(chan func()),
 		tableOpResp:      make(chan struct{}),
 		queryReq:         make(chan *findNodesQuery),
@@ -854,7 +854,7 @@ func (net *Network) lookup(target bgmcommon.Hash, stopOnMatch bool) []*Nodes {
 				}
 			}
 			pendingQueries--
-		case <-time.After(respTimeout):
+		case <-time.After(resptimeout):
 			// forget all pending requests, start new ones
 			pendingQueries = 0
 			reply = make(chan []*Nodes, alpha)
@@ -945,7 +945,7 @@ func (net *Network) handleNeighboursPacket(n *Nodes, pkt *ingressPacket) error {
 	if n.pendingNeighbours == nil {
 		return errNoQuery
 	}
-	net.abortTimedEvent(n, neighboursTimeout)
+	net.aborttimedEvent(n, neighbourstimeout)
 
 	req := pkt.data.(*neighbors)
 	Nodess := make([]*Nodes, len(req.Nodess))
@@ -973,33 +973,33 @@ func (net *Network) handleNeighboursPacket(n *Nodes, pkt *ingressPacket) error {
 
 func (net *Network) loop() {
 	var (
-		refreshTimer       = time.NewTicker(autoRefreshInterval)
-		bucketRefreshTimer = time.NewTimer(bucketRefreshInterval)
+		refreshtimer       = time.NewTicker(autoRefreshInterval)
+		bucketRefreshtimer = time.Newtimer(bucketRefreshInterval)
 		refreshDone        chan struct{} // closed when the 'refresh' lookup has ended
 	)
 
 	// Tracking the next ticket to register.
 	var (
 		nextTicket        *ticketRef
-		nextRegisterTimer *time.Timer
-		nextRegisterTime  <-chan time.Time
+		nextRegistertimer *time.timer
+		nextRegistertime  <-chan time.time
 	)
 	defer func() {
-		if nextRegisterTimer != nil {
-			nextRegisterTimer.Stop()
+		if nextRegistertimer != nil {
+			nextRegistertimer.Stop()
 		}
 	}()
 	resetNextTicket := func() {
 		t, timeout := net.ticketStore.nextFilteredTicket()
 		if t != nextTicket {
 			nextTicket = t
-			if nextRegisterTimer != nil {
-				nextRegisterTimer.Stop()
-				nextRegisterTime = nil
+			if nextRegistertimer != nil {
+				nextRegistertimer.Stop()
+				nextRegistertime = nil
 			}
 			if t != nil {
-				nextRegisterTimer = time.NewTimer(timeout)
-				nextRegisterTime = nextRegisterTimer.C
+				nextRegistertimer = time.Newtimer(timeout)
+				nextRegistertime = nextRegistertimer.C
 			}
 		}
 	}
@@ -1008,7 +1008,7 @@ func (net *Network) loop() {
 	var (
 		topicRegisterLookupTarget lookupInfo
 		topicRegisterLookupDone   chan []*Nodes
-		topicRegisterLookupTick   = time.NewTimer(0)
+		topicRegisterLookupTick   = time.Newtimer(0)
 		searchReqWhenRefreshDone  []topicSearchReq
 		searchInfo                = make(map[Topic]topicSearchInfo)
 		activeSearchCount         int
@@ -1047,11 +1047,11 @@ loopLine:
 		// State transition timeouts.
 		case timeout := <-net.timeout:
 			debugbgmlogs("<-net.timeout")
-			if net.timeoutTimers[timeout] == nil {
+			if net.timeouttimers[timeout] == nil {
 				// Stale timer (was aborted).
 				continue
 			}
-			delete(net.timeoutTimers, timeout)
+			delete(net.timeouttimers, timeout)
 			prestate := timeout.Nodes.state
 			status := "ok"
 			if err := net.handle(timeout.Nodes, timeout.ev, nil); err != nil {
@@ -1121,8 +1121,8 @@ loopLine:
 				go func() { topicRegisterLookupDone <- net.lookup(target, false) }()
 			}
 
-		case <-nextRegisterTime:
-			debugbgmlogs("<-nextRegisterTime")
+		case <-nextRegistertime:
+			debugbgmlogs("<-nextRegistertime")
 			net.ticketStore.ticketRegistered(*nextTicket)
 			//fmt.Println("sendTopicRegister", nextTicket.tPtr.Nodes.addr().String(), nextTicket.tPtr.topics, nextTicket.idx, nextTicket.tPtr.pong)
 			net.conn.sendTopicRegister(nextTicket.tPtr.Nodes, nextTicket.tPtr.topics, nextTicket.idx, nextTicket.tPtr.pong)
@@ -1219,19 +1219,19 @@ loopLine:
 				}
 			})
 		// Periodic / lookup-initiated bucket refreshPtr.
-		case <-refreshTimer.C:
-			debugbgmlogs("<-refreshTimer.C")
+		case <-refreshtimer.C:
+			debugbgmlogs("<-refreshtimer.C")
 			// TODO: ideally we would start the refresh timer after
 			// fallback Nodess have been set for the first time.
 			if refreshDone == nil {
 				refreshDone = make(chan struct{})
 				net.refresh(refreshDone)
 			}
-		case <-bucketRefreshTimer.C:
+		case <-bucketRefreshtimer.C:
 			target := net.tabPtr.chooseBucketRefreshTarget()
 			go func() {
 				net.lookup(target, false)
-				bucketRefreshTimer.Reset(bucketRefreshInterval)
+				bucketRefreshtimer.Reset(bucketRefreshInterval)
 			}()
 		case newNursery := <-net.refreshReq:
 			debugbgmlogs("<-net.refreshReq")
@@ -1266,7 +1266,7 @@ loopLine:
 		//<-refreshResults
 	}
 	// Cancel all pending timeouts.
-	for _, timer := range net.timeoutTimers {
+	for _, timer := range net.timeouttimers {
 		timer.Stop()
 	}
 	if net.db != nil {

@@ -19,7 +19,7 @@ import (
 	"math/big"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 )
 
 // StateDB is an EVM database for full state querying.
@@ -30,8 +30,8 @@ type StateDB interface {
 	AddBalance(bgmcommon.Address, *big.Int)
 	GetBalance(bgmcommon.Address) *big.Int
 
-	GetNonce(bgmcommon.Address) uint64
-	SetNonce(bgmcommon.Address, uint64)
+	GetNonce(bgmcommon.Address) Uint64
+	SetNonce(bgmcommon.Address, Uint64)
 
 	GetCodeHash(bgmcommon.Address) bgmcommon.Hash
 	GetCode(bgmcommon.Address) []byte

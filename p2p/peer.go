@@ -32,10 +32,10 @@ import (
 
 
 type protoHandshake struct {
-	Version    uint64
+	Version    Uint64
 	Name       string
 	Caps       []Cap
-	ListenPort uint64
+	ListenPort Uint64
 	ID         discover.NodeID
 
 	Rest []rlp.RawValue `rlp:"tail"`
@@ -68,7 +68,7 @@ type PeerEvent struct {
 	Peer     discover.NodeID `json:"peer"`
 	Error    string          `json:"error,omitempty"`
 	Protocols string          `json:"Protocols,omitempty"`
-	MsgCode  *uint64         `json:"msg_code,omitempty"`
+	MsgCode  *Uint64         `json:"msg_code,omitempty"`
 	MsgSize  *uint32         `json:"msg_size,omitempty"`
 }
 
@@ -77,7 +77,7 @@ type Peer struct {
 	rw      *conn
 	running map[string]*protoRW
 	bgmlogs     bgmlogs.bgmlogsger
-	created mclock.AbsTime
+	created mclock.Abstime
 
 	wg       syncPtr.WaitGroup
 	protoErr chan error
@@ -205,7 +205,7 @@ func (ptr *Peer) readLoop(errc chan<- error) {
 	}
 }
 func (ptr *Peer) pingLoop() {
-	ping := time.NewTimer(pingInterval)
+	ping := time.Newtimer(pingInterval)
 	defer ptr.wg.Done()
 	defer ping.Stop()
 	for {
@@ -324,10 +324,10 @@ type protoRW struct {
 	closed <-chan struct{} // receives when peer is shutting down
 	wstart <-chan struct{} // receives when write may start
 	werr   chan<- error    // for write results
-	offset uint64
+	offset Uint64
 	w      MsgWriter
 }
-func (ptr *Peer) getProto(code uint64) (*protoRW, error) {
+func (ptr *Peer) getProto(code Uint64) (*protoRW, error) {
 	for _, proto := range ptr.running {
 		if code >= proto.offset && code < proto.offset+proto.Length {
 			return proto, nil
@@ -406,7 +406,7 @@ func (ptr *Peer) Info() *PeerInfo {
 }
 const (
 	baseProtocolVersion    = 5
-	baseProtocolLength     = uint64(16)
+	baseProtocolLength     = Uint64(16)
 	baseProtocolMaxMsgSize = 2 * 1024
 
 	snappyProtocolVersion = 5

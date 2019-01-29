@@ -23,7 +23,7 @@ import (
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmcommon/hexutil"
-	"github.com/ssldltd/bgmchain/bgmcore"
+	"github.com/ssldltd/bgmchain/bgmCore"
 	"github.com/ssldltd/bgmchain/bgm/downloader"
 	"github.com/ssldltd/bgmchain/bgm/gasprice"
 	"github.com/ssldltd/bgmchain/bgmparam"
@@ -43,10 +43,10 @@ func init() {
 type Config struct {
 	// The genesis block, which is inserted if the database is empty.
 	// If nil, the Bgmchain main net block is used.
-	Genesis *bgmcore.Genesis `toml:",omitempty"`
+	Genesis *bgmCore.Genesis `toml:",omitempty"`
 
 	// Protocol options
-	NetworkId uint64 // Network ID to use for selecting peers to connect to
+	NetworkId Uint64 // Network ID to use for selecting peers to connect to
 	SyncMode  downloader.SyncMode
 
 	// Light client options
@@ -66,7 +66,7 @@ type Config struct {
 	GasPrice     *big.Int
 
 	// Transaction pool options
-	TxPool bgmcore.TxPoolConfig
+	TxPool bgmCore.TxPoolConfig
 
 	// Gas Price Oracle options
 	GPO gasprice.Config
@@ -94,7 +94,7 @@ var DefaultConfig = Config{
 	DatabaseCache: 128,
 	GasPrice:      big.NewInt(18 * bgmparam.Shannon),
 
-	TxPool: bgmcore.DefaultTxPoolConfig,
+	TxPool: bgmCore.DefaultTxPoolConfig,
 	GPO: gasprice.Config{
 		Blocks:     10,
 		Percentile: 50,

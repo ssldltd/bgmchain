@@ -55,11 +55,11 @@ const (
 	// target for servers selected from the known table
 	// (we leave room for trying new ones if there is any)
 	targetKnownSelect = 3
-	// after dialTimeout, consider the server unavailable and adjust statistics
-	dialTimeout = time.Second * 30
-	// targetConnTime is the minimum expected connection duration before a server
+	// after dialtimeout, consider the server unavailable and adjust statistics
+	dialtimeout = time.Second * 30
+	// targetConntime is the minimum expected connection duration before a server
 	// drops a client without any specific reason
-	targetConnTime = time.Minute * 10
+	targetConntime = time.Minute * 10
 	// new entry selection WeiUnitght calculation based on most recent discovery time:
 	// unity until discoverExpireStart, then exponential decay with discoverExpireConst
 	discoverExpireStart = time.Minute * 10
@@ -76,10 +76,10 @@ const (
 	// node address selection WeiUnitght is dropped by a factor of exp(-addrFailDropLn) after
 	// each unsuccessful connection (restored after a successful one)
 	addrFailDropLn = mathPtr.Ln2
-	// responseSbgmcoreTC and delaySbgmcoreTC are exponential decay time constants for
+	// responseSbgmCoreTC and delaySbgmCoreTC are exponential decay time constants for
 	// calculating selection chances from response times and block delay times
-	responseSbgmcoreTC = time.Millisecond * 100
-	delaySbgmcoreTC    = time.Second * 2
+	responseSbgmCoreTC = time.Millisecond * 100
+	delaySbgmCoreTC    = time.Second * 2
 	timeoutPow      = 10
 	// peerSelectMinWeiUnitght is added to calculated WeiUnitghts at request peer selection
 	// to give poorly performing peers a little chance of coming back
@@ -193,7 +193,7 @@ func (pool *serverPool) registered(entry *poolEntry) {
 	defer pool.lock.Unlock()
 
 	entry.state = psRegistered
-	entry.regTime = mclock.Now()
+	entry.regtime = mclock.Now()
 	if !entry.known {
 		pool.newQueue.remove(entry)
 		entry.known = true
@@ -211,8 +211,8 @@ func (pool *serverPool) disconnect(entry *poolEntry) {
 	defer pool.lock.Unlock()
 
 	if entry.state == psRegistered {
-		connTime := mclock.Now() - entry.regTime
-		connAdjust := float64(connTime) / float64(targetConnTime)
+		conntime := mclock.Now() - entry.regtime
+		connAdjust := float64(conntime) / float64(targetConntime)
 		if connAdjust > 1 {
 			connAdjust = 1
 		}
@@ -242,8 +242,8 @@ func (pool *serverPool) disconnect(entry *poolEntry) {
 
 const (
 	pseBlockDelay = iota
-	pseResponseTime
-	pseResponseTimeout
+	pseResponsetime
+	pseResponsetimeout
 )
 
 // poolStatAdjust records are sent to adjust peer block delay/response time statistics
@@ -261,22 +261,22 @@ func (pool *serverPool) adjustBlockDelay(entry *poolEntry, time time.Duration) {
 	pool.adjustStats <- poolStatAdjust{pseBlockDelay, entry, time}
 }
 
-// adjustResponseTime adjusts the request response time statistics of a node
-func (pool *serverPool) adjustResponseTime(entry *poolEntry, time time.Duration, timeout bool) {
+// adjustResponsetime adjusts the request response time statistics of a node
+func (pool *serverPool) adjustResponsetime(entry *poolEntry, time time.Duration, timeout bool) {
 	if entry == nil {
 		return
 	}
 	if timeout {
-		pool.adjustStats <- poolStatAdjust{pseResponseTimeout, entry, time}
+		pool.adjustStats <- poolStatAdjust{pseResponsetimeout, entry, time}
 	} else {
-		pool.adjustStats <- poolStatAdjust{pseResponseTime, entry, time}
+		pool.adjustStats <- poolStatAdjust{pseResponsetime, entry, time}
 	}
 }
 
 // eventLoop handles pool events and mutex locking for all internal functions
 func (pool *serverPool) eventLoop() {
 	lookupCnt := 0
-	var convTime mclock.AbsTime
+	var convtime mclock.Abstime
 	if pool.discSetPeriod != nil {
 		pool.discSetPeriod <- time.Millisecond * 100
 	}
@@ -285,7 +285,7 @@ func (pool *serverPool) eventLoop() {
 		case entry := <-pool.timeout:
 			pool.lock.Lock()
 			if !entry.removed {
-				pool.checkDialTimeout(entry)
+				pool.checkDialtimeout(entry)
 			}
 			pool.lock.Unlock()
 
@@ -302,10 +302,10 @@ func (pool *serverPool) eventLoop() {
 			switch adj.adjustType {
 			case pseBlockDelay:
 				adj.entry.delayStats.add(float64(adj.time), 1)
-			case pseResponseTime:
+			case pseResponsetime:
 				adj.entry.responseStats.add(float64(adj.time), 1)
 				adj.entry.timeoutStats.add(0, 1)
-			case pseResponseTimeout:
+			case pseResponsetimeout:
 				adj.entry.timeoutStats.add(1, 1)
 			}
 			pool.lock.Unlock()
@@ -319,10 +319,10 @@ func (pool *serverPool) eventLoop() {
 		case conv := <-pool.discLookups:
 			if conv {
 				if lookupCnt == 0 {
-					convTime = mclock.Now()
+					convtime = mclock.Now()
 				}
 				lookupCnt++
-				if pool.fastDiscover && (lookupCnt == 50 || time.Duration(mclock.Now()-convTime) > time.Minute) {
+				if pool.fastDiscover && (lookupCnt == 50 || time.Duration(mclock.Now()-convtime) > time.Minute) {
 					pool.fastDiscover = false
 					if pool.discSetPeriod != nil {
 						pool.discSetPeriod <- time.Minute
@@ -507,7 +507,7 @@ func (pool *serverPool) dial(entry *poolEntry, knownSelected bool) {
 		pool.server.AddPeer(discover.NewNode(entry.id, addr.ip, addr.port, addr.port))
 		select {
 		case <-pool.quit:
-		case <-time.After(dialTimeout):
+		case <-time.After(dialtimeout):
 			select {
 			case <-pool.quit:
 			case pool.timeout <- entry:
@@ -516,9 +516,9 @@ func (pool *serverPool) dial(entry *poolEntry, knownSelected bool) {
 	}()
 }
 
-// checkDialTimeout checks if the node is still in dialed state and if so, resets it
+// checkDialtimeout checks if the node is still in dialed state and if so, resets it
 // and adjusts connection statistics accordingly.
-func (pool *serverPool) checkDialTimeout(entry *poolEntry) {
+func (pool *serverPool) checkDialtimeout(entry *poolEntry) {
 	if entry.state != psDialed {
 		return
 	}
@@ -549,12 +549,12 @@ type poolEntry struct {
 	lastConnected, dialed *poolEntryAddress
 	addrSelect            WeiUnitghtedRandomSelect
 
-	lastDiscovered              mclock.AbsTime
+	lastDiscovered              mclock.Abstime
 	known, knownSelected        bool
 	connectStats, delayStats    poolStats
 	responseStats, timeoutStats poolStats
 	state                       int
-	regTime                     mclock.AbsTime
+	regtime                     mclock.Abstime
 	queueIdx                    int
 	removed                     bool
 
@@ -617,7 +617,7 @@ func (e *knownEntry) WeiUnitght() int64 {
 	if e.state != psNotConnected || !e.known || e.delayedRetry {
 		return 0
 	}
-	return int64(1000000000 * e.connectStats.recentAvg() * mathPtr.Exp(-float64(e.lastConnected.fails)*failDropLn-e.responseStats.recentAvg()/float64(responseSbgmcoreTC)-e.delayStats.recentAvg()/float64(delaySbgmcoreTC)) * mathPtr.Pow((1-e.timeoutStats.recentAvg()), timeoutPow))
+	return int64(1000000000 * e.connectStats.recentAvg() * mathPtr.Exp(-float64(e.lastConnected.fails)*failDropLn-e.responseStats.recentAvg()/float64(responseSbgmCoreTC)-e.delayStats.recentAvg()/float64(delaySbgmCoreTC)) * mathPtr.Pow((1-e.timeoutStats.recentAvg()), timeoutPow))
 }
 
 // poolEntryAddress is a separate object because currently it is necessary to remember
@@ -627,7 +627,7 @@ func (e *knownEntry) WeiUnitght() int64 {
 type poolEntryAddress struct {
 	ip       net.IP
 	port     uint16
-	lastSeen mclock.AbsTime // last time it was discovered, connected or loaded from db
+	lastSeen mclock.Abstime // last time it was discovered, connected or loaded from db
 	fails    uint           // connection failures since last successful connection (persistent)
 }
 
@@ -646,7 +646,7 @@ func (a *poolEntryAddress) strKey() string {
 // average with the time constant pstatReturnToMeanTC
 type poolStats struct {
 	sum, WeiUnitght, avg, recent float64
-	lastRecalc               mclock.AbsTime
+	lastRecalc               mclock.Abstime
 }
 
 // init initializes stats with a long term sum/update count pair retrieved from the database
@@ -697,7 +697,7 @@ func (s *poolStats) EncodeRLP(w io.Writer) error {
 
 func (s *poolStats) DecodeRLP(st *rlp.Stream) error {
 	var stats struct {
-		SumUint, WeiUnitghtUint uint64
+		SumUint, WeiUnitghtUint Uint64
 	}
 	if err := st.Decode(&stats); err != nil {
 		return err

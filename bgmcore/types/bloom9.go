@@ -28,7 +28,7 @@ type bytesBacked interface {
 }
 
 const (
-	// BloomByteLength represents the number of bytes used in a header bgmlogs bloomPtr.
+	// BloomByteLength represents the number of bytes used in a Header bgmlogs bloomPtr.
 	BloomByteLength = 256
 
 	BloomBitLength = 8 * BloomByteLength

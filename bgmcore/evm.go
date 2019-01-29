@@ -13,25 +13,25 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the BMG Chain project source. If not, you can see <http://www.gnu.org/licenses/> for detail.
 
-package bgmcore
+package bgmCore
 
 import (
 	"math/big"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/consensus"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
-	"github.com/ssldltd/bgmchain/bgmcore/vm"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/vm"
 )
 
-// ChainContext supports retrieving headers and consensus bgmparameters from the
+// ChainContext supports retrieving Headers and consensus bgmparameters from the
 // current blockchain to be used during transaction processing.
 type ChainContext interface {
 	// Engine retrieves the chain's consensus engine.
 	Engine() consensus.Engine
 
 	// GetHeader returns the hash corresponding to their hashPtr.
-	GetHeader(bgmcommon.Hash, uint64) *types.Header
+	GetHeader(bgmcommon.Hash, Uint64) *types.Header
 }
 
 // NewEVMContext creates a new context for use in the EVmPtr.
@@ -42,34 +42,34 @@ func Transfer(db vmPtr.StateDB, sender, recipient bgmcommon.Address, amount *big
 	dbPtr.SubBalance(sender, amount)
 	dbPtr.AddBalance(recipient, amount)
 }
-func NewEVMContext(msg Message, headerPtr *types.headerPtr, chain ChainContext, author *bgmcommon.Address) vmPtr.Context {
-	// If we don't have an explicit author (i.e. not mining), extract from the header
+func NewEVMContext(msg Message, HeaderPtr *types.HeaderPtr, chain ChainContext, author *bgmcommon.Address) vmPtr.Context {
+	// If we don't have an explicit author (i.e. not mining), extract from the Header
 	var beneficiary bgmcommon.Address
 	if author == nil {
-		beneficiary, _ = chain.Engine().Author(header) // Ignore error, we're past header validation
+		beneficiary, _ = chain.Engine().Author(Header) // Ignore error, we're past Header validation
 	} else {
 		beneficiary = *author
 	}
 	return vmPtr.Context{
 		CanTransfer: CanTransfer,
 		Transfer:    Transfer,
-		GetHash:     GetHashFn(headerPtr, chain),
+		GetHash:     GetHashFn(HeaderPtr, chain),
 		Origin:      msg.From(),
 		Coinbase:    beneficiary,
-		BlockNumber: new(big.Int).Set(headerPtr.Number),
-		Time:        new(big.Int).Set(headerPtr.Time),
-		Difficulty:  new(big.Int).Set(headerPtr.Difficulty),
-		GasLimit:    new(big.Int).Set(headerPtr.GasLimit),
+		number: new(big.Int).Set(HeaderPtr.Number),
+		time:        new(big.Int).Set(HeaderPtr.time),
+		Difficulty:  new(big.Int).Set(HeaderPtr.Difficulty),
+		GasLimit:    new(big.Int).Set(HeaderPtr.GasLimit),
 		GasPrice:    new(big.Int).Set(msg.GasPrice()),
 	}
 }
 
-// GetHashFn returns a GetHashFunc which retrieves header hashes by number
-func GetHashFn(ref *types.headerPtr, chain ChainContext) func(n uint64) bgmcommon.Hash {
-	return func(n uint64) bgmcommon.Hash {
-		for header := chain.GetHeader(ref.ParentHash, ref.Number.Uint64()-1); header != nil; header = chain.GetHeader(headerPtr.ParentHash, headerPtr.Number.Uint64()-1) {
-			if headerPtr.Number.Uint64() == n {
-				return headerPtr.Hash()
+// GetHashFn returns a GetHashFunc which retrieves Header hashes by number
+func GetHashFn(ref *types.HeaderPtr, chain ChainContext) func(n Uint64) bgmcommon.Hash {
+	return func(n Uint64) bgmcommon.Hash {
+		for Header := chain.GetHeader(ref.ParentHash, ref.Number.Uint64()-1); Header != nil; Header = chain.GetHeader(HeaderPtr.ParentHash, HeaderPtr.Number.Uint64()-1) {
+			if HeaderPtr.Number.Uint64() == n {
+				return HeaderPtr.Hash()
 			}
 		}
 

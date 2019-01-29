@@ -33,8 +33,8 @@ import (
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmcommon/mclock"
 	"github.com/ssldltd/bgmchain/consensus"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgm"
 	"github.com/ssldltd/bgmchain/event"
 	"github.com/ssldltd/bgmchain/les"
@@ -59,11 +59,11 @@ const (
 type txPool interface {
 	// SubscribeTxPreEvent should return an event subscription of
 	// TxPreEvent and send events to the given channel.
-	SubscribeTxPreEvent(chan<- bgmcore.TxPreEvent) event.Subscription
+	SubscribeTxPreEvent(chan<- bgmCore.TxPreEvent) event.Subscription
 }
 
 type blockChain interface {
-	SubscribeChainHeadEvent(ch chan<- bgmcore.ChainHeadEvent) event.Subscription
+	SubscribeChainHeadEvent(ch chan<- bgmCore.ChainHeadEvent) event.Subscription
 }
 
 // Service implement an Bgmchain netstats reporting daemon that pushes local
@@ -79,7 +79,7 @@ type Service struct {
 	host string // Remote address of the monitoring service
 
 	pongCh chan struct{} // Pong notifications are fed into this channel
-	histCh chan []uint64 // History request block numbers are fed into this channel
+	histCh chan []Uint64 // History request block numbers are fed into this channel
 }
 
 // New returns a monitoring service ready for stats reporting.
@@ -105,7 +105,7 @@ func New(url string, bgmServ *bgmPtr.Bgmchain, lesServ *les.LightBgmchain) (*Ser
 		pass:   parts[3],
 		host:   parts[4],
 		pongCh: make(chan struct{}),
-		histCh: make(chan []uint64, 1),
+		histCh: make(chan []Uint64, 1),
 	}, nil
 }
 
@@ -146,11 +146,11 @@ func (s *Service) loop() {
 		txpool = s.les.TxPool()
 	}
 
-	chainHeadCh := make(chan bgmcore.ChainHeadEvent, chainHeadChanSize)
+	chainHeadCh := make(chan bgmCore.ChainHeadEvent, chainHeadChanSize)
 	headSub := blockchain.SubscribeChainHeadEvent(chainHeadCh)
 	defer headSubPtr.Unsubscribe()
 
-	txEventCh := make(chan bgmcore.TxPreEvent, txChanSize)
+	txEventCh := make(chan bgmCore.TxPreEvent, txChanSize)
 	txSub := txpool.SubscribeTxPreEvent(txEventCh)
 	defer txSubPtr.Unsubscribe()
 
@@ -161,7 +161,7 @@ func (s *Service) loop() {
 		txCh   = make(chan struct{}, 1)
 	)
 	go func() {
-		var lastTx mclock.AbsTime
+		var lastTx mclock.Abstime
 
 	HandleLoop:
 		for {
@@ -214,7 +214,7 @@ func (s *Service) loop() {
 			if conf, err = websocket.NewConfig(url, "http://localhost/"); err != nil {
 				continue
 			}
-			conf.Dialer = &net.Dialer{Timeout: 5 * time.Second}
+			conf.Dialer = &net.Dialer{timeout: 5 * time.Second}
 			if conn, err = websocket.DialConfig(conf); err == nil {
 				break
 			}
@@ -326,14 +326,14 @@ func (s *Service) readLoop(conn *websocket.Conn) {
 				return
 			}
 			// Convert the block number list to an integer list
-			numbers := make([]uint64, len(list))
+			numbers := make([]Uint64, len(list))
 			for i, num := range list {
 				n, ok := numPtr.(float64)
 				if !ok {
 					bgmlogs.Warn("Invalid stats history block number", "number", num)
 					return
 				}
-				numbers[i] = uint64(n)
+				numbers[i] = Uint64(n)
 			}
 			select {
 			case s.histCh <- numbers:
@@ -439,7 +439,7 @@ func (s *Service) reportLatency(conn *websocket.Conn) error {
 	ping := map[string][]interface{}{
 		"emit": {"node-ping", map[string]string{
 			"id":         s.node,
-			"clientTime": start.String(),
+			"clienttime": start.String(),
 		}},
 	}
 	if err := websocket.JSON.Send(conn, ping); err != nil {
@@ -472,7 +472,7 @@ type blockStats struct {
 	Number     *big.Int       `json:"number"`
 	Hash       bgmcommon.Hash    `json:"hash"`
 	ParentHash bgmcommon.Hash    `json:"parentHash"`
-	Timestamp  *big.Int       `json:"timestamp"`
+	timestamp  *big.Int       `json:"timestamp"`
 	Miner      bgmcommon.Address `json:"miner"`
 	GasUsed    *big.Int       `json:"gasUsed"`
 	GasLimit   *big.Int       `json:"gasLimit"`
@@ -502,7 +502,7 @@ func (s uncleStats) MarshalJSON() ([]byte, error) {
 
 // reportBlock retrieves the current chain head and repors it to the stats server.
 func (s *Service) reportBlock(conn *websocket.Conn, block *types.Block) error {
-	// Gather the block details from the header or block chain
+	// Gather the block details from the Header or block chain
 	details := s.assembleBlockStats(block)
 
 	// Assemble the block report and send it to the server
@@ -523,7 +523,7 @@ func (s *Service) reportBlock(conn *websocket.Conn, block *types.Block) error {
 func (s *Service) assembleBlockStats(block *types.Block) *blockStats {
 	// Gather the block infos from the local blockchain
 	var (
-		headerPtr *types.Header
+		HeaderPtr *types.Header
 		td     *big.Int
 		txs    []txStats
 		uncles []*types.Header
@@ -533,8 +533,8 @@ func (s *Service) assembleBlockStats(block *types.Block) *blockStats {
 		if block == nil {
 			block = s.bgmPtr.BlockChain().CurrentBlock()
 		}
-		header = block.Header()
-		td = s.bgmPtr.BlockChain().GetTd(headerPtr.Hash(), headerPtr.Number.Uint64())
+		Header = block.Header()
+		td = s.bgmPtr.BlockChain().GetTd(HeaderPtr.Hash(), HeaderPtr.Number.Uint64())
 
 		txs = make([]txStats, len(block.Transactions()))
 		for i, tx := range block.Transactions() {
@@ -544,38 +544,38 @@ func (s *Service) assembleBlockStats(block *types.Block) *blockStats {
 	} else {
 		// Light nodes would need on-demand lookups for transactions/uncles, skip
 		if block != nil {
-			header = block.Header()
+			Header = block.Header()
 		} else {
-			header = s.les.BlockChain().CurrentHeader()
+			Header = s.les.BlockChain().CurrentHeader()
 		}
-		td = s.les.BlockChain().GetTd(headerPtr.Hash(), headerPtr.Number.Uint64())
+		td = s.les.BlockChain().GetTd(HeaderPtr.Hash(), HeaderPtr.Number.Uint64())
 		txs = []txStats{}
 	}
 	// Assemble and return the block stats
-	author, _ := s.engine.Author(header)
+	author, _ := s.engine.Author(Header)
 
 	return &blockStats{
-		Number:     headerPtr.Number,
-		Hash:       headerPtr.Hash(),
-		ParentHash: headerPtr.ParentHash,
-		Timestamp:  headerPtr.Time,
+		Number:     HeaderPtr.Number,
+		Hash:       HeaderPtr.Hash(),
+		ParentHash: HeaderPtr.ParentHash,
+		timestamp:  HeaderPtr.time,
 		Miner:      author,
-		GasUsed:    new(big.Int).Set(headerPtr.GasUsed),
-		GasLimit:   new(big.Int).Set(headerPtr.GasLimit),
-		Diff:       headerPtr.Difficulty.String(),
+		GasUsed:    new(big.Int).Set(HeaderPtr.GasUsed),
+		GasLimit:   new(big.Int).Set(HeaderPtr.GasLimit),
+		Diff:       HeaderPtr.Difficulty.String(),
 		TotalDiff:  td.String(),
 		Txs:        txs,
-		TxHash:     headerPtr.TxHash,
-		Root:       headerPtr.Root,
+		TxHash:     HeaderPtr.TxHash,
+		Root:       HeaderPtr.Root,
 		Uncles:     uncles,
 	}
 }
 
 // reportHistory retrieves the most recent batch of blocks and reports it to the
 // stats server.
-func (s *Service) reportHistory(conn *websocket.Conn, list []uint64) error {
+func (s *Service) reportHistory(conn *websocket.Conn, list []Uint64) error {
 	// Figure out the indexes that need reporting
-	indexes := make([]uint64, 0, historyUpdateRange)
+	indexes := make([]Uint64, 0, historyUpdateRange)
 	if len(list) > 0 {
 		// Specific indexes requested, send them back in particular
 		indexes = append(indexes, list...)
@@ -591,7 +591,7 @@ func (s *Service) reportHistory(conn *websocket.Conn, list []uint64) error {
 		if start < 0 {
 			start = 0
 		}
-		for i := uint64(start); i <= uint64(head); i++ {
+		for i := Uint64(start); i <= Uint64(head); i++ {
 			indexes = append(indexes, i)
 		}
 	}
@@ -603,8 +603,8 @@ func (s *Service) reportHistory(conn *websocket.Conn, list []uint64) error {
 		if s.bgm != nil {
 			block = s.bgmPtr.BlockChain().GetBlockByNumber(number)
 		} else {
-			if header := s.les.BlockChain().GetHeaderByNumber(number); header != nil {
-				block = types.NewBlockWithHeader(header)
+			if Header := s.les.BlockChain().GetHeaderByNumber(number); Header != nil {
+				block = types.NewBlockWithHeader(Header)
 			}
 		}
 		// If we do have the block, add to the history and continue

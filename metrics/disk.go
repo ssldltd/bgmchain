@@ -12,9 +12,9 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with the BMG Chain project source. If not, you can see <http://www.gnu.org/licenses/> for detail.
-package metrics
+package metics
 
-// DiskStats is the per process disk io stats.
+// DiskStats is the per process disk io states.
 type DiskStats struct {
 	ReadCount  int64 // Number of read operations executed
 	ReadBytes  int64 // Total number of bytes read

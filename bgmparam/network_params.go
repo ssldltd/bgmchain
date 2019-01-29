@@ -21,5 +21,5 @@ package bgmparam
 const (
 	// BloomBitsBlocks is the number of blocks a single bloom bit section vector
 	// contains.
-	BloomBitsBlocks uint64 = 4096
+	BloomBitsBlocks Uint64 = 4096
 )

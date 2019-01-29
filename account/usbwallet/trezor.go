@@ -25,7 +25,7 @@ import (
 	"github.com/ssldltd/bgmchain/account/usbwallet/internal/trezor"
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmcommon/hexutil"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 	"github.com/golang/protobuf/proto"
 )
@@ -36,9 +36,9 @@ import (
 var ErrorTrezorPINNeeded = errors.New("trezor: pin needed")
 
 // ErrorTrezorReplyInvalidHeader is the error message returned by a Trezor data exchange
-// if the device replies with a mismatching headerPtr. This usually means the device
+// if the device replies with a mismatching HeaderPtr. This usually means the device
 // is in browser mode.
-var ErrorTrezorReplyInvalidHeader = errors.New("trezor: invalid reply header")
+var ErrorTrezorReplyInvalidHeader = errors.New("trezor: invalid reply Header")
 
 // trezorDriver implements the communication with a Trezor hardware wallet.
 type trezorDriver struct {
@@ -202,7 +202,7 @@ func (w *trezorDriver) trezorExchange(req proto.Message, results ...proto.Messag
 		}
 		w.bgmlogs.Trace("Data chunk received from the Trezor", "chunk", hexutil.Bytes(chunk))
 
-		// Make sure the transport header matches
+		// Make sure the transport Header matches
 		if chunk[0] != 0x3f || (len(reply) == 0 && (chunk[1] != 0x23 || chunk[2] != 0x23)) {
 			return 0, ErrorTrezorReplyInvalidHeader
 		}

@@ -20,49 +20,49 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/ssldltd/bgmchain/bgmcore/state"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmparam"
 )
 
 
-// VerifyDAOHeaderExtraData validates the extra-data field of a block header to
+// VerifyDAOHeaderExtraData validates the extra-data field of a block Header to
 // ensure it conforms to DAO hard-fork rules.
 //
-// DAO hard-fork extension to the header validity:
+// DAO hard-fork extension to the Header validity:
 //   a) if the node is no-fork, do not accept blocks in the [fork, fork+10) range
 //      with the fork specific extra-data set
 //   b) if the node is pro-fork, require blocks in the specific range to have the
 //      unique extra-data set.
-func VerifyDAOHeaderExtraData(config *bgmparam.ChainConfig, headerPtr *types.Header) error {
+func VerifyDAOHeaderExtraData(config *bgmparam.ChainConfig, HeaderPtr *types.Header) error {
 	// Short circuit validation if the node doesn't care about the DAO fork
 	if config.DAOForkBlock == nil {
 		return nil
 	}
 	// Make sure the block is within the fork's modified extra-data range
 	limit := new(big.Int).Add(config.DAOForkBlock, bgmparam.DAOForkExtraRange)
-	if headerPtr.Number.Cmp(config.DAOForkBlock) < 0 || headerPtr.Number.Cmp(limit) >= 0 {
+	if HeaderPtr.Number.Cmp(config.DAOForkBlock) < 0 || HeaderPtr.Number.Cmp(limit) >= 0 {
 		return nil
 	}
 	// Depending on whbgmchain we support or oppose the fork, validate the extra-data contents
 	if config.DAOForkSupport {
-		if !bytes.Equal(headerPtr.Extra, bgmparam.DAOForkBlockExtra) {
+		if !bytes.Equal(HeaderPtr.Extra, bgmparam.DAOForkBlockExtra) {
 			return ErrBadProDAOExtra
 		}
 	} else {
-		if bytes.Equal(headerPtr.Extra, bgmparam.DAOForkBlockExtra) {
+		if bytes.Equal(HeaderPtr.Extra, bgmparam.DAOForkBlockExtra) {
 			return ErrBadNoDAOExtra
 		}
 	}
-	// All ok, header has the same extra-data we expect
+	// All ok, Header has the same extra-data we expect
 	return nil
 }
 var (
-	// ErrBadProDAOExtra is returned if a header doens't support the DAO fork on a
+	// ErrBadProDAOExtra is returned if a Header doens't support the DAO fork on a
 	// pro-fork client.
 	ErrBadProDAOExtra = errors.New("bad DAO pro-fork extra-data")
 
-	// ErrBadNoDAOExtra is returned if a header does support the DAO fork on a no-
+	// ErrBadNoDAOExtra is returned if a Header does support the DAO fork on a no-
 	// fork client.
 	ErrBadNoDAOExtra = errors.New("bad DAO no-fork extra-data")
 )

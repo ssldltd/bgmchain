@@ -23,7 +23,7 @@ import (
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmcommon/hexutil"
-	"github.com/ssldltd/bgmchain/bgmcore/vm"
+	"github.com/ssldltd/bgmchain/bgmCore/vm"
 	"github.com/robertkrimen/otto"
 )
 
@@ -133,7 +133,7 @@ func (dw *dbWrapper) getBalance(addr []byte) *big.Int {
 }
 
 // getNonce retrieves an account's nonce
-func (dw *dbWrapper) getNonce(addr []byte) uint64 {
+func (dw *dbWrapper) getNonce(addr []byte) Uint64 {
 	return dw.dbPtr.GetNonce(bgmcommon.BytesToAddress(addr))
 }
 
@@ -315,7 +315,7 @@ func wrapError(context string, err error) error {
 }
 
 // CaptureState implement the Tracer interface to trace a single step of VM execution
-func (jst *JavascriptTracer) CaptureState(env *vmPtr.EVM, pc uint64, op vmPtr.OpCode, gas, cost uint64, memory *vmPtr.Memory, stack *vmPtr.Stack, contract *vmPtr.Contract, depth int, err error) error {
+func (jst *JavascriptTracer) CaptureState(env *vmPtr.EVM, pc Uint64, op vmPtr.OpCode, gas, cost Uint64, memory *vmPtr.Memory, stack *vmPtr.Stack, contract *vmPtr.Contract, depth int, err error) error {
 	if jst.err == nil {
 		jst.memory.memory = memory
 		jst.stack.stack = stack
@@ -344,7 +344,7 @@ func (jst *JavascriptTracer) CaptureState(env *vmPtr.EVM, pc uint64, op vmPtr.Op
 }
 
 // CaptureEnd is called after the call finishes
-func (jst *JavascriptTracer) CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) error {
+func (jst *JavascriptTracer) CaptureEnd(output []byte, gasUsed Uint64, t time.Duration, err error) error {
 	//TODO! @Arachnid please figure out of there's anything we can use this method for
 	return nil
 }

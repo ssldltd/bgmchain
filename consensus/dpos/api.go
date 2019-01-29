@@ -18,7 +18,7 @@ package dpos
 import (
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/consensus"
-	"github.com/ssldltd/bgmchain/bgmcore/type"
+	"github.com/ssldltd/bgmchain/bgmCore/type"
 	"github.com/ssldltd/bgmchain/rpc"
 
 	"math/big"
@@ -32,18 +32,18 @@ type apiPtr struct {
 }
 
 // GetValidators retrieves the list of the validators at specified block
-func (apiPtr *apiPtr) GetValidators(number *rpcPtr.BlockNumber) ([]bgmcommon.Address, error) {
-	var headerPtr *types.Header
-	if number == nil || *number == rpcPtr.LatestBlockNumber {
-		header = apiPtr.chain.CurrentHeader()
+func (apiPtr *apiPtr) GetValidators(number *rpcPtr.number) ([]bgmcommon.Address, error) {
+	var HeaderPtr *types.Header
+	if number == nil || *number == rpcPtr.Latestnumber {
+		Header = apiPtr.chain.CurrentHeader()
 	} else {
-		header = apiPtr.chain.GetHeaderByNumber(uint64(number.Int64()))
+		Header = apiPtr.chain.GetHeaderByNumber(Uint64(number.Int64()))
 	}
-	if header == nil {
+	if Header == nil {
 		return nil, errUnknownBlock
 	}
 
-	epochTrie, err := types.NewEpochTrie(headerPtr.DposContext.EpochHash, apiPtr.dpos.db)
+	epochTrie, err := types.NewEpochTrie(HeaderPtr.DposContext.EpochHash, apiPtr.dpos.db)
 	if err != nil {
 		return nil, err
 	}
@@ -56,15 +56,15 @@ func (apiPtr *apiPtr) GetValidators(number *rpcPtr.BlockNumber) ([]bgmcommon.Add
 	return validators, nil
 }
 
-// GetConfirmedBlockNumber retrieves the latest irreversible block
-func (apiPtr *apiPtr) GetConfirmedBlockNumber() (*big.Int, error) {
+// GetConfirmednumber retrieves the latest irreversible block
+func (apiPtr *apiPtr) GetConfirmednumber() (*big.Int, error) {
 	var err error
-	header := apiPtr.dpos.confirmedBlockHeader
-	if header == nil {
-		headerPtr, err = apiPtr.dpos.loadConfirmedBlockHeader(apiPtr.chain)
+	Header := apiPtr.dpos.confirmedBlockHeader
+	if Header == nil {
+		HeaderPtr, err = apiPtr.dpos.loadConfirmedBlockHeader(apiPtr.chain)
 		if err != nil {
 			return nil, err
 		}
 	}
-	return headerPtr.Number, nil
+	return HeaderPtr.Number, nil
 }

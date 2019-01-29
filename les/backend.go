@@ -25,9 +25,9 @@ import (
 	"github.com/ssldltd/bgmchain/bgmcommon/hexutil"
 	"github.com/ssldltd/bgmchain/consensus"
 	"github.com/ssldltd/bgmchain/consensus/dpos"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/bloombits"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/bloombits"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgm"
 	"github.com/ssldltd/bgmchain/bgm/downloader"
 	"github.com/ssldltd/bgmchain/bgm/filters"
@@ -62,7 +62,7 @@ type LightBgmchain struct {
 	chainDb bgmdbPtr.Database // Block chain database
 
 	bloomRequests                              chan chan *bloombits.Retrieval // Channel receiving bloom data retrieval requests
-	bloomIndexer, chtIndexer, bloomTrieIndexer *bgmcore.ChainIndexer
+	bloomIndexer, chtIndexer, bloomTrieIndexer *bgmCore.ChainIndexer
 
 	ApiBackend *LesApiBackend
 
@@ -70,18 +70,18 @@ type LightBgmchain struct {
 	engine         consensus.Engine
 	accountManager *accounts.Manager
 
-	networkId     uint64
+	networkId     Uint64
 	netRPCService *bgmapi.PublicNetAPI
 
 	wg syncPtr.WaitGroup
 }
 
-func New(ctx *node.ServiceContext, config *bgmPtr.Config) (*LightBgmchain, error) {
-	chainDb, err := bgmPtr.CreateDB(ctx, config, "lightchaindata")
+func New(CTX *node.ServiceContext, config *bgmPtr.Config) (*LightBgmchain, error) {
+	chainDb, err := bgmPtr.CreateDB(CTX, config, "lightchaindata")
 	if err != nil {
 		return nil, err
 	}
-	chainConfig, genesisHash, genesisErr := bgmcore.SetupGenesisBlock(chainDb, config.Genesis)
+	chainConfig, genesisHash, genesisErr := bgmCore.SetupGenesisBlock(chainDb, config.Genesis)
 	if _, isCompat := genesisErr.(*bgmparam.ConfigCompatError); genesisErr != nil && !isCompat {
 		return nil, genesisErr
 	}
@@ -93,10 +93,10 @@ func New(ctx *node.ServiceContext, config *bgmPtr.Config) (*LightBgmchain, error
 	lbgm := &LightBgmchain{
 		chainConfig:      chainConfig,
 		chainDb:          chainDb,
-		eventMux:         ctx.EventMux,
+		eventMux:         CTX.EventMux,
 		peers:            peers,
 		reqDist:          newRequestDistributor(peers, quitSync),
-		accountManager:   ctx.AccountManager,
+		accountManager:   CTX.AccountManager,
 		engine:           dpos.New(chainConfig.Dpos, chainDb),
 		shutdownChan:     make(chan bool),
 		networkId:        config.NetworkId,
@@ -118,7 +118,7 @@ func New(ctx *node.ServiceContext, config *bgmPtr.Config) (*LightBgmchain, error
 	if compat, ok := genesisErr.(*bgmparam.ConfigCompatError); ok {
 		bgmlogs.Warn("Rewinding chain to upgrade configuration", "err", compat)
 		lbgmPtr.blockchain.SetHead(compat.RewindTo)
-		bgmcore.WriteChainConfig(chainDb, genesisHash, chainConfig)
+		bgmCore.WriteChainConfig(chainDb, genesisHash, chainConfig)
 	}
 
 	lbgmPtr.txPool = light.NewTxPool(lbgmPtr.chainConfig, lbgmPtr.blockchain, lbgmPtr.relay)

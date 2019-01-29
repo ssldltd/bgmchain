@@ -68,7 +68,7 @@ func Keccak512(data ...[]byte) []byte {
 }
 
 // Creates an bgmchain address given the bytes and the nonce
-func CreateAddress(b bgmcommon.Address, nonce uint64) bgmcommon.Address {
+func CreateAddress(b bgmcommon.Address, nonce Uint64) bgmcommon.Address {
 	data, _ := rlp.EncodeToBytes([]interface{}{b, nonce})
 	return bgmcommon.BytesToAddress(Keccak256(data)[12:])
 }

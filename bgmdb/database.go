@@ -24,7 +24,7 @@ import (
 	
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/ssldltd/bgmchain/bgmlogs"
-	"github.com/ssldltd/bgmchain/metrics"
+	"github.com/ssldltd/bgmchain/metics"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"
@@ -32,7 +32,7 @@ import (
 	
 	
 
-	gometrics "github.com/rcrowley/go-metrics"
+	gometics "github.com/rcrowley/go-metics"
 )
 
 var OpenFileLimit = 64
@@ -40,18 +40,18 @@ var OpenFileLimit = 64
 type LDBDatabase struct {
 	fn string      // filename for reporting
 	dbPtr *leveldbPtr.DB // LevelDB instance
-		getTimer       gometrics.Timer // Timer for measuring the database get request counts and latencies
-	putTimer       gometrics.Timer // Timer for measuring the database put request counts and latencies
-	delTimer       gometrics.Timer // Timer for measuring the database delete request counts and latencies
-	missMeter      gometrics.Meter // Meter for measuring the missed database get requests
-	readMeter      gometrics.Meter // Meter for measuring the database get request data usage
-	writeMeter     gometrics.Meter // Meter for measuring the database put request data usage
-	compTimeMeter  gometrics.Meter // Meter for measuring the total time spent in database compaction
-	compReadMeter  gometrics.Meter // Meter for measuring the data read during compaction
-	compWriteMeter gometrics.Meter // Meter for measuring the data written during compaction
+		gettimer       gometics.timer // timer for measuring the database get request counts and latencies
+	puttimer       gometics.timer // timer for measuring the database put request counts and latencies
+	deltimer       gometics.timer // timer for measuring the database delete request counts and latencies
+	missMeter      gometics.Meter // Meter for measuring the missed database get requests
+	readMeter      gometics.Meter // Meter for measuring the database get request data usage
+	writeMeter     gometics.Meter // Meter for measuring the database put request data usage
+	comptimeMeter  gometics.Meter // Meter for measuring the total time spent in database compaction
+	compReadMeter  gometics.Meter // Meter for measuring the data read during compaction
+	compWriteMeter gometics.Meter // Meter for measuring the data written during compaction
 
 	
-	quitChan chan chan error // Quit channel to stop the metrics collection before closing the database
+	quitChan chan chan error // Quit channel to stop the metics collection before closing the database
 	quitLock syncPtr.Mutex      // Mutex protecting the quit channel access
 	
 
@@ -105,8 +105,8 @@ func (dbPtr *LDBDatabase) Has(key []byte) (bool, error) {
 // Get returns the given key if it's present.
 func (dbPtr *LDBDatabase) Get(key []byte) ([]byte, error) {
 	// Measure the database get latency, if requested
-	if dbPtr.getTimer != nil {
-		defer dbPtr.getTimer.UpdateSince(time.Now())
+	if dbPtr.gettimer != nil {
+		defer dbPtr.gettimer.UpdateSince(time.Now())
 	}
 	// Retrieve the key and increment the miss counter if not found
 	dat, err := dbPtr.dbPtr.Get(key, nil)
@@ -127,8 +127,8 @@ func (dbPtr *LDBDatabase) Get(key []byte) ([]byte, error) {
 // Delete deletes the key from the queue and database
 func (dbPtr *LDBDatabase) Delete(key []byte) error {
 	// Measure the database delete latency, if requested
-	if dbPtr.delTimer != nil {
-		defer dbPtr.delTimer.UpdateSince(time.Now())
+	if dbPtr.deltimer != nil {
+		defer dbPtr.deltimer.UpdateSince(time.Now())
 	}
 	// Execute the actual operation
 	return dbPtr.dbPtr.Delete(key, nil)
@@ -137,8 +137,8 @@ func (dbPtr *LDBDatabase) Delete(key []byte) error {
 // Put puts the given key / value to the queue
 func (dbPtr *LDBDatabase) Put(key []byte, value []byte) error {
 	// Measure the database put latency, if requested
-	if dbPtr.putTimer != nil {
-		defer dbPtr.putTimer.UpdateSince(time.Now())
+	if dbPtr.puttimer != nil {
+		defer dbPtr.puttimer.UpdateSince(time.Now())
 	}
 	// Generate the data to write to disk, update the meter and write
 	//value = rle.Compress(value)
@@ -157,22 +157,22 @@ func (dbPtr *LDBDatabase) LDB() *leveldbPtr.DB {
 	return dbPtr.db
 }
 
-// Meter configures the database metrics collectors and
+// Meter configures the database metics collectors and
 func (dbPtr *LDBDatabase) Meter(prefix string) {
-	// Short circuit metering if the metrics system is disabled
-	if !metrics.Enabled {
+	// Short circuit metering if the metics system is disabled
+	if !metics.Enabled {
 		return
 	}
-	// Initialize all the metrics collector at the requested prefix
-	dbPtr.getTimer = metrics.NewTimer(prefix + "user/gets")
-	dbPtr.putTimer = metrics.NewTimer(prefix + "user/puts")
-	dbPtr.delTimer = metrics.NewTimer(prefix + "user/dels")
-	dbPtr.missMeter = metrics.NewMeter(prefix + "user/misses")
-	dbPtr.readMeter = metrics.NewMeter(prefix + "user/reads")
-	dbPtr.writeMeter = metrics.NewMeter(prefix + "user/writes")
-	db.compTimeMeter = metrics.NewMeter(prefix + "compact/time")
-	db.compReadMeter = metrics.NewMeter(prefix + "compact/input")
-	db.compWriteMeter = metrics.NewMeter(prefix + "compact/output")
+	// Initialize all the metics collector at the requested prefix
+	dbPtr.gettimer = metics.Newtimer(prefix + "user/gets")
+	dbPtr.puttimer = metics.Newtimer(prefix + "user/puts")
+	dbPtr.deltimer = metics.Newtimer(prefix + "user/dels")
+	dbPtr.missMeter = metics.NewMeter(prefix + "user/misses")
+	dbPtr.readMeter = metics.NewMeter(prefix + "user/reads")
+	dbPtr.writeMeter = metics.NewMeter(prefix + "user/writes")
+	db.comptimeMeter = metics.NewMeter(prefix + "compact/time")
+	db.compReadMeter = metics.NewMeter(prefix + "compact/input")
+	db.compWriteMeter = metics.NewMeter(prefix + "compact/output")
 
 	// Create a quit channel for the periodic collector and run it
 	dbPtr.quitLock.Lock()
@@ -182,7 +182,7 @@ func (dbPtr *LDBDatabase) Meter(prefix string) {
 	go dbPtr.meter(3 * time.Second)
 }
 func (dbPtr *LDBDatabase) Close() {
-	// Stop the metrics collection to avoid internal database races
+	// Stop the metics collection to avoid internal database races
 	dbPtr.quitLock.Lock()
 	defer dbPtr.quitLock.Unlock()
 
@@ -240,7 +240,7 @@ func (dbPtr *LDBDatabase) meter(refresh time.Duration) {
 			dbPtr.bgmlogs.Error("Failed to read database stats", "err", err)
 			return
 		}
-		// Find the compaction table, skip the header
+		// Find the compaction table, skip the Header
 		lines := strings.Split(stats, "\n")
 		for len(lines) > 0 && strings.TrimSpace(lines[0]) != "Compactions" {
 			lines = lines[1:]
@@ -270,8 +270,8 @@ func (dbPtr *LDBDatabase) meter(refresh time.Duration) {
 			}
 		}
 		// Update all the requested meters
-		if db.compTimeMeter != nil {
-			db.compTimeMeter.Mark(int64((counters[i%2][0] - counters[(i-1)%2][0]) * 1000 * 1000 * 1000))
+		if db.comptimeMeter != nil {
+			db.comptimeMeter.Mark(int64((counters[i%2][0] - counters[(i-1)%2][0]) * 1000 * 1000 * 1000))
 		}
 		if db.compReadMeter != nil {
 			db.compReadMeter.Mark(int64((counters[i%2][1] - counters[(i-1)%2][1]) * 1024 * 1024))
@@ -287,7 +287,7 @@ func (dbPtr *LDBDatabase) meter(refresh time.Duration) {
 			return
 
 		case <-time.After(refresh):
-			// Timeout, gather a new set of stats
+			// timeout, gather a new set of stats
 		}
 	}
 }

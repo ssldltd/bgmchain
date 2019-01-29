@@ -70,11 +70,11 @@ web3._extend({
 			name: 'getValidators',
 			call: 'dpos_getValidators',
 			bgmparam: 1,
-			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter]
+			inputFormatter: [web3._extend.formatters.inputnumberFormatter]
 		}),
 		new web3._extend.Method({
-			name: 'getConfirmedBlockNumber',
-			call: 'dpos_getConfirmedBlockNumber',
+			name: 'getConfirmednumber',
+			call: 'dpos_getConfirmednumber',
 			bgmparam: 0,
 			outputFormatter: web3._extend.utils.toBigNumber
 		}),
@@ -256,8 +256,8 @@ web3._extend({
 			call: 'debug_chaindbCompact',
 		}),
 		new web3._extend.Method({
-			name: 'metrics',
-			call: 'debug_metrics',
+			name: 'metics',
+			call: 'debug_metics',
 			bgmparam: 1
 		}),
 		new web3._extend.Method({
@@ -426,16 +426,16 @@ web3._extend({
 		new web3._extend.Method({
 			name: 'getRawTransactionFromBlock',
 			call: function(args) {
-				return (web3._extend.utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'bgm_getRawTransactionByBlockHashAndIndex' : 'bgm_getRawTransactionByBlockNumberAndIndex';
+				return (web3._extend.utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'bgm_getRawTransactionByhashAndIndex' : 'bgm_getRawTransactionBynumberAndIndex';
 			},
 			bgmparam: 2,
-			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter, web3._extend.utils.toHex]
+			inputFormatter: [web3._extend.formatters.inputnumberFormatter, web3._extend.utils.toHex]
 		}),
 		new web3._extend.Method({
             name: 'getBalance',
             call: 'bgm_getBalance',
             bgmparam: 2,
-            inputFormatter: [web3._extend.formatters.inputAddressFormatter, web3._extend.formatters.inputDefaultBlockNumberFormatter],
+            inputFormatter: [web3._extend.formatters.inputAddressFormatter, web3._extend.formatters.inputDefaultnumberFormatter],
             outputFormatter: web3._extend.formatters.outputBigNumberFormatter
         }),
 		new web3._extend.Method({

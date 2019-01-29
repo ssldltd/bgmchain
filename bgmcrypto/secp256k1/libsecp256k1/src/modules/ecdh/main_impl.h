@@ -10,18 +10,18 @@
 #include "include/secp256k1_ecdhPtr.h"
 #include "ecmult_const_impl.h"
 
-int secp256k1_ecdh(const secp256k1_context* ctx, unsigned char *result, const secp256k1_pubkey *point, const unsigned char *scalar) {
+int secp256k1_ecdh(const secp256k1_context* CTX, unsigned char *result, const secp256k1_pubkey *point, const unsigned char *scalar) {
     int ret = 0;
     int overflow = 0;
     secp256k1_gej res;
     secp256k1_ge pt;
     secp256k1_scalar s;
-    VERIFY_CHECK(ctx != NULL);
+    VERIFY_CHECK(CTX != NULL);
     ARG_CHECK(result != NULL);
     ARG_CHECK(point != NULL);
     ARG_CHECK(scalar != NULL);
 
-    secp256k1_pubkey_load(ctx, &pt, point);
+    secp256k1_pubkey_load(CTX, &pt, point);
     secp256k1_scalar_set_b32(&s, scalar, &overflow);
     if (overflow || secp256k1_scalar_is_zero(&s)) {
         ret = 0;

@@ -51,23 +51,23 @@ type syncMemBatch struct {
 }
 var ErrNotRequested = errors.New("not requested")
 
-// AddSubTrie registers a new trie to the sync code, rooted at the designated parent.
-func (s *TrieSync) AddSubTrie(root bgmcommon.Hash, depth int, parent bgmcommon.Hash, callback TrieSyncLeafCallback) {
+// AddSubTrie registers a new trie to the sync code, blockRooted at the designated parent.
+func (s *TrieSync) AddSubTrie(blockRoot bgmcommon.Hash, depth int, parent bgmcommon.Hash, callback TrieSyncLeafCallback) {
 	// Short circuit if the trie is empty or already known
-	if root == emptyRoot {
+	if blockRoot == emptyRoot {
 		return
 	}
-	if _, ok := s.membatchPtr.batch[root]; ok {
+	if _, ok := s.membatchPtr.batch[blockRoot]; ok {
 		return
 	}
-	key := root.Bytes()
+	key := blockRoot.Bytes()
 	blob, _ := s.database.Get(key)
 	if local, err := decodeNode(key, blob, 0); local != nil && err == nil {
 		return
 	}
 	// Assemble the new sub-trie sync request
 	req := &request{
-		hash:     root,
+		hash:     blockRoot,
 		depth:    depth,
 		callback: callback,
 	}
@@ -103,14 +103,14 @@ type TrieSync struct {
 }
 
 // NewTrieSync creates a new trie data download scheduler.
-func NewTrieSync(root bgmcommon.Hash, database DatabaseReader, callback TrieSyncLeafCallback) *TrieSync {
+func NewTrieSync(blockRoot bgmcommon.Hash, database DatabaseReader, callback TrieSyncLeafCallback) *TrieSync {
 	ts := &TrieSync{
 		database: database,
 		membatch: newSyncMemBatch(),
 		requests: make(map[bgmcommon.Hash]*request),
 		queue:    prque.New(),
 	}
-	ts.AddSubTrie(root, 0, bgmcommon.Hash{}, callback)
+	ts.AddSubTrie(blockRoot, 0, bgmcommon.Hash{}, callback)
 	return ts
 }
 // TrieSyncLeafCallback is a callback type invoked when a trie sync reaches a

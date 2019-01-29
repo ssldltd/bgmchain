@@ -22,7 +22,7 @@ import (
 
 	"github.com/ssldltd/bgmchain/account/keystore"
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmcrypto"
 )
 

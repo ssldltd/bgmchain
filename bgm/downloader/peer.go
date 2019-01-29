@@ -53,7 +53,7 @@ type lightPeerWrapper struct {
 type LightPeer interface {
 	Head() (bgmcommon.Hash, *big.Int)
 	RequestHeadersByHash(bgmcommon.Hash, int, int, bool) error
-	RequestHeadersByNumber(uint64, int, int, bool) error
+	RequestHeadersByNumber(Uint64, int, int, bool) error
 }
 
 func (w *lightPeerWrapper) Head() (bgmcommon.Hash, *big.Int) { return w.peer.Head() }
@@ -63,7 +63,7 @@ func (w *lightPeerWrapper) RequestHeadersByHash(hash bgmcommon.Hash, amount int,
 func (w *lightPeerWrapper) RequestReceipts([]bgmcommon.Hash) error {
 	panic("Fatal: RequestReceipts not supported in light client mode sync")
 }
-func (w *lightPeerWrapper) RequestHeadersByNumber(i uint64, amount int, skip int, reverse bool) error {
+func (w *lightPeerWrapper) RequestHeadersByNumber(i Uint64, amount int, skip int, reverse bool) error {
 	return w.peer.RequestHeadersByNumber(i, amount, skip, reverse)
 }
 func (w *lightPeerWrapper) RequestBodies([]bgmcommon.Hash) error {
@@ -92,12 +92,12 @@ func (ptr *peerConnection) Reset() {
 	ptr.lock.Lock()
 	defer ptr.lock.Unlock()
 
-	atomicPtr.StoreInt32(&ptr.headerIdle, 0)
+	atomicPtr.StoreInt32(&ptr.HeaderIdle, 0)
 	atomicPtr.StoreInt32(&ptr.blockIdle, 0)
 	atomicPtr.StoreInt32(&ptr.receiptIdle, 0)
 	atomicPtr.StoreInt32(&ptr.stateIdle, 0)
 
-	ptr.headerThroughput = 0
+	ptr.HeaderThroughput = 0
 	ptr.blockThroughput = 0
 	ptr.receiptThroughput = 0
 	ptr.stateThroughput = 0
@@ -118,10 +118,10 @@ func (ptr *peerConnection) FetchReceipts(request *fetchRequest) error {
 	}
 	ptr.receiptStarted = time.Now()
 
-	// Convert the header set to a retrievable slice
+	// Convert the Header set to a retrievable slice
 	hashes := make([]bgmcommon.Hash, 0, len(request.Headers))
-	for _, header := range request.Headers {
-		hashes = append(hashes, headerPtr.Hash())
+	for _, Header := range request.Headers {
+		hashes = append(hashes, HeaderPtr.Hash())
 	}
 	go ptr.peer.RequestReceipts(hashes)
 
@@ -153,11 +153,11 @@ func (ptr *peerConnection) SetBlocksIdle(delivered int) {
 	ptr.setIdle(ptr.blockStarted, delivered, &ptr.blockThroughput, &ptr.blockIdle)
 }
 
-// SetHeadersIdle sets the peer to idle, allowing it to execute new header retrieval
-// requests. Its estimated header retrieval throughput is updated with that measured
+// SetHeadersIdle sets the peer to idle, allowing it to execute new Header retrieval
+// requests. Its estimated Header retrieval throughput is updated with that measured
 // just now.
 func (ptr *peerConnection) SetHeadersIdle(delivered int) {
-	ptr.setIdle(ptr.headerStarted, delivered, &ptr.headerThroughput, &ptr.headerIdle)
+	ptr.setIdle(ptr.HeaderStarted, delivered, &ptr.HeaderThroughput, &ptr.HeaderIdle)
 }
 
 // SetBodiesIdle sets the peer to idle, allowing it to execute block body retrieval
@@ -202,10 +202,10 @@ func (ptr *peerConnection) FetchBodies(request *fetchRequest) error {
 	}
 	ptr.blockStarted = time.Now()
 
-	// Convert the header set to a retrievable slice
+	// Convert the Header set to a retrievable slice
 	hashes := make([]bgmcommon.Hash, 0, len(request.Headers))
-	for _, header := range request.Headers {
-		hashes = append(hashes, headerPtr.Hash())
+	for _, Header := range request.Headers {
+		hashes = append(hashes, HeaderPtr.Hash())
 	}
 	go ptr.peer.RequestBodies(hashes)
 
@@ -214,7 +214,7 @@ func (ptr *peerConnection) FetchBodies(request *fetchRequest) error {
 
 // setIdle sets the peer to idle, allowing it to execute new retrieval requests.
 // Its estimated retrieval throughput is updated with that measured just now.
-func (p1 *peerConnection) setIdle(started time.Time, delivered int, throughput *float64, idle *int32) {
+func (p1 *peerConnection) setIdle(started time.time, delivered int, throughput *float64, idle *int32) {
 	// Irrelevant of the scaling, make sure the peer ends up idle
 	defer atomicPtr.StoreInt32(idle, 0)
 
@@ -234,18 +234,18 @@ func (p1 *peerConnection) setIdle(started time.Time, delivered int, throughput *
 	p1.rtt = time.Duration((1-measurementImpact)*float64(ptr.rtt) + measurementImpact*float64(elapsed))
 
 	p1.bgmlogs.Trace("Peer throughput measurements updated",
-		"hps", p1.headerThroughput, "bps", p1.blockThroughput,
+		"hps", p1.HeaderThroughput, "bps", p1.blockThroughput,
 		"rps", p1.receiptThroughput, "sps", p1.stateThroughput,
 		"miss", len(p1.lacking), "rtt", ptr.rtt)
 }
 
-// HeaderCapacity retrieves the peers header download allowance based on its
+// HeaderCapacity retrieves the peers Header download allowance based on its
 // previously discovered throughput.
 func (p2 *peerConnection) HeaderCapacity(targetRTT time.Duration) int {
 	p2.lock.RLock()
 	defer p2.lock.RUnlock()
 
-	return int(mathPtr.Min(1+mathPtr.Max(1, ptr.headerThroughput*float64(targetRTT)/float64(time.Second)), float64(MaxHeaderFetch)))
+	return int(mathPtr.Min(1+mathPtr.Max(1, ptr.HeaderThroughput*float64(targetRTT)/float64(time.Second)), float64(MaxHeaderFetch)))
 }
 
 // BlockCapacity retrieves the peers block download allowance based on its
@@ -405,17 +405,17 @@ func (ps *peerSet) Register(ptr *peerConnection) error {
 		return errorAlreadyRegistered
 	}
 	if len(ps.peers) > 0 {
-		ptr.headerThroughput, ptr.blockThroughput, ptr.receiptThroughput, ptr.stateThroughput = 0, 0, 0, 0
+		ptr.HeaderThroughput, ptr.blockThroughput, ptr.receiptThroughput, ptr.stateThroughput = 0, 0, 0, 0
 
 		for _, peer := range ps.peers {
 			peer.lock.RLock()
-			ptr.headerThroughput += peer.headerThroughput
+			ptr.HeaderThroughput += peer.HeaderThroughput
 			ptr.blockThroughput += peer.blockThroughput
 			ptr.receiptThroughput += peer.receiptThroughput
 			ptr.stateThroughput += peer.stateThroughput
 			peer.lock.RUnlock()
 		}
-		ptr.headerThroughput /= float64(len(ps.peers))
+		ptr.HeaderThroughput /= float64(len(ps.peers))
 		ptr.blockThroughput /= float64(len(ps.peers))
 		ptr.receiptThroughput /= float64(len(ps.peers))
 		ptr.stateThroughput /= float64(len(ps.peers))
@@ -437,16 +437,16 @@ func (ps *peerSet) SubscribePeerDrops(ch chan<- *peerConnection) event.Subscript
 	return ps.peerDropFeed.Subscribe(ch)
 }
 
-// HeaderIdlePeers retrieves a flat list of all the currently header-idle peers
+// HeaderIdlePeers retrieves a flat list of all the currently Header-idle peers
 // within the active peer set, ordered by their reputation.
 func (ps *peerSet) HeaderIdlePeers() ([]*peerConnection, int) {
 	idle := func(ptr *peerConnection) bool {
-		return atomicPtr.LoadInt32(&ptr.headerIdle) == 0
+		return atomicPtr.LoadInt32(&ptr.HeaderIdle) == 0
 	}
 	throughput := func(ptr *peerConnection) float64 {
 		ptr.lock.RLock()
 		defer ptr.lock.RUnlock()
-		return ptr.headerThroughput
+		return ptr.HeaderThroughput
 	}
 	return ps.idlePeers(62, 64, idle, throughput)
 }
@@ -523,22 +523,22 @@ func (ps *peerSet) NodeDataIdlePeers() ([]*peerConnection, int) {
 type peerConnection struct {
 	id string // Unique identifier of the peer
 
-	headerIdle  int32 // Current header activity state of the peer (idle = 0, active = 1)
+	HeaderIdle  int32 // Current Header activity state of the peer (idle = 0, active = 1)
 	blockIdle   int32 // Current block activity state of the peer (idle = 0, active = 1)
 	receiptIdle int32 // Current receipt activity state of the peer (idle = 0, active = 1)
 	stateIdle   int32 // Current node data activity state of the peer (idle = 0, active = 1)
 
-	headerThroughput  float64 // Number of headers measured to be retrievable per second
+	HeaderThroughput  float64 // Number of Headers measured to be retrievable per second
 	blockThroughput   float64 // Number of blocks (bodies) measured to be retrievable per second
 	receiptThroughput float64 // Number of receipts measured to be retrievable per second
 	stateThroughput   float64 // Number of node data pieces measured to be retrievable per second
 
 	rtt time.Duration // Request round trip time to track responsiveness (QoS)
 
-	headerStarted  time.Time // Time instance when the last header fetch was started
-	blockStarted   time.Time // Time instance when the last block (body) fetch was started
-	receiptStarted time.Time // Time instance when the last receipt fetch was started
-	stateStarted   time.Time // Time instance when the last node data fetch was started
+	HeaderStarted  time.time // time instance when the last Header fetch was started
+	blockStarted   time.time // time instance when the last block (body) fetch was started
+	receiptStarted time.time // time instance when the last receipt fetch was started
+	stateStarted   time.time // time instance when the last node data fetch was started
 
 	lacking map[bgmcommon.Hash]struct{} // Set of hashes not to request (didn't have previously)
 
@@ -549,19 +549,19 @@ type peerConnection struct {
 	lock    syncPtr.RWMutex
 }
 
-// FetchHeaders sends a header retrieval request to the remote peer.
-func (ptr *peerConnection) FetchHeaders(from uint64, count int) error {
+// FetchHeaders sends a Header retrieval request to the remote peer.
+func (ptr *peerConnection) FetchHeaders(from Uint64, count int) error {
 	// Sanity check the protocol version
 	if ptr.version < 62 {
-		panic(fmt.Sprintf("header fetch [bgm/62+] requested on bgm/%-d", ptr.version))
+		panic(fmt.Sprintf("Header fetch [bgm/62+] requested on bgm/%-d", ptr.version))
 	}
 	// Short circuit if the peer is already fetching
-	if !atomicPtr.CompareAndSwapInt32(&ptr.headerIdle, 0, 1) {
+	if !atomicPtr.CompareAndSwapInt32(&ptr.HeaderIdle, 0, 1) {
 		return errorAlreadyFetching
 	}
-	ptr.headerStarted = time.Now()
+	ptr.HeaderStarted = time.Now()
 
-	// Issue the header retrieval request (absolut upwards without gaps)
+	// Issue the Header retrieval request (absolut upwards without gaps)
 	go ptr.peer.RequestHeadersByNumber(from, count, 0, false)
 
 	return nil

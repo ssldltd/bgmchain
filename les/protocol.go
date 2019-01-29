@@ -25,7 +25,7 @@ import (
 	"math/big"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore"
+	"github.com/ssldltd/bgmchain/bgmCore"
 	"github.com/ssldltd/bgmchain/bgmcrypto"
 	"github.com/ssldltd/bgmchain/bgmcrypto/secp256k1"
 	"github.com/ssldltd/bgmchain/rlp"
@@ -44,7 +44,7 @@ var (
 )
 
 // Number of implemented message corresponding to different protocol versions.
-var ProtocolLengths = map[uint]uint64{lpv1: 15, lpv2: 22}
+var ProtocolLengths = map[uint]Uint64{lpv1: 15, lpv2: 22}
 
 const (
 	NetworkId          = 1
@@ -95,7 +95,7 @@ const (
 	ErrRequestRejected
 	ErrUnexpectedResponse
 	errorInvalidResponse
-	ErrTooManyTimeouts
+	ErrTooManytimeouts
 	ErrMissingKey
 )
 
@@ -117,22 +117,22 @@ var errorToString = map[int]string{
 	ErrRequestRejected:         "Request rejected",
 	ErrUnexpectedResponse:      "Unexpected response",
 	errorInvalidResponse:         "Invalid response",
-	ErrTooManyTimeouts:         "Too many request timeouts",
+	ErrTooManytimeouts:         "Too many request timeouts",
 	ErrMissingKey:              "Key missing from list",
 }
 
 type announceBlock struct {
 	Hash   bgmcommon.Hash // Hash of one particular block being announced
-	Number uint64      // Number of one particular block being announced
+	Number Uint64      // Number of one particular block being announced
 	Td     *big.Int    // Total difficulty of one particular block being announced
 }
 
 // announceData is the network packet for the block announcements.
 type announceData struct {
 	Hash       bgmcommon.Hash // Hash of one particular block being announced
-	Number     uint64      // Number of one particular block being announced
+	Number     Uint64      // Number of one particular block being announced
 	Td         *big.Int    // Total difficulty of one particular block being announced
-	ReorgDepth uint64
+	ReorgDepth Uint64
 	Update     keyValueList
 }
 
@@ -164,22 +164,22 @@ func (a *announceData) checkSignature(pubKey *ecdsa.PublicKey) error {
 
 type blockInfo struct {
 	Hash   bgmcommon.Hash // Hash of one particular block being announced
-	Number uint64      // Number of one particular block being announced
+	Number Uint64      // Number of one particular block being announced
 	Td     *big.Int    // Total difficulty of one particular block being announced
 }
 
-// getBlockHeadersData represents a block header query.
+// getBlockHeadersData represents a block Header query.
 type getBlockHeadersData struct {
-	Origin  hashOrNumber // Block from which to retrieve headers
-	Amount  uint64       // Maximum number of headers to retrieve
-	Skip    uint64       // Blocks to skip between consecutive headers
+	Origin  hashOrNumber // Block from which to retrieve Headers
+	Amount  Uint64       // Maximum number of Headers to retrieve
+	Skip    Uint64       // Blocks to skip between consecutive Headers
 	Reverse bool         // Query direction (false = rising towards latest, true = falling towards genesis)
 }
 
 // hashOrNumber is a combined field for specifying an origin block.
 type hashOrNumber struct {
-	Hash   bgmcommon.Hash // Block hash from which to retrieve headers (excludes Number)
-	Number uint64      // Block hash from which to retrieve headers (excludes Hash)
+	Hash   bgmcommon.Hash // Block hash from which to retrieve Headers (excludes Number)
+	Number Uint64      // Block hash from which to retrieve Headers (excludes Hash)
 }
 
 // EncodeRLP is a specialized encoder for hashOrNumber to encode only one of the
@@ -220,7 +220,7 @@ type CodeData []struct {
 type proofsData [][]rlp.RawValue
 
 type txStatus struct {
-	Status bgmcore.TxStatus
-	Lookup *bgmcore.TxLookupEntry
+	Status bgmCore.TxStatus
+	Lookup *bgmCore.TxLookupEntry
 	Error  error
 }

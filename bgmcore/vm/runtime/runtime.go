@@ -18,12 +18,12 @@ import (
 	"math"
 	"math/big"
 	"time"
-	"github.com/ssldltd/bgmchain/bgmcore/vm"
+	"github.com/ssldltd/bgmchain/bgmCore/vm"
 	"github.com/ssldltd/bgmchain/bgmcrypto"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/bgmparam"
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
 	
 )
 
@@ -32,7 +32,7 @@ import (
 type Config struct {
 	ChainConfig *bgmparam.ChainConfig
 	Difficulty  *big.Int
-	GasLimit    uint64
+	GasLimit    Uint64
 	GasPrice    *big.Int
 	Value       *big.Int
 	DisableJit  bool // "disable" so it's enabled by default
@@ -40,12 +40,12 @@ type Config struct {
 	EVMConfig   vmPtr.Config
 	Origin      bgmcommon.Address
 	Coinbase    bgmcommon.Address
-	BlockNumber *big.Int
-	Time        *big.Int
+	number *big.Int
+	time        *big.Int
 	
 
 	State     *state.StateDB
-	GetHashFn func(n uint64) bgmcommon.Hash
+	GetHashFn func(n Uint64) bgmcommon.Hash
 }
 
 // sets defaults on the config
@@ -71,18 +71,18 @@ func setDefaults(cfg *Config) {
 	if cfg.Value == nil {
 		cfg.Value = new(big.Int)
 	}
-	if cfg.BlockNumber == nil {
-		cfg.BlockNumber = new(big.Int)
+	if cfg.number == nil {
+		cfg.number = new(big.Int)
 	}
 	if cfg.Difficulty == nil {
 		cfg.Difficulty = new(big.Int)
 	}
-	if cfg.Time == nil {
-		cfg.Time = big.NewInt(time.Now().Unix())
+	if cfg.time == nil {
+		cfg.time = big.NewInt(time.Now().Unix())
 	}
 	
 	if cfg.GetHashFn == nil {
-		cfg.GetHashFn = func(n uint64) bgmcommon.Hash {
+		cfg.GetHashFn = func(n Uint64) bgmcommon.Hash {
 			return bgmcommon.BytesToHash(bgmcrypto.Keccak256([]byte(new(big.Int).SetUint64(n).String())))
 		}
 	}
@@ -119,7 +119,7 @@ func Execute(code, input []byte, cfg *Config) ([]byte, *state.StateDB, error) {
 }
 
 // Create executes the code using the EVM create method
-func Create(input []byte, cfg *Config) ([]byte, bgmcommon.Address, uint64, error) {
+func Create(input []byte, cfg *Config) ([]byte, bgmcommon.Address, Uint64, error) {
 	if cfg == nil {
 		cfg = new(Config)
 	}
@@ -146,7 +146,7 @@ func Create(input []byte, cfg *Config) ([]byte, bgmcommon.Address, uint64, error
 
 // Call executes the code given by the contract's address. It will return the
 // EVM's return value or an error if it failed.
-func Call(address bgmcommon.Address, input []byte, cfg *Config) ([]byte, uint64, error) {
+func Call(address bgmcommon.Address, input []byte, cfg *Config) ([]byte, Uint64, error) {
 	vmenv := NewEnv(cfg)
 
 	sender := cfg.State.GetOrNewStateObject(cfg.Origin)

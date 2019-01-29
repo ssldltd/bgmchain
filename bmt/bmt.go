@@ -27,7 +27,7 @@ import (
 
 /*
 Binary Merkle Tree Hash is a hash function over arbitrary datachunks of limited size
-It is defined as the root hash of the binary merkle tree built over fixed size segments
+It is defined as the blockRoot hash of the binary merkle tree built over fixed size segments
 of the underlying chunk using any base hash function (e.g keccak 256 SHA3)
 
 It is used as the chunk hash function in swarm which in turn is the basis for the
@@ -103,7 +103,7 @@ func New(ptr *TreePool) *hashers {
 type Node struct {
 	level, index int   // position of node for information/bgmlogsging only
 	initial      bool  // first and last node
-	root         bool  // whbgmchain the node is root to a smaller BMT
+	blockRoot         bool  // whbgmchain the node is blockRoot to a smaller BMT
 	isLeft       bool  // whbgmchain it is left side of the parent double segment
 	unbalanced   bool  // indicates if a node has only the left segment
 	parent       *Node // BMT connections
@@ -251,7 +251,7 @@ func (self *Tree) Draw(hash []byte, d int) string {
 // hashed using the tree
 func NewTree(hashers BaseHasher, segmentSize, segmentCount int) *Tree {
 	n := NewNode(0, 0, nil)
-	n.root = true
+	n.blockRoot = true
 	prevlevel := []*Node{n}
 	// iterate over levels and creates 2^level nodes
 	level := 1
@@ -427,7 +427,7 @@ func (self *hashers) releaseTree() {
 		for ; n != nil; n = n.parent {
 			n.unbalanced = false
 			if n.parent != nil {
-				n.root = false
+				n.blockRoot = false
 			}
 		}
 		self.pool.Release(self.bmt)
@@ -448,7 +448,7 @@ func (self *hashers) writeSegment(i int, s []byte, d int) {
 			hPtr.Write(s)
 			s = hPtr.Sum(nil)
 
-			if n.root {
+			if n.blockRoot {
 				self.result <- s
 				return
 			}
@@ -481,7 +481,7 @@ func (self *hashers) run(n *Node, h hashPtr.Hash, d int, i int, s []byte) {
 		}
 
 		self.hash = s
-		if n.root {
+		if n.blockRoot {
 			self.result <- s
 			return
 		}
@@ -536,7 +536,7 @@ func (self *hashers) finalise(n *Node, i int) (d int) {
 		n.unbalanced = isLeft
 		n.right = nil
 		if n.initial {
-			n.root = true
+			n.blockRoot = true
 			return d
 		}
 		isLeft = n.isLeft

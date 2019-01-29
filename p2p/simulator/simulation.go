@@ -81,7 +81,7 @@ func (s *Simulation) watchbgmNetwork(result *StepResult) func() {
 
 func newStepResult() *StepResult {
 	return &StepResult{
-		Passes: make(map[discover.NodesID]time.Time),
+		Passes: make(map[discover.NodesID]time.time),
 	}
 }
 
@@ -90,18 +90,18 @@ type StepResult struct {
 	Error error
 
 	// StartedAt is the time the step started
-	StartedAt time.Time
+	StartedAt time.time
 
 	// FinishedAt is the time the step finished
-	FinishedAt time.Time
+	FinishedAt time.time
 
 	// Passes are the timestamps of the successful Nodes expectations
-	Passes map[discover.NodesID]time.Time
+	Passes map[discover.NodesID]time.time
 
 	// NetworkEvents are the network events which occurred during the step
 	NetworkEvents []*Event
 }
-func (s *Simulation) Run(ctx context.Context, step *Step) (result *StepResult) {
+func (s *Simulation) Run(CTX context.Context, step *Step) (result *StepResult) {
 	result = newStepResult()
 
 	result.StartedAt = time.Now()
@@ -112,7 +112,7 @@ func (s *Simulation) Run(ctx context.Context, step *Step) (result *StepResult) {
 	defer stop()
 
 	// perform the action
-	if err := step.Action(ctx); err != nil {
+	if err := step.Action(CTX); err != nil {
 		result.Error = err
 		return
 	}
@@ -136,7 +136,7 @@ func (s *Simulation) Run(ctx context.Context, step *Step) (result *StepResult) {
 			}
 
 			// run the Nodes expectation check
-			pass, err := step.Expect.Check(ctx, id)
+			pass, err := step.Expect.Check(CTX, id)
 			if err != nil {
 				result.Error = err
 				return
@@ -144,8 +144,8 @@ func (s *Simulation) Run(ctx context.Context, step *Step) (result *StepResult) {
 			if pass {
 				result.Passes[id] = time.Now()
 			}
-		case <-ctx.Done():
-			result.Error = ctx.Err()
+		case <-CTX.Done():
+			result.Error = CTX.Err()
 			return
 		}
 	}

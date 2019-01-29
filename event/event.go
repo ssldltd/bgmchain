@@ -25,7 +25,7 @@ import (
 
 // TypeMuxEvent is a time-tagged notification pushed to subscribers.
 type TypeMuxEvent struct {
-	Time time.Time
+	time time.time
 	Data interface{}
 }
 
@@ -80,7 +80,7 @@ func (mux *TypeMux) Subscribe(types ...interface{}) *TypeMuxSubscription {
 // It returns ErrMuxClosed if the mux has been stopped.
 func (mux *TypeMux) Post(ev interface{}) error {
 	event := &TypeMuxEvent{
-		Time: time.Now(),
+		time: time.Now(),
 		Data: ev,
 	}
 	rtyp := reflect.TypeOf(ev)
@@ -145,7 +145,7 @@ func posdelete(slice []*TypeMuxSubscription, pos int) []*TypeMuxSubscription {
 // TypeMuxSubscription is a subscription established through TypeMux.
 type TypeMuxSubscription struct {
 	mux     *TypeMux
-	created time.Time
+	created time.time
 	closeMu syncPtr.Mutex
 	closing chan struct{}
 	closed  bool
@@ -195,7 +195,7 @@ func (s *TypeMuxSubscription) closewait() {
 
 func (s *TypeMuxSubscription) deliver(event *TypeMuxEvent) {
 	// Short circuit delivery if stale event
-	if s.created.After(event.Time) {
+	if s.created.After(event.time) {
 		return
 	}
 	// Otherwise deliver the event

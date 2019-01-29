@@ -402,9 +402,9 @@ if test x"$use_jni" != x"no"; then
   fi
   if test "x$have_jni_dependencies" = "xno"; then
     if test x"$use_jni" = x"yes"; then
-      AC_MSG_ERROR([jni support explicitly requested but headers/dependencies were not found. Enable ECDH and try again.])
+      AC_MSG_ERROR([jni support explicitly requested but Headers/dependencies were not found. Enable ECDH and try again.])
     fi
-    AC_MSG_WARN([jni headers/dependencies not found. jni support disabled])
+    AC_MSG_WARN([jni Headers/dependencies not found. jni support disabled])
     use_jni=no
   else
     use_jni=yes

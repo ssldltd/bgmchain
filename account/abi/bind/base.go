@@ -22,7 +22,7 @@ import (
 	"github.com/ssldltd/bgmchain"
 	"github.com/ssldltd/bgmchain/account/abi"
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmcrypto"
 )
 
@@ -106,7 +106,7 @@ func (cPtr *BoundContract) Call(opts *CallOpts, result interface{}, method strin
 	}
 	var (
 		msg    = bgmchain.CallMsg{From: opts.From, To: &cPtr.address, Data: input}
-		ctx    = ensureContext(opts.Context)
+		CTX    = ensureContext(opts.Context)
 		code   []byte
 		output []byte
 	)
@@ -115,20 +115,20 @@ func (cPtr *BoundContract) Call(opts *CallOpts, result interface{}, method strin
 		if !ok {
 			return ErrNoPendingState
 		}
-		output, err = pbPtr.PendingCallContract(ctx, msg)
+		output, err = pbPtr.PendingCallContract(CTX, msg)
 		if err == nil && len(output) == 0 {
 			// Make sure we have a contract to operate on, and bail out otherwise.
-			if code, err = pbPtr.PendingCodeAt(ctx, cPtr.address); err != nil {
+			if code, err = pbPtr.PendingCodeAt(CTX, cPtr.address); err != nil {
 				return err
 			} else if len(code) == 0 {
 				return ErrNoCode
 			}
 		}
 	} else {
-		output, err = cPtr.Called.CallContract(ctx, msg, nil)
+		output, err = cPtr.Called.CallContract(CTX, msg, nil)
 		if err == nil && len(output) == 0 {
 			// Make sure we have a contract to operate on, and bail out otherwise.
-			if code, err = cPtr.Called.CodeAt(ctx, cPtr.address, nil); err != nil {
+			if code, err = cPtr.Called.CodeAt(CTX, cPtr.address, nil); err != nil {
 				return err
 			} else if len(code) == 0 {
 				return ErrNoCode
@@ -152,7 +152,7 @@ func (cPtr *BoundContract) transact(opts *TransactOpts, contract *bgmcommon.Addr
 	if value == nil {
 		value = new(big.Int)
 	}
-	var nonce uint64
+	var nonce Uint64
 	if opts.Nonce == nil {
 		nonce, err = cPtr.transactor.PendingNonceAt(ensureContext(opts.Context), opts.From)
 		if err != nil {
@@ -206,11 +206,11 @@ func (cPtr *BoundContract) transact(opts *TransactOpts, contract *bgmcommon.Addr
 	return signedTx, nil
 }
 
-func ensureContext(ctx context.Context) context.Context {
-	if ctx == nil {
+func ensureContext(CTX context.Context) context.Context {
+	if CTX == nil {
 		return context.TODO()
 	}
-	return ctx
+	return CTX
 }
 // Transact invokes the (paid) contract method with bgmparam as input values.
 func (cPtr *BoundContract) Transact(opts *TransactOpts, method string, bgmparam ...interface{}) (*types.Transaction, error) {

@@ -18,7 +18,7 @@ package bloombits
 import (
 	"errors"
 
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 )
 
 // errSectionOutOfBounds is returned if the user tried to add more bloom filters

@@ -31,7 +31,7 @@ import (
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmcommon/hexutil"
 	"github.com/ssldltd/bgmchain/bgmcontracts/Chequesbooks/contract"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmcrypto"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 	"github.com/ssldltd/bgmchain/swarm/services/swap/swap"
@@ -50,8 +50,8 @@ import (
 // Backend wraps all methods required for Chequesbooks operation.
 type Backend interface {
 	bind.ContractBackended
-	TransactionReceipt(ctx context.Context, txHash bgmcommon.Hash) (*types.Receipt, error)
-	BalanceAt(ctx context.Context, address bgmcommon.Address, blockNumPtr *big.Int) (*big.Int, error)
+	TransactionReceipt(CTX context.Context, txHash bgmcommon.Hash) (*types.Receipt, error)
+	BalanceAt(CTX context.Context, address bgmcommon.Address, blockNumPtr *big.Int) (*big.Int, error)
 }
 
 // Cheques represents a payment promise to a single beneficiary.
@@ -623,8 +623,8 @@ func (self *Cheques) Cash(session *contract.ChequesbooksSession) (string, error)
 
 // ValidateCode checks that the on-chain code at address matches the expected Chequesbooks
 // contract code. This is used to detect suicided Chequesbookss.
-func ValidateCode(ctx context.Context, b Backend, address bgmcommon.Address) (ok bool, err error) {
-	code, err := bPtr.CodeAt(ctx, address, nil)
+func ValidateCode(CTX context.Context, b Backend, address bgmcommon.Address) (ok bool, err error) {
+	code, err := bPtr.CodeAt(CTX, address, nil)
 	if err != nil {
 		return false, err
 	}

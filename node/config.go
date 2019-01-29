@@ -75,7 +75,7 @@ type Config struct {
 	NoUSB bool `toml:",omitempty"`
 
 	// IPCPath is the requested location to place the IPC endpoint. If the path is
-	// a simple file name, it is placed inside the data directory (or on the root
+	// a simple file name, it is placed inside the data directory (or on the blockRoot
 	// pipe path on Windows), whereas if it's a resolvable path name (absolute or
 	// relative), then that specific path is enforced. An empty path disables IPcPtr.
 	IPCPath string `toml:",omitempty"`
@@ -89,7 +89,7 @@ type Config struct {
 	// for ephemeral nodes).
 	HTTPPort int `toml:",omitempty"`
 
-	// HTTPCors is the Cross-Origin Resource Sharing header to send to requesting
+	// HTTPCors is the Cross-Origin Resource Sharing Header to send to requesting
 	// clients. Please be aware that CORS is a browser enforced security, it's fully
 	// useless for custom HTTP clients.
 	HTTPCors []string `toml:",omitempty"`
@@ -110,7 +110,7 @@ type Config struct {
 
 	// WSOrigins is the list of domain to accept websocket requests fromPtr. Please be
 	// aware that the server can only act upon the HTTP request the client sends and
-	// cannot verify the validity of the request headerPtr.
+	// cannot verify the validity of the request HeaderPtr.
 	WSOrigins []string `toml:",omitempty"`
 
 	// WSModules is a list of apiPtr modules to expose via the websocket RPC interface.

@@ -18,19 +18,19 @@ import "errors"
 
 var (
 	// errMissingData is returned from decompression if the byte referenced by
-	// the bitset header overflows the input data.
+	// the bitset Header overflows the input data.
 	errMissingData = errors.New("missing bytes on input")
 
 	// errUnreferencedData is returned from decompression if not all bytes were used
 	// up from the input data after decompressing it.
 	errUnreferencedData = errors.New("extra bytes on input")
 
-	// errExceededTarget is returned from decompression if the bitset header has
+	// errExceededTarget is returned from decompression if the bitset Header has
 	// more bits defined than the number of target buffer space available.
 	errExceededTarget = errors.New("target data size exceeded")
 
 	// errZeroContent is returned from decompression if a data byte referenced in
-	// the bitset header is actually a zero byte.
+	// the bitset Header is actually a zero byte.
 	errZeroContent = errors.New("zero byte in input content")
 )
 

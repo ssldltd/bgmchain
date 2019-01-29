@@ -20,8 +20,8 @@ import (
 	"github.com/aristanetworks/goarista/monotime"
 )
 
-type AbsTime time.Duration // absolute monotonic time
+type Abstime time.Duration // absolute monotonic time
 
-func Now() AbsTime {
-	return AbsTime(monotime.Now())
+func Now() Abstime {
+	return Abstime(monotime.Now())
 }

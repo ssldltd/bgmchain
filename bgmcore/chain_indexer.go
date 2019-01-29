@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the BMG Chain project source. If not, you can see <http://www.gnu.org/licenses/> for detail.
 
-package bgmcore
+package bgmCore
 
 import (
 	"encoding/binary"
@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/event"
 	"github.com/ssldltd/bgmchain/bgmlogs"
@@ -32,10 +32,10 @@ import (
 // the background and write the segment results into the database. These can be
 type ChainIndexerBackend interface {
 	// any partially completed operations (in case of a reorg).
-	Reset(section uint64, prevHead bgmcommon.Hash) error
+	Reset(section Uint64, prevHead bgmcommon.Hash) error
 
-	// will ensure a sequential order of headers.
-	Process(headerPtr *types.Header)
+	// will ensure a sequential order of Headers.
+	Process(HeaderPtr *types.Header)
 
 	// Commit finalizes the section metadata and stores it into the database.
 	Commit() error
@@ -43,10 +43,10 @@ type ChainIndexerBackend interface {
 
 // ChainIndexerChain interface is used for connecting the indexer to a blockchain
 type ChainIndexerChain interface {
-	// CurrentHeader retrieves the latest locally known headerPtr.
+	// CurrentHeader retrieves the latest locally known HeaderPtr.
 	CurrentHeader() *types.Header
 
-	// SubscribeChainEvent subscribes to new head header notifications.
+	// SubscribeChainEvent subscribes to new head Header notifications.
 	SubscribeChainEvent(ch chan<- ChainEvent) event.Subscription
 }
 // Further child ChainIndexers can be added which use the output of the parent
@@ -60,15 +60,15 @@ type ChainIndexer struct {
 	children []*ChainIndexer     // Child indexers to cascade chain updates to
 
 	active uint32          // Flag whbgmchain the event loop was started
-	update chan struct{}   // Notification channel that headers should be processed
+	update chan struct{}   // Notification channel that Headers should be processed
 	quit   chan chan error // Quit channel to tear down running goroutines
 
-	sectionSize uint64 // Number of blocks in a single chain segment to process
-	confirmsReq uint64 // Number of confirmations before processing a completed segment
+	sectionSize Uint64 // Number of blocks in a single chain segment to process
+	confirmsReq Uint64 // Number of confirmations before processing a completed segment
 
-	storedSections uint64 // Number of sections successfully indexed into the database
-	knownSections  uint64 // Number of sections known to be complete (block wise)
-	cascadedHead   uint64 // Block number of the last completed section cascaded to subindexers
+	storedSections Uint64 // Number of sections successfully indexed into the database
+	knownSections  Uint64 // Number of sections known to be complete (block wise)
+	cascadedHead   Uint64 // Block number of the last completed section cascaded to subindexers
 
 	throttling time.Duration // Disk throttling to prevent a heavy upgrade from hogging resources
 
@@ -112,7 +112,7 @@ func (cPtr *ChainIndexer) Close() error {
 }
 // chain segments of a given size after certain number of confirmations passed.
 // The throttling bgmparameter might be used to prevent database thrashing.
-func NewChainIndexer(chainDb, indexDb bgmdbPtr.Database, backend ChainIndexerBackend, section, confirm uint64, throttling time.Duration, kind string) *ChainIndexer {
+func NewChainIndexer(chainDb, indexDb bgmdbPtr.Database, backend ChainIndexerBackend, section, confirm Uint64, throttling time.Duration, kind string) *ChainIndexer {
 	c := &ChainIndexer{
 		chainDb:     chainDb,
 		indexDb:     indexDb,
@@ -132,7 +132,7 @@ func NewChainIndexer(chainDb, indexDb bgmdbPtr.Database, backend ChainIndexerBac
 }
 
 // AddKnownSectionHead marks a new section head as known/processed if it is newer
-func (cPtr *ChainIndexer) AddKnownSectionHead(section uint64, shead bgmcommon.Hash) {
+func (cPtr *ChainIndexer) AddKnownSectionHead(section Uint64, shead bgmcommon.Hash) {
 	cPtr.lock.Lock()
 	defer cPtr.lock.Unlock()
 
@@ -155,18 +155,18 @@ func (cPtr *ChainIndexer) Start(chain ChainIndexerChain) {
 
 // eventLoop is a secondary - optional - event loop of the indexer which is only
 // started for the outermost indexer to push chain head events into a processing
-func (cPtr *ChainIndexer) eventLoop(currentheaderPtr *types.headerPtr, events chan ChainEvent, sub event.Subscription) {
+func (cPtr *ChainIndexer) eventLoop(currentHeaderPtr *types.HeaderPtr, events chan ChainEvent, sub event.Subscription) {
 	// Mark the chain indexer as active, requiring an additional teardown
 	atomicPtr.StoreUint32(&cPtr.active, 1)
 
 	defer subPtr.Unsubscribe()
 
 	// Fire the initial new head event to start any outstanding processing
-	cPtr.newHead(currentheaderPtr.Number.Uint64(), false)
+	cPtr.newHead(currentHeaderPtr.Number.Uint64(), false)
 
 	var (
 		prevHeader = currentHeader
-		prevHash   = currentheaderPtr.Hash()
+		prevHash   = currentHeaderPtr.Hash()
 	)
 	for {
 		select {
@@ -182,23 +182,23 @@ func (cPtr *ChainIndexer) eventLoop(currentheaderPtr *types.headerPtr, events ch
 				errc <- nil
 				return
 			}
-			header := ev.Block.Header()
-			if headerPtr.ParentHash != prevHash {
+			Header := ev.Block.Header()
+			if HeaderPtr.ParentHash != prevHash {
 				// Reorg to the bgmcommon ancestor (might not exist in light sync mode, skip reorg then)
 				// TODO(karalabe, zsfelfoldi): This seems a bit brittle, can we detect this case explicitly?
-				if h := FindbgmcommonAncestor(cPtr.chainDb, prevheaderPtr, header); h != nil {
+				if h := FindbgmcommonAncestor(cPtr.chainDb, prevHeaderPtr, Header); h != nil {
 					cPtr.newHead(hPtr.Number.Uint64(), true)
 				}
 			}
-			cPtr.newHead(headerPtr.Number.Uint64(), false)
+			cPtr.newHead(HeaderPtr.Number.Uint64(), false)
 
-			prevheaderPtr, prevHash = headerPtr, headerPtr.Hash()
+			prevHeaderPtr, prevHash = HeaderPtr, HeaderPtr.Hash()
 		}
 	}
 }
 
 // newHead notifies the indexer about new chain heads and/or reorgs.
-func (cPtr *ChainIndexer) newHead(head uint64, reorg bool) {
+func (cPtr *ChainIndexer) newHead(head Uint64, reorg bool) {
 	cPtr.lock.Lock()
 	defer cPtr.lock.Unlock()
 
@@ -225,7 +225,7 @@ func (cPtr *ChainIndexer) newHead(head uint64, reorg bool) {
 		return
 	}
 	// No reorg, calculate the number of newly known sections and update if high enough
-	var sections uint64
+	var sections Uint64
 	if head >= cPtr.confirmsReq {
 		sections = (head + 1 - cPtr.confirmsReq) / cPtr.sectionSize
 		if sections > cPtr.knownSections {
@@ -243,7 +243,7 @@ func (cPtr *ChainIndexer) newHead(head uint64, reorg bool) {
 func (cPtr *ChainIndexer) updateLoop() {
 	var (
 		updating bool
-		updated  time.Time
+		updated  time.time
 	)
 
 	for {
@@ -254,7 +254,7 @@ func (cPtr *ChainIndexer) updateLoop() {
 			return
 
 		case <-cPtr.update:
-			// Section headers completed (or rolled back), update the index
+			// Section Headers completed (or rolled back), update the index
 			cPtr.lock.Lock()
 			if cPtr.knownSections > cPtr.storedSections {
 				// Periodically print an upgrade bgmlogs message to the user
@@ -314,8 +314,8 @@ func (cPtr *ChainIndexer) updateLoop() {
 }
 
 // processSection processes an entire section by calling backend functions while
-// ensuring the continuity of the passed headers. Since the chain mutex is not
-func (cPtr *ChainIndexer) processSection(section uint64, lastHead bgmcommon.Hash) (bgmcommon.Hash, error) {
+// ensuring the continuity of the passed Headers. Since the chain mutex is not
+func (cPtr *ChainIndexer) processSection(section Uint64, lastHead bgmcommon.Hash) (bgmcommon.Hash, error) {
 	cPtr.bgmlogs.Trace("Processing new chain section", "section", section)
 
 	// Reset and partial processing
@@ -330,14 +330,14 @@ func (cPtr *ChainIndexer) processSection(section uint64, lastHead bgmcommon.Hash
 		if hash == (bgmcommon.Hash{}) {
 			return bgmcommon.Hash{}, fmt.Errorf("canonical block #%-d unknown", number)
 		}
-		header := GetHeader(cPtr.chainDb, hash, number)
-		if header == nil {
+		Header := GetHeader(cPtr.chainDb, hash, number)
+		if Header == nil {
 			return bgmcommon.Hash{}, fmt.Errorf("block #%-d [%x…] not found", number, hash[:4])
-		} else if headerPtr.ParentHash != lastHead {
+		} else if HeaderPtr.ParentHash != lastHead {
 			return bgmcommon.Hash{}, fmt.Errorf("chain reorged during section processing")
 		}
-		cPtr.backend.Process(header)
-		lastHead = headerPtr.Hash()
+		cPtr.backend.Process(Header)
+		lastHead = HeaderPtr.Hash()
 	}
 	if err := cPtr.backend.Commit(); err != nil {
 		cPtr.bgmlogs.Error("Section commit failed", "error", err)
@@ -348,7 +348,7 @@ func (cPtr *ChainIndexer) processSection(section uint64, lastHead bgmcommon.Hash
 
 // Sections returns the number of processed sections maintained by the indexer
 // verifications.
-func (cPtr *ChainIndexer) Sections() (uint64, uint64, bgmcommon.Hash) {
+func (cPtr *ChainIndexer) Sections() (Uint64, Uint64, bgmcommon.Hash) {
 	cPtr.lock.Lock()
 	defer cPtr.lock.Unlock()
 
@@ -378,14 +378,14 @@ func (cPtr *ChainIndexer) loadValidSections() {
 }
 // removeSectionHead removes the reference to a processed section from the index
 // database.
-func (cPtr *ChainIndexer) removeSectionHead(section uint64) {
+func (cPtr *ChainIndexer) removeSectionHead(section Uint64) {
 	var data [8]byte
 	binary.BigEndian.PutUint64(data[:], section)
 
 	cPtr.indexDbPtr.Delete(append([]byte("shead"), data[:]...))
 }
 // setValidSections writes the number of valid sections to the index database
-func (cPtr *ChainIndexer) setValidSections(sections uint64) {
+func (cPtr *ChainIndexer) setValidSections(sections Uint64) {
 	// Set the current number of valid sections in the database
 	var data [8]byte
 	binary.BigEndian.PutUint64(data[:], sections)
@@ -399,7 +399,7 @@ func (cPtr *ChainIndexer) setValidSections(sections uint64) {
 	cPtr.storedSections = sections // needed if new > old
 }
 // SectionHead retrieves the last block hash of a processed section from the
-func (cPtr *ChainIndexer) SectionHead(section uint64) bgmcommon.Hash {
+func (cPtr *ChainIndexer) SectionHead(section Uint64) bgmcommon.Hash {
 	var data [8]byte
 	binary.BigEndian.PutUint64(data[:], section)
 
@@ -411,7 +411,7 @@ func (cPtr *ChainIndexer) SectionHead(section uint64) bgmcommon.Hash {
 }
 // setSectionHead writes the last block hash of a processed section to the index
 // database.
-func (cPtr *ChainIndexer) setSectionHead(section uint64, hash bgmcommon.Hash) {
+func (cPtr *ChainIndexer) setSectionHead(section Uint64, hash bgmcommon.Hash) {
 	var data [8]byte
 	binary.BigEndian.PutUint64(data[:], section)
 

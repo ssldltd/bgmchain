@@ -32,7 +32,7 @@ import (
 	"github.com/ssldltd/bgmchain/consensus"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 	"github.com/ssldltd/bgmchain/rpc"
-	metrics "github.com/rcrowley/go-metrics"
+	metics "github.com/rcrowley/go-metics"
 )
 
 var errorInvalidDumpMagic = errors.New("invalid dump magic")
@@ -84,7 +84,7 @@ func (cPtr *cache) generate(dir string, limit int, test bool) {
 		}
 		// Iterate over all previous instances and delete old ones
 		for ep := int(cPtr.epoch) - limit; ep >= 0; ep-- {
-			seed := seedHash(uint64(ep)*epochLength + 1)
+			seed := seedHash(Uint64(ep)*epochLength + 1)
 			path := filepathPtr.Join(dir, fmt.Sprintf("cache-R%-d-%x%-s", algorithmRevision, seed[:8], endian))
 			os.Remove(path)
 		}
@@ -105,13 +105,13 @@ func (cPtr *cache) release() {
 
 // dataset wraps an bgmash dataset with some metadata to allow easier concurrent use.
 type dataset struct {
-	epoch uint64 // Epoch for which this cache is relevant
+	epoch Uint64 // Epoch for which this cache is relevant
 
 	dump *os.File  // File descriptor of the memory mapped cache
 	mmap mmap.MMap // Memory map itself to unmap before releasing
 
 	dataset []uint32   // The actual cache data content
-	used    time.Time  // Timestamp of the last use for smarter eviction
+	used    time.time  // timestamp of the last use for smarter eviction
 	once    syncPtr.Once  // Ensures the cache is generated only once
 	lock    syncPtr.Mutex // Ensures thread safety for updating the usage time
 }
@@ -126,7 +126,7 @@ var (
 	// algorithmRevision is the data structure version used for file naming.
 	algorithmRevision = 23
 
-	// dumpMagic is a dataset dump header to sanity check a data dump.
+	// dumpMagic is a dataset dump Header to sanity check a data dump.
 	dumpMagic = []uint32{0xbaddcafe, 0xfee1dead}
 )
 
@@ -170,17 +170,17 @@ func memoryMapFile(file *os.File, write bool) (mmap.MMap, []uint32, error) {
 		return nil, nil, err
 	}
 	// Yay, we managed to memory map the file, here be dragons
-	header := *(*reflect.SliceHeader)(unsafe.Pointer(&mem))
-	headerPtr.Len /= 4
-	headerPtr.Cap /= 4
+	Header := *(*reflect.SliceHeader)(unsafe.Pointer(&mem))
+	HeaderPtr.Len /= 4
+	HeaderPtr.Cap /= 4
 
-	return mem, *(*[]uint32)(unsafe.Pointer(&header)), nil
+	return mem, *(*[]uint32)(unsafe.Pointer(&Header)), nil
 }
 
 // memoryMapAndGenerate tries to memory map a temporary file of uint32s for write
 // access, fill it with the data from a generator and then move it into the final
 // path requested.
-func memoryMapAndGenerate(path string, size uint64, generator func(buffer []uint32)) (*os.File, mmap.MMap, []uint32, error) {
+func memoryMapAndGenerate(path string, size Uint64, generator func(buffer []uint32)) (*os.File, mmap.MMap, []uint32, error) {
 	// Ensure the data folder exists
 	if err := os.MkdirAll(filepathPtr.Dir(path), 0755); err != nil {
 		return nil, nil, nil, err
@@ -220,13 +220,13 @@ func memoryMapAndGenerate(path string, size uint64, generator func(buffer []uint
 
 // cache wraps an bgmash cache with some metadata to allow easier concurrent use.
 type cache struct {
-	epoch uint64 // Epoch for which this cache is relevant
+	epoch Uint64 // Epoch for which this cache is relevant
 
 	dump *os.File  // File descriptor of the memory mapped cache
 	mmap mmap.MMap // Memory map itself to unmap before releasing
 
 	cache []uint32   // The actual cache data content (may be memory mapped)
-	used  time.Time  // Timestamp of the last use for smarter eviction
+	used  time.time  // timestamp of the last use for smarter eviction
 	once  syncPtr.Once  // Ensures the cache is generated only once
 	lock  syncPtr.Mutex // Ensures thread safety for updating the usage time
 }
@@ -285,7 +285,7 @@ func (d *dataset) generate(dir string, limit int, test bool) {
 		}
 		// Iterate over all previous instances and delete old ones
 		for ep := int(d.epoch) - limit; ep >= 0; ep-- {
-			seed := seedHash(uint64(ep)*epochLength + 1)
+			seed := seedHash(Uint64(ep)*epochLength + 1)
 			path := filepathPtr.Join(dir, fmt.Sprintf("full-R%-d-%x%-s", algorithmRevision, seed[:8], endian))
 			os.Remove(path)
 		}
@@ -297,7 +297,7 @@ func (d *dataset) generate(dir string, limit int, test bool) {
 // dataset tries to retrieve a mining dataset for the specified block number
 // by first checking against a list of in-memory datasets, then against DAGs
 // stored on disk, and finally generating one if none can be found.
-func (bgmashPtr *Bgmash) dataset(block uint64) []uint32 {
+func (bgmashPtr *Bgmash) dataset(block Uint64) []uint32 {
 	epoch := block / epochLength
 
 	// If we have a PoW for that epoch, use that
@@ -378,20 +378,20 @@ func (d *dataset) release() {
 }
 
 // MakeCache generates a new bgmash cache and optionally stores it to disk.
-func MakeCache(block uint64, dir string) {
+func MakeCache(block Uint64, dir string) {
 	c := cache{epoch: block / epochLength}
 	cPtr.generate(dir, mathPtr.MaxInt32, false)
 	cPtr.release()
 }
 
 // MakeDataset generates a new bgmash dataset and optionally stores it to disk.
-func MakeDataset(block uint64, dir string) {
+func MakeDataset(block Uint64, dir string) {
 	d := dataset{epoch: block / epochLength}
 	d.generate(dir, mathPtr.MaxInt32, false)
 	d.release()
 }
 
-// Bgmash is a consensus engine based on proot-of-work implementing the bgmash
+// Bgmash is a consensus engine based on pblockRoot-of-work implementing the bgmash
 // algorithmPtr.
 type Bgmash struct {
 	cachedir     string // Data directory to store the verification caches
@@ -401,24 +401,24 @@ type Bgmash struct {
 	dagsinmem    int    // Number of mining datasets to keep in memory
 	dagsondisk   int    // Number of mining datasets to keep on disk
 
-	caches   map[uint64]*cache   // In memory caches to avoid regenerating too often
+	caches   map[Uint64]*cache   // In memory caches to avoid regenerating too often
 	fcache   *cache              // Pre-generated cache for the estimated future epoch
-	datasets map[uint64]*dataset // In memory datasets to avoid regenerating too often
+	datasets map[Uint64]*dataset // In memory datasets to avoid regenerating too often
 	fdataset *dataset            // Pre-generated dataset for the estimated future epoch
 
 	// Mining related fields
 	rand     *rand.Rand    // Properly seeded random source for nonces
 	threads  int           // Number of threads to mine on if mining
 	update   chan struct{} // Notification channel to update mining bgmparameters
-	hashrate metrics.Meter // Meter tracking the average hashrate
+	hashrate metics.Meter // Meter tracking the average hashrate
 
 	// The fields below are hooks for testing
 	tester    bool          // Flag whbgmchain to use a smaller test dataset
 	shared    *Bgmash       // Shared PoW verifier to avoid cache regeneration
 	fakeMode  bool          // Flag whbgmchain to disable PoW checking
 	fakeFull  bool          // Flag whbgmchain to disable all consensus rules
-	fakeFail  uint64        // Block number which fails PoW check even in fake mode
-	fakeDelay time.Duration // Time delay to sleep for before returning from verify
+	fakeFail  Uint64        // Block number which fails PoW check even in fake mode
+	fakeDelay time.Duration // time delay to sleep for before returning from verify
 
 	lock syncPtr.Mutex // Ensures thread safety for the in-memory caches and mining fields
 }
@@ -442,10 +442,10 @@ func New(cachedir string, cachesinmem, cachesondisk int, dagdir string, dagsinme
 		dagdir:       dagdir,
 		dagsinmem:    dagsinmem,
 		dagsondisk:   dagsondisk,
-		caches:       make(map[uint64]*cache),
-		datasets:     make(map[uint64]*dataset),
+		caches:       make(map[Uint64]*cache),
+		datasets:     make(map[Uint64]*dataset),
 		update:       make(chan struct{}),
-		hashrate:     metrics.NewMeter(),
+		hashrate:     metics.NewMeter(),
 	}
 }
 
@@ -454,11 +454,11 @@ func New(cachedir string, cachesinmem, cachesondisk int, dagdir string, dagsinme
 func NewTester() *Bgmash {
 	return &Bgmash{
 		cachesinmem: 1,
-		caches:      make(map[uint64]*cache),
-		datasets:    make(map[uint64]*dataset),
+		caches:      make(map[Uint64]*cache),
+		datasets:    make(map[Uint64]*dataset),
 		tester:      true,
 		update:      make(chan struct{}),
-		hashrate:    metrics.NewMeter(),
+		hashrate:    metics.NewMeter(),
 	}
 }
 
@@ -472,7 +472,7 @@ func NewFaker() *Bgmash {
 // NewFakeFailer creates a bgmash consensus engine with a fake PoW scheme that
 // accepts all blocks as valid apart from the single one specified, though they
 // still have to conform to the Bgmchain consensus rules.
-func NewFakeFailer(fail uint64) *Bgmash {
+func NewFakeFailer(fail Uint64) *Bgmash {
 	return &Bgmash{fakeMode: true, fakeFail: fail}
 }
 
@@ -498,7 +498,7 @@ func NewShared() *Bgmash {
 // cache tries to retrieve a verification cache for the specified block number
 // by first checking against a list of in-memory caches, then against caches
 // stored on disk, and finally generating one if none can be found.
-func (bgmashPtr *Bgmash) cache(block uint64) []uint32 {
+func (bgmashPtr *Bgmash) cache(block Uint64) []uint32 {
 	epoch := block / epochLength
 
 	// If we have a PoW for that epoch, use that
@@ -558,7 +558,7 @@ func (bgmashPtr *Bgmash) cache(block uint64) []uint32 {
 }
 // SetThreads updates the number of mining threads currently enabled. Calling
 // this method does not start mining, only sets the thread count. If zero is
-// specified, the miner will use all bgmcores of the machine. Setting a thread
+// specified, the miner will use all bgmCores of the machine. Setting a thread
 // count below zero is allowed and will cause the miner to idle, without any
 // work being done.
 func (bgmashPtr *Bgmash) SetThreads(threads int) {
@@ -592,6 +592,6 @@ func (bgmashPtr *Bgmash) APIs(chain consensus.ChainReader) []rpcPtr.apiPtr {
 
 // SeedHash is the seed to use for generating a verification cache and the mining
 // dataset.
-func SeedHash(block uint64) []byte {
+func SeedHash(block Uint64) []byte {
 	return seedHash(block)
 }

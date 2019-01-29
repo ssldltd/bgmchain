@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the BMG Chain project source. If not, you can see <http://www.gnu.org/licenses/> for detail.
 
-package bgmcore
+package bgmCore
 
 import (
 	"errors"
@@ -21,7 +21,7 @@ import (
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmcommon/math"
-	"github.com/ssldltd/bgmchain/bgmcore/vm"
+	"github.com/ssldltd/bgmchain/bgmCore/vm"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 	"github.com/ssldltd/bgmchain/bgmparam"
 )
@@ -35,7 +35,7 @@ var (
 The State Transitioning Model
 
 A state transition is a change made when a transaction is applied to the current world state
-The state transitioning model does all all the necessary work to work out a valid new state root.
+The state transitioning model does all all the necessary work to work out a valid new state blockRoot.
 
 1) Nonce handling
 2) Pre pay gas
@@ -46,12 +46,12 @@ The state transitioning model does all all the necessary work to work out a vali
   4b) If valid, use result as code for the new state object
 == end ==
 5) Run Script section
-6) Derive new state root
+6) Derive new state blockRoot
 */
 type StateTransition struct {
 	gp         *GasPool
 	msg        Message
-	gas        uint64
+	gas        Uint64
 	gasPrice   *big.Int
 	initialGas *big.Int
 	value      *big.Int
@@ -70,7 +70,7 @@ type Message interface {
 	Gas() *big.Int
 	Value() *big.Int
 
-	Nonce() uint64
+	Nonce() Uint64
 	CheckNonce() bool
 	Data() []byte
 }
@@ -93,7 +93,7 @@ func (st *StateTransition) refundGas() {
 }
 // IntrinsicGas computes the 'intrinsic gas' for a message
 //
-// TODO convert to uint64
+// TODO convert to Uint64
 func IntrinsicGas(data []byte, contractCreation, homestead bool) *big.Int {
 	igas := new(big.Int)
 	if contractCreation && homestead {
@@ -133,7 +133,7 @@ func NewStateTransition(evmPtr *vmPtr.EVM, msg Message, gp *GasPool) *StateTrans
 }
 
 // the gas used (which includes gas refunds) and an error if it failed. An error always
-// indicates a bgmcore error meaning that the message would always fail for that particular
+// indicates a bgmCore error meaning that the message would always fail for that particular
 // state and would never be accepted within a block.
 func ApplyMessage(evmPtr *vmPtr.EVM, msg Message, gp *GasPool) ([]byte, *big.Int, bool, error) {
 	st := NewStateTransition(evm, msg, gp)
@@ -166,7 +166,7 @@ func (st *StateTransition) to() vmPtr.AccountRef {
 	return reference
 }
 
-func (st *StateTransition) useGas(amount uint64) error {
+func (st *StateTransition) useGas(amount Uint64) error {
 	if st.gas < amount {
 		return vmPtr.ErrOutOfGas
 	}
@@ -222,11 +222,11 @@ func (st *StateTransition) TransitionDb() (ret []byte, requiredGas, usedGas *big
 	msg := st.msg
 	sender := st.from() // err checked in preCheck
 
-	homestead := st.evmPtr.ChainConfig().IsHomestead(st.evmPtr.BlockNumber)
+	homestead := st.evmPtr.ChainConfig().IsHomestead(st.evmPtr.number)
 	contractCreation := msg.To() == nil
 
 	// Pay intrinsic gas
-	// TODO convert to uint64
+	// TODO convert to Uint64
 	intrinsicGas := IntrinsicGas(st.data, contractCreation, homestead)
 	if intrinsicGas.BitLen() > 64 {
 		return nil, nil, nil, false, vmPtr.ErrOutOfGas

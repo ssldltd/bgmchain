@@ -56,7 +56,7 @@ with each bgmlogs line:
     requestbgmlogsger := bgmlogs.New("path", r.URL.Path)
 
     // later
-    requestbgmlogsger.Debug("db txn commit", "duration", txnTimer.Finish())
+    requestbgmlogsger.Debug("db txn commit", "duration", txntimer.Finish())
 
 This will output a bgmlogs line that includes the path context that is attached to the bgmlogsger:
 
@@ -137,7 +137,7 @@ fails you want to bgmlogs those records to a file on disk.
     func (hPtr *BackupHandler) bgmlogs (r *Record) error {
         err := hPtr.Primary.bgmlogs(r)
         if err != nil {
-            r.Ctx = append(ctx, "primary_err", err)
+            r.Ctx = append(CTX, "primary_err", err)
             return hPtr.Secondary.bgmlogs(r)
         }
         return nil

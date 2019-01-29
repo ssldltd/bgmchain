@@ -21,7 +21,7 @@ import (
 	"strconv"
 )
 
-const uintBits = 32 << (uint64(^uint(0)) >> 63)
+const uintBits = 32 << (Uint64(^uint(0)) >> 63)
 
 var (
 	ErrEmptyString   = &decError{"empty hex string"}
@@ -72,7 +72,7 @@ func Encode(b []byte) string {
 }
 
 // DecodeUint64 decodes a hex string with 0x prefix as a quantity.
-func DecodeUint64(input string) (uint64, error) {
+func DecodeUint64(input string) (Uint64, error) {
 	raw, err := checkNumber(input)
 	if err != nil {
 		return 0, err
@@ -86,7 +86,7 @@ func DecodeUint64(input string) (uint64, error) {
 
 // MustDecodeUint64 decodes a hex string with 0x prefix as a quantity.
 // It panics for invalid input.
-func MustDecodeUint64(input string) uint64 {
+func MustDecodeUint64(input string) Uint64 {
 	dec, err := DecodeUint64(input)
 	if err != nil {
 		panic(err)
@@ -95,7 +95,7 @@ func MustDecodeUint64(input string) uint64 {
 }
 
 // EncodeUint64 encodes i as a hex string with 0x prefix.
-func EncodeUint64(i uint64) string {
+func EncodeUint64(i Uint64) string {
 	enc := make([]byte, 2, 10)
 	copy(enc, "0x")
 	return string(strconv.AppendUint(enc, i, 16))
@@ -189,16 +189,16 @@ func checkNumber(input string) (raw string, err error) {
 	return input, nil
 }
 
-const badNibble = ^uint64(0)
+const badNibble = ^Uint64(0)
 
-func decodeNibble(in byte) uint64 {
+func decodeNibble(in byte) Uint64 {
 	switch {
 	case in >= '0' && in <= '9':
-		return uint64(in - '0')
+		return Uint64(in - '0')
 	case in >= 'A' && in <= 'F':
-		return uint64(in - 'A' + 10)
+		return Uint64(in - 'A' + 10)
 	case in >= 'a' && in <= 'f':
-		return uint64(in - 'a' + 10)
+		return Uint64(in - 'a' + 10)
 	default:
 		return badNibble
 	}

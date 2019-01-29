@@ -17,14 +17,14 @@
 package bgm
 
 import (
-	"github.com/ssldltd/bgmchain/metrics"
+	"github.com/ssldltd/bgmchain/metics"
 	"github.com/ssldltd/bgmchain/p2p"
 )
 
 // newMeteredMsgWriter wraps a p2p MsgReadWriter with metering support. If the
-// metrics system is disabled, this function returns the original object.
+// metics system is disabled, this function returns the original object.
 func newMeteredMsgWriter(rw p2p.MsgReadWriter) p2p.MsgReadWriter {
-	if !metrics.Enabled {
+	if !metics.Enabled {
 		return rw
 	}
 	return &meteredMsgReadWriter{MsgReadWriter: rw}
@@ -54,7 +54,7 @@ func (rw *meteredMsgReadWriter) ReadMessage() (p2p.Msg, error) {
 
 	case rw.version >= bgm63 && msg.Code == NodeDataMsg:
 		packets, traffic = reqStateInPacketsMeter, reqStateInTrafficMeter
-	case msg.Code == NewBlockHashesMsg:
+	case msg.Code == NewhashesMsg:
 		packets, traffic = propHashInPacketsMeter, propHashInTrafficMeter
 	case msg.Code == NewBlockMsg:
 		packets, traffic = propBlockInPacketsMeter, propBlockInTrafficMeter
@@ -71,7 +71,7 @@ func (rw *meteredMsgReadWriter) WriteMessage(msg p2p.Msg) error {
 	// Account for the data traffic
 	packets, traffic := miscOutPacketsMeter, miscOutTrafficMeter
 	switch {
-	case msg.Code == NewBlockHashesMsg:
+	case msg.Code == NewhashesMsg:
 		packets, traffic = propHashOutPacketsMeter, propHashOutTrafficMeter
 	case msg.Code == BlockHeadersMsg:
 		packets, traffic = reqHeaderOutPacketsMeter, reqHeaderOutTrafficMeter
@@ -93,38 +93,38 @@ func (rw *meteredMsgReadWriter) WriteMessage(msg p2p.Msg) error {
 	return rw.MsgReadWriter.WriteMessage(msg)
 }
 var (
-	propTxnInPacketsMeter     = metrics.NewMeter("bgm/prop/txns/in/packets")
-	propTxnInTrafficMeter     = metrics.NewMeter("bgm/prop/txns/in/traffic")
-	propTxnOutPacketsMeter    = metrics.NewMeter("bgm/prop/txns/out/packets")
-	propTxnOutTrafficMeter    = metrics.NewMeter("bgm/prop/txns/out/traffic")
-	propHashInPacketsMeter    = metrics.NewMeter("bgm/prop/hashes/in/packets")
-	propHashInTrafficMeter    = metrics.NewMeter("bgm/prop/hashes/in/traffic")
-	propHashOutPacketsMeter   = metrics.NewMeter("bgm/prop/hashes/out/packets")
-	propHashOutTrafficMeter   = metrics.NewMeter("bgm/prop/hashes/out/traffic")
-	propBlockInPacketsMeter   = metrics.NewMeter("bgm/prop/blocks/in/packets")
-	propBlockInTrafficMeter   = metrics.NewMeter("bgm/prop/blocks/in/traffic")
-	propBlockOutPacketsMeter  = metrics.NewMeter("bgm/prop/blocks/out/packets")
-	propBlockOutTrafficMeter  = metrics.NewMeter("bgm/prop/blocks/out/traffic")
-	reqHeaderInPacketsMeter   = metrics.NewMeter("bgm/req/headers/in/packets")
-	reqHeaderInTrafficMeter   = metrics.NewMeter("bgm/req/headers/in/traffic")
-	reqHeaderOutPacketsMeter  = metrics.NewMeter("bgm/req/headers/out/packets")
-	reqHeaderOutTrafficMeter  = metrics.NewMeter("bgm/req/headers/out/traffic")
-	reqBodyInPacketsMeter     = metrics.NewMeter("bgm/req/bodies/in/packets")
-	reqBodyInTrafficMeter     = metrics.NewMeter("bgm/req/bodies/in/traffic")
-	reqBodyOutPacketsMeter    = metrics.NewMeter("bgm/req/bodies/out/packets")
-	reqBodyOutTrafficMeter    = metrics.NewMeter("bgm/req/bodies/out/traffic")
-	reqStateInPacketsMeter    = metrics.NewMeter("bgm/req/states/in/packets")
-	reqStateInTrafficMeter    = metrics.NewMeter("bgm/req/states/in/traffic")
-	reqStateOutPacketsMeter   = metrics.NewMeter("bgm/req/states/out/packets")
-	reqStateOutTrafficMeter   = metrics.NewMeter("bgm/req/states/out/traffic")
-	reqReceiptInPacketsMeter  = metrics.NewMeter("bgm/req/receipts/in/packets")
-	reqReceiptInTrafficMeter  = metrics.NewMeter("bgm/req/receipts/in/traffic")
-	reqReceiptOutPacketsMeter = metrics.NewMeter("bgm/req/receipts/out/packets")
-	reqReceiptOutTrafficMeter = metrics.NewMeter("bgm/req/receipts/out/traffic")
-	miscInPacketsMeter        = metrics.NewMeter("bgm/misc/in/packets")
-	miscInTrafficMeter        = metrics.NewMeter("bgm/misc/in/traffic")
-	miscOutPacketsMeter       = metrics.NewMeter("bgm/misc/out/packets")
-	miscOutTrafficMeter       = metrics.NewMeter("bgm/misc/out/traffic")
+	propTxnInPacketsMeter     = metics.NewMeter("bgm/prop/txns/in/packets")
+	propTxnInTrafficMeter     = metics.NewMeter("bgm/prop/txns/in/traffic")
+	propTxnOutPacketsMeter    = metics.NewMeter("bgm/prop/txns/out/packets")
+	propTxnOutTrafficMeter    = metics.NewMeter("bgm/prop/txns/out/traffic")
+	propHashInPacketsMeter    = metics.NewMeter("bgm/prop/hashes/in/packets")
+	propHashInTrafficMeter    = metics.NewMeter("bgm/prop/hashes/in/traffic")
+	propHashOutPacketsMeter   = metics.NewMeter("bgm/prop/hashes/out/packets")
+	propHashOutTrafficMeter   = metics.NewMeter("bgm/prop/hashes/out/traffic")
+	propBlockInPacketsMeter   = metics.NewMeter("bgm/prop/blocks/in/packets")
+	propBlockInTrafficMeter   = metics.NewMeter("bgm/prop/blocks/in/traffic")
+	propBlockOutPacketsMeter  = metics.NewMeter("bgm/prop/blocks/out/packets")
+	propBlockOutTrafficMeter  = metics.NewMeter("bgm/prop/blocks/out/traffic")
+	reqHeaderInPacketsMeter   = metics.NewMeter("bgm/req/Headers/in/packets")
+	reqHeaderInTrafficMeter   = metics.NewMeter("bgm/req/Headers/in/traffic")
+	reqHeaderOutPacketsMeter  = metics.NewMeter("bgm/req/Headers/out/packets")
+	reqHeaderOutTrafficMeter  = metics.NewMeter("bgm/req/Headers/out/traffic")
+	reqBodyInPacketsMeter     = metics.NewMeter("bgm/req/bodies/in/packets")
+	reqBodyInTrafficMeter     = metics.NewMeter("bgm/req/bodies/in/traffic")
+	reqBodyOutPacketsMeter    = metics.NewMeter("bgm/req/bodies/out/packets")
+	reqBodyOutTrafficMeter    = metics.NewMeter("bgm/req/bodies/out/traffic")
+	reqStateInPacketsMeter    = metics.NewMeter("bgm/req/states/in/packets")
+	reqStateInTrafficMeter    = metics.NewMeter("bgm/req/states/in/traffic")
+	reqStateOutPacketsMeter   = metics.NewMeter("bgm/req/states/out/packets")
+	reqStateOutTrafficMeter   = metics.NewMeter("bgm/req/states/out/traffic")
+	reqReceiptInPacketsMeter  = metics.NewMeter("bgm/req/receipts/in/packets")
+	reqReceiptInTrafficMeter  = metics.NewMeter("bgm/req/receipts/in/traffic")
+	reqReceiptOutPacketsMeter = metics.NewMeter("bgm/req/receipts/out/packets")
+	reqReceiptOutTrafficMeter = metics.NewMeter("bgm/req/receipts/out/traffic")
+	miscInPacketsMeter        = metics.NewMeter("bgm/misc/in/packets")
+	miscInTrafficMeter        = metics.NewMeter("bgm/misc/in/traffic")
+	miscOutPacketsMeter       = metics.NewMeter("bgm/misc/out/packets")
+	miscOutTrafficMeter       = metics.NewMeter("bgm/misc/out/traffic")
 )
 type meteredMsgReadWriter struct {
 	p2p.MsgReadWriter     // Wrapped message stream to meter

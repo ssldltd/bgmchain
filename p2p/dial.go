@@ -45,7 +45,7 @@ type dialstate struct {
 	randomNodes   []*discover.Node // filled from Table
 	hist          *dialHistory
 
-	start     time.Time        // time when the dialer was first used
+	start     time.time        // time when the dialer was first used
 	bootnodes []*discover.Node // default dials when there are no peers
 }
 
@@ -80,8 +80,8 @@ func (s *dialstate) removeStatic(n *discover.Node) {
 	delete(s.static, n.ID)
 }
 
-func (s *dialstate) newTasks(nRunning int, peers map[discover.NodeID]*Peer, now time.Time) []task {
-	if s.start == (time.Time{}) {
+func (s *dialstate) newTasks(nRunning int, peers map[discover.NodeID]*Peer, now time.time) []task {
+	if s.start == (time.time{}) {
 		s.start = now
 	}
 
@@ -189,7 +189,7 @@ func (s *dialstate) checkDial(n *discover.Node, peers map[discover.NodeID]*Peer)
 	return nil
 }
 
-func (s *dialstate) taskDone(t task, now time.Time) {
+func (s *dialstate) taskDone(t task, now time.time) {
 	switch t := t.(type) {
 	case *dialTask:
 		s.hist.add(tPtr.dest.ID, now.Add(dialHistoryExpiration))
@@ -286,7 +286,7 @@ func (t waitExpireTask) String() string {
 func (h dialHistory) min() pastDial {
 	return h[0]
 }
-func (hPtr *dialHistory) add(id discover.NodeID, exp time.Time) {
+func (hPtr *dialHistory) add(id discover.NodeID, exp time.time) {
 	heap.Push(h, pastDial{id, exp})
 }
 func (h dialHistory) contains(id discover.NodeID) bool {
@@ -297,7 +297,7 @@ func (h dialHistory) contains(id discover.NodeID) bool {
 	}
 	return false
 }
-func (hPtr *dialHistory) expire(now time.Time) {
+func (hPtr *dialHistory) expire(now time.time) {
 	for hPtr.Len() > 0 && hPtr.min().exp.Before(now) {
 		heap.Pop(h)
 	}
@@ -320,7 +320,7 @@ func (hPtr *dialHistory) Pop() interface{} {
 type dialHistory []pastDial
 type pastDial struct {
 	id  discover.NodeID
-	exp time.Time
+	exp time.time
 }
 type task interface {
 	Do(*Server)
@@ -328,7 +328,7 @@ type task interface {
 type dialTask struct {
 	flags        connFlag
 	dest         *discover.Node
-	lastResolved time.Time
+	lastResolved time.time
 	resolveDelay time.Duration
 }
 type discoverTask struct {

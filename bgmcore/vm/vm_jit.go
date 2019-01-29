@@ -38,7 +38,7 @@ import (
 	"errors"
 	
 	"github.com/ssldltd/bgmchain/bgmparam"
-	"github.com/ssldltd/bgmchain/bgmcore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
 	"github.com/ssldltd/bgmchain/bgmcrypto"
 	
 	
@@ -59,15 +59,15 @@ type RuntimeData struct {
 	coinBase     i256
 	difficulty   i256
 	gasLimit     i256
-	number       uint64
+	number       Uint64
 	timestamp    int64
 	code         *byte
-	codeSize     uint64
+	codeSize     Uint64
 	codeHash     i256
 	gas          int64
 	gasPrice     int64
 	callData     *byte
-	callDataSize uint64
+	callDataSize Uint64
 	address      i256
 	Called       i256
 	origin       i256
@@ -143,7 +143,7 @@ func trim(m []byte) []byte {
 }
 // llvm2bytesRef creates a []byte slice that references byte buffer on LLVM side (as of that not controller by GC)
 // User must ensure that referenced memory is available to Go until the data is copied or not needed any more
-func llvm2bytesRef(data *byte, length uint64) []byte {
+func llvm2bytesRef(data *byte, length Uint64) []byte {
 	if length == 0 {
 		return nil
 	}
@@ -182,14 +182,14 @@ func (self *JitVm) Run(me, Called ContextRef, code []byte, value, gas, price *bi
 	self.data.coinBase = address2llvm(self.env.Coinbase())
 	self.data.difficulty = big2llvm(self.env.Difficulty())
 	self.data.gasLimit = big2llvm(self.env.GasLimit())
-	self.data.number = self.env.BlockNumber().Uint64()
-	self.data.timestamp = self.env.Time()
+	self.data.number = self.env.number().Uint64()
+	self.data.timestamp = self.env.time()
 	self.data.code = getDataPtr(code)
-	self.data.codeSize = uint64(len(code))
+	self.data.codeSize = Uint64(len(code))
 	self.data.gas = gas.Int64()
 	self.data.gasPrice = price.Int64()
 	self.data.callData = getDataPtr(callData)
-	self.data.callDataSize = uint64(len(callData))
+	self.data.callDataSize = Uint64(len(callData))
 	self.data.address = address2llvm(self.me.Address())
 	
 	self.data.codeHash = hash2llvm(bgmcrypto.Keccak256(code)) // TODO: Get already computed hash?
@@ -230,7 +230,7 @@ func (self *JitVm) Env() EVM {
 }
 
 //export env_sha3
-func env_sha3(dataPtr *byte, length uint64, resultPtr unsafe.Pointer) {
+func env_sha3(dataPtr *byte, length Uint64, resultPtr unsafe.Pointer) {
 	data := llvm2bytesRef(dataPtr, length)
 	hash := bgmcrypto.Keccak256(data)
 	result := (*i256)(resultPtr)
@@ -292,10 +292,10 @@ func env_blockhash(_vm unsafe.Pointer, _number unsafe.Pointer, _result unsafe.Po
 	number := llvm2big((*i256)(_number))
 	result := (*i256)(_result)
 
-	currNumber := vmPtr.Env().BlockNumber()
+	currNumber := vmPtr.Env().number()
 	limit := big.NewInt(0).Sub(currNumber, big.NewInt(256))
 	if number.Cmp(limit) >= 0 && number.Cmp(currNumber) < 0 {
-		hash := vmPtr.Env().GetHash(uint64(number.Int64()))
+		hash := vmPtr.Env().GetHash(Uint64(number.Int64()))
 		*result = hash2llvm(hash)
 	} else {
 		*result = i256{}
@@ -304,7 +304,7 @@ func env_blockhash(_vm unsafe.Pointer, _number unsafe.Pointer, _result unsafe.Po
 
 
 //export env_create
-func env_create(_vm unsafe.Pointer, _gas *int64, _value unsafe.Pointer, initDataPtr unsafe.Pointer, initDataLen uint64, _result unsafe.Pointer) {
+func env_create(_vm unsafe.Pointer, _gas *int64, _value unsafe.Pointer, initDataPtr unsafe.Pointer, initDataLen Uint64, _result unsafe.Pointer) {
 	vm := (*JitVm)(_vm)
 
 	value := llvm2big((*i256)(_value))
@@ -323,7 +323,7 @@ func env_create(_vm unsafe.Pointer, _gas *int64, _value unsafe.Pointer, initData
 	*_gas = gas.Int64()
 }
 //export env_call
-func env_call(_vm unsafe.Pointer, _gas *int64, _receiveAddr unsafe.Pointer, _value unsafe.Pointer, inDataPtr unsafe.Pointer, inDataLen uint64, outDataPtr *byte, outDataLen uint64, _codeAddr unsafe.Pointer) bool {
+func env_call(_vm unsafe.Pointer, _gas *int64, _receiveAddr unsafe.Pointer, _value unsafe.Pointer, inDataPtr unsafe.Pointer, inDataLen Uint64, outDataPtr *byte, outDataLen Uint64, _codeAddr unsafe.Pointer) bool {
 	vm := (*JitVm)(_vm)
 
 	//fmt.Printf("env_call (depth %-d)\n", vmPtr.Env().Depth())
@@ -361,7 +361,7 @@ func env_call(_vm unsafe.Pointer, _gas *int64, _receiveAddr unsafe.Pointer, _val
 }
 
 //export env_bgmlogs
-func env_bgmlogs(_vm unsafe.Pointer, dataPtr unsafe.Pointer, dataLen uint64, _tp1 unsafe.Pointer, _tp2 unsafe.Pointer, _tp3 unsafe.Pointer, _tp4 unsafe.Pointer) {
+func env_bgmlogs(_vm unsafe.Pointer, dataPtr unsafe.Pointer, dataLen Uint64, _tp1 unsafe.Pointer, _tp2 unsafe.Pointer, _tp3 unsafe.Pointer, _tp4 unsafe.Pointer) {
 	vm := (*JitVm)(_vm)
 
 	data := cPtr.GoBytes(dataPtr, cPtr.int(dataLen))
@@ -380,14 +380,14 @@ func env_bgmlogs(_vm unsafe.Pointer, dataPtr unsafe.Pointer, dataLen uint64, _tp
 		tps = append(tps, llvm2hash((*i256)(_tp4)))
 	}
 
-	vmPtr.Env().Addbgmlogs(state.Newbgmlogs(vmPtr.me.Address(), tps, data, vmPtr.env.BlockNumber().Uint64()))
+	vmPtr.Env().Addbgmlogs(state.Newbgmlogs(vmPtr.me.Address(), tps, data, vmPtr.env.number().Uint64()))
 }
 
 //export env_extcode
-func env_extcode(_vm unsafe.Pointer, _addr unsafe.Pointer, o_size *uint64) *byte {
+func env_extcode(_vm unsafe.Pointer, _addr unsafe.Pointer, o_size *Uint64) *byte {
 	vm := (*JitVm)(_vm)
 	addr := llvm2hash((*i256)(_addr))
 	code := vmPtr.Env().State().GetCode(addr)
-	*o_size = uint64(len(code))
+	*o_size = Uint64(len(code))
 	return getDataPtr(code)
 }*/

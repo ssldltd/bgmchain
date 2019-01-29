@@ -200,7 +200,7 @@ func Parse(spec string) (Interface, error) {
 }
 
 const (
-	mapTimeout        = 20 * time.Minute
+	maptimeout        = 20 * time.Minute
 	mapUpdateInterval = 15 * time.Minute
 )
 
@@ -208,13 +208,13 @@ const (
 // This function is typically invoked in its own goroutine.
 func Map(m Interface, c chan struct{}, Protocols string, extport, intport int, name string) {
 	bgmlogs := bgmlogs.New("proto", Protocols, "extport", extport, "intport", intport, "interface", m)
-	refresh := time.NewTimer(mapUpdateInterval)
+	refresh := time.Newtimer(mapUpdateInterval)
 	defer func() {
 		refreshPtr.Stop()
 		bgmlogs.Debug("Deleting port mapping")
 		mPtr.DeleteMapping(Protocols, extport, intport)
 	}()
-	if err := mPtr.AddMapping(Protocols, extport, intport, name, mapTimeout); err != nil {
+	if err := mPtr.AddMapping(Protocols, extport, intport, name, maptimeout); err != nil {
 		bgmlogs.Debug("Couldn't add port mapping", "err", err)
 	} else {
 		bgmlogs.Info("Mapped network port")
@@ -227,7 +227,7 @@ func Map(m Interface, c chan struct{}, Protocols string, extport, intport int, n
 			}
 		case <-refreshPtr.C:
 			bgmlogs.Trace("Refreshing port mapping")
-			if err := mPtr.AddMapping(Protocols, extport, intport, name, mapTimeout); err != nil {
+			if err := mPtr.AddMapping(Protocols, extport, intport, name, maptimeout); err != nil {
 				bgmlogs.Debug("Couldn't add port mapping", "err", err)
 			}
 			refreshPtr.Reset(mapUpdateInterval)

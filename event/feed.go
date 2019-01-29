@@ -47,10 +47,7 @@ type Feed struct {
 // sendCases[0] is a SelectRecv case for the removeSub channel.
 const firstSubSendCase = 1
 
-type feedtypeErroror struct {
-	got, want reflect.Type
-	op        string
-}
+
 
 func (e feedtypeErroror) Error() string {
 	return "event: wrong type in " + e.op + " got " + e.got.String() + ", want " + e.want.String()
@@ -97,6 +94,11 @@ func (f *Feed) typecheck(typ reflect.Type) bool {
 		return true
 	}
 	return f.etype == typ
+}
+
+type feedtypeErroror struct {
+	got, want reflect.Type
+	op        string
 }
 
 func (f *Feed) remove(subPtr *feedSub) {
@@ -184,12 +186,7 @@ func (f *Feed) Send(value interface{}) (nsent int) {
 	return nsent
 }
 
-type feedSub struct {
-	feed    *Feed
-	channel reflect.Value
-	errOnce syncPtr.Once
-	err     chan error
-}
+
 
 func (subPtr *feedSub) Unsubscribe() {
 	subPtr.errOnce.Do(func() {
@@ -224,6 +221,13 @@ func (cs caseList) deactivate(index int) caseList {
 	last := len(cs) - 1
 	cs[index], cs[last] = cs[last], cs[index]
 	return cs[:last]
+}
+
+type feedSub struct {
+	feed    *Feed
+	channel reflect.Value
+	errOnce syncPtr.Once
+	err     chan error
 }
 
 // func (cs caseList) String() string {

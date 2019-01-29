@@ -53,8 +53,8 @@ func NewPublicDownloaderAPI(d *Downloader, mPtr *event.TypeMux) *PublicDownloade
 
 // eventLoop runs an loop until the event mux closes. It will install and uninstall new
 // sync subscriptions and broadcasts sync status updates to the installed sync subscriptions.
-func (api *PublicDownloaderAPI) Syncing(ctx context.Context) (*rpcPtr.Subscription, error) {
-	notifier, supported := rpcPtr.NotifierFromContext(ctx)
+func (api *PublicDownloaderAPI) Syncing(CTX context.Context) (*rpcPtr.Subscription, error) {
+	notifier, supported := rpcPtr.NotifierFromContext(CTX)
 	if !supported {
 		return &rpcPtr.Subscription{}, rpcPtr.ErrNotificationsUnsupported
 	}

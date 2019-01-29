@@ -35,7 +35,7 @@ func reflectIntKindAndType(unsigned bool, size int) (reflect.Kind, reflect.Type)
 	switch size {
 	case 64:
 		if unsigned {
-			return reflect.Uint64, uint64_t
+			return reflect.Uint64, Uint64_t
 		}
 		return reflect.Int64, int64_t
 	case 32:

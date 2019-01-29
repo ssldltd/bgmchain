@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the BMG Chain project source. If not, you can see <http://www.gnu.org/licenses/> for detail.
 
-package bgmcore
+package bgmCore
 
 import (
 	"fmt"
@@ -21,12 +21,12 @@ import (
 
 	"github.com/ssldltd/bgmchain/bgmcommon/math"
 	"github.com/ssldltd/bgmchain/consensus"
-	"github.com/ssldltd/bgmchain/bgmcore/state"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmparam"
 )
 
-// BlockValidator is responsible for validating block headers, uncles and
+// BlockValidator is responsible for validating block Headers, uncles and
 //
 // BlockValidator implements Validator.
 type BlockValidator struct {
@@ -56,15 +56,15 @@ func (v *BlockValidator) ValidateBody(block *types.Block) error {
 		return consensus.ErrUnknownAncestor
 	}
 	// Header validity is known at this point, check the uncles and transactions
-	header := block.Header()
+	Header := block.Header()
 	if err := v.engine.VerifyUncles(v.bc, block); err != nil {
 		return err
 	}
-	if hash := types.CalcUncleHash(block.Uncles()); hash != headerPtr.UncleHash {
-		return fmt.Errorf("uncle root hash mismatch: have %x, want %x", hash, headerPtr.UncleHash)
+	if hash := types.CalcUncleHash(block.Uncles()); hash != HeaderPtr.UncleHash {
+		return fmt.Errorf("uncle blockRoot hash mismatch: have %x, want %x", hash, HeaderPtr.UncleHash)
 	}
-	if hash := types.DeriveSha(block.Transactions()); hash != headerPtr.TxHash {
-		return fmt.Errorf("transaction root hash mismatch: have %x, want %x", hash, headerPtr.TxHash)
+	if hash := types.DeriveSha(block.Transactions()); hash != HeaderPtr.TxHash {
+		return fmt.Errorf("transaction blockRoot hash mismatch: have %x, want %x", hash, HeaderPtr.TxHash)
 	}
 	return nil
 }
@@ -73,25 +73,25 @@ func (v *BlockValidator) ValidateBody(block *types.Block) error {
 // itself. ValidateState returns a database batch if the validation was a success
 // otherwise nil and an error is returned.
 func (v *BlockValidator) ValidateState(block, parent *types.Block, statedbPtr *state.StateDB, receipts types.Receipts, usedGas *big.Int) error {
-	header := block.Header()
+	Header := block.Header()
 	if block.GasUsed().Cmp(usedGas) != 0 {
 		return fmt.Errorf("invalid gas used (remote: %v local: %v)", block.GasUsed(), usedGas)
 	}
 	// Validate the received block's bloom with the one derived from the generated receipts.
 	// For valid blocks this should always validate to true.
 	rbloom := types.CreateBloom(receipts)
-	if rbloom != headerPtr.Bloom {
-		return fmt.Errorf("invalid bloom (remote: %x  local: %x)", headerPtr.Bloom, rbloom)
+	if rbloom != HeaderPtr.Bloom {
+		return fmt.Errorf("invalid bloom (remote: %x  local: %x)", HeaderPtr.Bloom, rbloom)
 	}
-	// Tre receipt Trie's root (R = (Tr [[H1, R1], ... [Hn, R1]]))
+	// Tre receipt Trie's blockRoot (R = (Tr [[H1, R1], ... [Hn, R1]]))
 	receiptSha := types.DeriveSha(receipts)
-	if receiptSha != headerPtr.ReceiptHash {
-		return fmt.Errorf("invalid receipt root hash (remote: %x local: %x)", headerPtr.ReceiptHash, receiptSha)
+	if receiptSha != HeaderPtr.ReceiptHash {
+		return fmt.Errorf("invalid receipt blockRoot hash (remote: %x local: %x)", HeaderPtr.ReceiptHash, receiptSha)
 	}
-	// Validate the state root against the received state root and throw
+	// Validate the state blockRoot against the received state blockRoot and throw
 	// an error if they don't matchPtr.
-	if root := statedbPtr.IntermediateRoot(v.config.IsEIP158(headerPtr.Number)); headerPtr.Root != root {
-		return fmt.Errorf("invalid merkle root (remote: %x local: %x)", headerPtr.Root, root)
+	if blockRoot := statedbPtr.IntermediateRoot(v.config.IsEIP158(HeaderPtr.Number)); HeaderPtr.Root != blockRoot {
+		return fmt.Errorf("invalid merkle blockRoot (remote: %x local: %x)", HeaderPtr.Root, blockRoot)
 	}
 	return nil
 }
@@ -118,11 +118,11 @@ func CalcGasLimit(parent *types.Block) *big.Int {
 	return gl
 }
 func (v *BlockValidator) ValidateDposState(block *types.Block) error {
-	header := block.Header()
+	Header := block.Header()
 	localRoot := block.DposCtx().Root()
-	remoteRoot := headerPtr.DposContext.Root()
+	remoteRoot := HeaderPtr.DposContext.Root()
 	if remoteRoot != localRoot {
-		return fmt.Errorf("invalid dpos root (remote: %x local: %x)", remoteRoot, localRoot)
+		return fmt.Errorf("invalid dpos blockRoot (remote: %x local: %x)", remoteRoot, localRoot)
 	}
 	return nil
 }

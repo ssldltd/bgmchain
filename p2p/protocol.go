@@ -31,7 +31,7 @@ type Protocols struct {
 
 	// Length should contain the number of message codes used
 	// by the Protocols.
-	Length uint64
+	Length Uint64
 
 	// Run is called in a new groutine when the Protocols has been
 	// negotiated with a peer. It should read and write messages from

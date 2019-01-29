@@ -18,7 +18,7 @@
 #ifndef EXHAUSTIVE_TEST_ORDER
 /* see group_impl.h for allowable values */
 #define EXHAUSTIVE_TEST_ORDER 13
-#define EXHAUSTIVE_TEST_LAMBDA 9   /* cube root of 1 mod 13 */
+#define EXHAUSTIVE_TEST_LAMBDA 9   /* cube blockRoot of 1 mod 13 */
 #endif
 
 #include "include/secp256k1.h"
@@ -160,7 +160,7 @@ void test_exhaustive_addition(const secp256k1_ge *group, const secp256k1_gej *gr
     }
 }
 
-void test_exhaustive_ecmult(const secp256k1_context *ctx, const secp256k1_ge *group, const secp256k1_gej *groupj, int order) {
+void test_exhaustive_ecmult(const secp256k1_context *CTX, const secp256k1_ge *group, const secp256k1_gej *groupj, int order) {
     int i, j, r_bgmlogs;
     for (r_bgmlogs = 1; r_bgmlogs < order; r_bgmlogs++) {
         for (j = 0; j < order; j++) {
@@ -170,7 +170,7 @@ void test_exhaustive_ecmult(const secp256k1_context *ctx, const secp256k1_ge *gr
                 secp256k1_scalar_set_int(&na, i);
                 secp256k1_scalar_set_int(&ng, j);
 
-                secp256k1_ecmult(&ctx->ecmult_ctx, &tmp, &groupj[r_bgmlogs], &na, &ng);
+                secp256k1_ecmult(&CTX->ecmult_CTX, &tmp, &groupj[r_bgmlogs], &na, &ng);
                 ge_equals_gej(&group[(i * r_bgmlogs + j) % order], &tmp);
 
                 if (i > 0) {
@@ -192,7 +192,7 @@ void r_from_k(secp256k1_scalar *r, const secp256k1_ge *group, int k) {
     secp256k1_scalar_set_b32(r, x_bin, NULL);
 }
 
-void test_exhaustive_verify(const secp256k1_context *ctx, const secp256k1_ge *group, int order) {
+void test_exhaustive_verify(const secp256k1_context *CTX, const secp256k1_ge *group, int order) {
     int s, r, msg, key;
     for (s = 1; s < order; s++) {
         for (r = 1; r < order; r++) {
@@ -235,14 +235,14 @@ void test_exhaustive_verify(const secp256k1_context *ctx, const secp256k1_ge *gr
                     secp256k1_pubkey_save(&pk, &nonconst_ge);
                     secp256k1_scalar_get_b32(msg32, &msg_s);
                     CHECK(should_verify ==
-                          secp256k1_ecdsa_verify(ctx, &sig, msg32, &pk));
+                          secp256k1_ecdsa_verify(CTX, &sig, msg32, &pk));
                 }
             }
         }
     }
 }
 
-void test_exhaustive_sign(const secp256k1_context *ctx, const secp256k1_ge *group, int order) {
+void test_exhaustive_sign(const secp256k1_context *CTX, const secp256k1_ge *group, int order) {
     int i, j, k;
 
     /* Loop */
@@ -258,9 +258,9 @@ void test_exhaustive_sign(const secp256k1_context *ctx, const secp256k1_ge *grou
                 secp256k1_scalar_get_b32(sk32, &sk);
                 secp256k1_scalar_get_b32(msg32, &msg);
 
-                secp256k1_ecdsa_sign(ctx, &sig, msg32, sk32, secp256k1_nonce_function_smallint, &k);
+                secp256k1_ecdsa_sign(CTX, &sig, msg32, sk32, secp256k1_nonce_function_smallint, &k);
 
-                secp256k1_ecdsa_signature_load(ctx, &r, &s, &sig);
+                secp256k1_ecdsa_signature_load(CTX, &r, &s, &sig);
                 /* Note that we compute expected_r *after* signing -- this is important
                  * because our nonce-computing function function might change k during
                  * signing. */
@@ -288,7 +288,7 @@ void test_exhaustive_sign(const secp256k1_context *ctx, const secp256k1_ge *grou
 }
 
 #ifdef ENABLE_MODULE_RECOVERY
-void test_exhaustive_recovery_sign(const secp256k1_context *ctx, const secp256k1_ge *group, int order) {
+void test_exhaustive_recovery_sign(const secp256k1_context *CTX, const secp256k1_ge *group, int order) {
     int i, j, k;
 
     /* Loop */
@@ -308,10 +308,10 @@ void test_exhaustive_recovery_sign(const secp256k1_context *ctx, const secp256k1
                 secp256k1_scalar_get_b32(sk32, &sk);
                 secp256k1_scalar_get_b32(msg32, &msg);
 
-                secp256k1_ecdsa_sign_recoverable(ctx, &rsig, msg32, sk32, secp256k1_nonce_function_smallint, &k);
+                secp256k1_ecdsa_sign_recoverable(CTX, &rsig, msg32, sk32, secp256k1_nonce_function_smallint, &k);
 
                 /* Check directly */
-                secp256k1_ecdsa_recoverable_signature_load(ctx, &r, &s, &recid, &rsig);
+                secp256k1_ecdsa_recoverable_signature_load(CTX, &r, &s, &recid, &rsig);
                 r_from_k(&expected_r, group, k);
                 CHECK(r == expected_r);
                 CHECK((k * s) % order == (i + r * j) % order ||
@@ -332,8 +332,8 @@ void test_exhaustive_recovery_sign(const secp256k1_context *ctx, const secp256k1
                 CHECK(recid == expected_recid);
 
                 /* Convert to a standard sig then check */
-                secp256k1_ecdsa_recoverable_signature_convert(ctx, &sig, &rsig);
-                secp256k1_ecdsa_signature_load(ctx, &r, &s, &sig);
+                secp256k1_ecdsa_recoverable_signature_convert(CTX, &sig, &rsig);
+                secp256k1_ecdsa_signature_load(CTX, &r, &s, &sig);
                 /* Note that we compute expected_r *after* signing -- this is important
                  * because our nonce-computing function function might change k during
                  * signing. */
@@ -351,7 +351,7 @@ void test_exhaustive_recovery_sign(const secp256k1_context *ctx, const secp256k1
     }
 }
 
-void test_exhaustive_recovery_verify(const secp256k1_context *ctx, const secp256k1_ge *group, int order) {
+void test_exhaustive_recovery_verify(const secp256k1_context *CTX, const secp256k1_ge *group, int order) {
     /* This is essentially a copy of test_exhaustive_verify, with recovery added */
     int s, r, msg, key;
     for (s = 1; s < order; s++) {
@@ -399,11 +399,11 @@ void test_exhaustive_recovery_verify(const secp256k1_context *ctx, const secp256
 
                     /* Verify by converting to a standard signature and calling verify */
                     secp256k1_ecdsa_recoverable_signature_save(&rsig, &r_s, &s_s, recid);
-                    secp256k1_ecdsa_recoverable_signature_convert(ctx, &sig, &rsig);
+                    secp256k1_ecdsa_recoverable_signature_convert(CTX, &sig, &rsig);
                     memcpy(&nonconst_ge, &group[sk_s], sizeof(nonconst_ge));
                     secp256k1_pubkey_save(&pk, &nonconst_ge);
                     CHECK(should_verify ==
-                          secp256k1_ecdsa_verify(ctx, &sig, msg32, &pk));
+                          secp256k1_ecdsa_verify(CTX, &sig, msg32, &pk));
                 }
             }
         }
@@ -417,7 +417,7 @@ int main(void) {
     secp256k1_ge group[EXHAUSTIVE_TEST_ORDER];
 
     /* Build context */
-    secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
+    secp256k1_context *CTX = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
 
     /* TODO set z = 1, then do num_tests runs with random z values */
 
@@ -440,7 +440,7 @@ int main(void) {
             secp256k1_ge generated;
 
             secp256k1_scalar_set_int(&scalar_i, i);
-            secp256k1_ecmult_gen(&ctx->ecmult_gen_ctx, &generatedj, &scalar_i);
+            secp256k1_ecmult_gen(&CTX->ecmult_gen_CTX, &generatedj, &scalar_i);
             secp256k1_ge_set_gej(&generated, &generatedj);
 
             CHECK(group[i].infinity == 0);
@@ -455,16 +455,16 @@ int main(void) {
     test_exhaustive_endomorphism(group, EXHAUSTIVE_TEST_ORDER);
 #endif
     test_exhaustive_addition(group, groupj, EXHAUSTIVE_TEST_ORDER);
-    test_exhaustive_ecmult(ctx, group, groupj, EXHAUSTIVE_TEST_ORDER);
-    test_exhaustive_sign(ctx, group, EXHAUSTIVE_TEST_ORDER);
-    test_exhaustive_verify(ctx, group, EXHAUSTIVE_TEST_ORDER);
+    test_exhaustive_ecmult(CTX, group, groupj, EXHAUSTIVE_TEST_ORDER);
+    test_exhaustive_sign(CTX, group, EXHAUSTIVE_TEST_ORDER);
+    test_exhaustive_verify(CTX, group, EXHAUSTIVE_TEST_ORDER);
 
 #ifdef ENABLE_MODULE_RECOVERY
-    test_exhaustive_recovery_sign(ctx, group, EXHAUSTIVE_TEST_ORDER);
-    test_exhaustive_recovery_verify(ctx, group, EXHAUSTIVE_TEST_ORDER);
+    test_exhaustive_recovery_sign(CTX, group, EXHAUSTIVE_TEST_ORDER);
+    test_exhaustive_recovery_verify(CTX, group, EXHAUSTIVE_TEST_ORDER);
 #endif
 
-    secp256k1_context_destroy(ctx);
+    secp256k1_context_destroy(CTX);
     return 0;
 }
 

@@ -26,15 +26,15 @@ import (
 
 type DumpAccount struct {
 	Balance  string            `json:"balance"`
-	Nonce    uint64            `json:"nonce"`
-	Root     string            `json:"root"`
+	Nonce    Uint64            `json:"nonce"`
+	Root     string            `json:"blockRoot"`
 	CodeHash string            `json:"codeHash"`
 	Code     string            `json:"code"`
 	Storage  map[string]string `json:"storage"`
 }
 
 type Dump struct {
-	Root     string                 `json:"root"`
+	Root     string                 `json:"blockRoot"`
 	Accounts map[string]DumpAccount `json:"accounts"`
 }
 

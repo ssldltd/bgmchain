@@ -46,24 +46,24 @@ var (
 	mintCntPrefix   = []byte("mintCnt-")
 )
 
-func NewEpochTrie(root bgmcommon.Hash, db bgmdbPtr.Database) (*trie.Trie, error) {
-	return trie.NewTrieWithPrefix(root, epochPrefix, db)
+func NewEpochTrie(blockRoot bgmcommon.Hash, db bgmdbPtr.Database) (*trie.Trie, error) {
+	return trie.NewTrieWithPrefix(blockRoot, epochPrefix, db)
 }
 
-func NewDelegateTrie(root bgmcommon.Hash, db bgmdbPtr.Database) (*trie.Trie, error) {
-	return trie.NewTrieWithPrefix(root, delegatePrefix, db)
+func NewDelegateTrie(blockRoot bgmcommon.Hash, db bgmdbPtr.Database) (*trie.Trie, error) {
+	return trie.NewTrieWithPrefix(blockRoot, delegatePrefix, db)
 }
 
-func NewVoteTrie(root bgmcommon.Hash, db bgmdbPtr.Database) (*trie.Trie, error) {
-	return trie.NewTrieWithPrefix(root, votePrefix, db)
+func NewVoteTrie(blockRoot bgmcommon.Hash, db bgmdbPtr.Database) (*trie.Trie, error) {
+	return trie.NewTrieWithPrefix(blockRoot, votePrefix, db)
 }
 
-func NewCandidateTrie(root bgmcommon.Hash, db bgmdbPtr.Database) (*trie.Trie, error) {
-	return trie.NewTrieWithPrefix(root, candidatePrefix, db)
+func NewCandidateTrie(blockRoot bgmcommon.Hash, db bgmdbPtr.Database) (*trie.Trie, error) {
+	return trie.NewTrieWithPrefix(blockRoot, candidatePrefix, db)
 }
 
-func NewMintCntTrie(root bgmcommon.Hash, db bgmdbPtr.Database) (*trie.Trie, error) {
-	return trie.NewTrieWithPrefix(root, mintCntPrefix, db)
+func NewMintCntTrie(blockRoot bgmcommon.Hash, db bgmdbPtr.Database) (*trie.Trie, error) {
+	return trie.NewTrieWithPrefix(blockRoot, mintCntPrefix, db)
 }
 
 func NewDposContext(db bgmdbPtr.Database) (*DposContext, error) {
@@ -97,24 +97,24 @@ func NewDposContext(db bgmdbPtr.Database) (*DposContext, error) {
 	}, nil
 }
 
-func NewDposContextFromProto(db bgmdbPtr.Database, ctxProto *DposContextProto) (*DposContext, error) {
-	epochTrie, err := NewEpochTrie(ctxProto.EpochHash, db)
+func NewDposContextFromProto(db bgmdbPtr.Database, CTXProto *DposContextProto) (*DposContext, error) {
+	epochTrie, err := NewEpochTrie(CTXProto.EpochHash, db)
 	if err != nil {
 		return nil, err
 	}
-	delegateTrie, err := NewDelegateTrie(ctxProto.DelegateHash, db)
+	delegateTrie, err := NewDelegateTrie(CTXProto.DelegateHash, db)
 	if err != nil {
 		return nil, err
 	}
-	voteTrie, err := NewVoteTrie(ctxProto.VoteHash, db)
+	voteTrie, err := NewVoteTrie(CTXProto.VoteHash, db)
 	if err != nil {
 		return nil, err
 	}
-	candidateTrie, err := NewCandidateTrie(ctxProto.CandidateHash, db)
+	candidateTrie, err := NewCandidateTrie(CTXProto.CandidateHash, db)
 	if err != nil {
 		return nil, err
 	}
-	mintCntTrie, err := NewMintCntTrie(ctxProto.MintCntHash, db)
+	mintCntTrie, err := NewMintCntTrie(CTXProto.MintCntHash, db)
 	if err != nil {
 		return nil, err
 	}

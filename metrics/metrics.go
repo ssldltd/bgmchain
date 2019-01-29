@@ -12,8 +12,8 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with the BMG Chain project source. If not, you can see <http://www.gnu.org/licenses/> for detail.
-// Package metrics provides general system and process level metrics collection.
-package metrics
+// Package metics provides general system and process level metics collection.
+package metics
 
 import (
 	"os"
@@ -22,99 +22,99 @@ import (
 	"time"
 
 	"github.com/ssldltd/bgmchain/bgmlogs"
-	"github.com/rcrowley/go-metrics"
-	"github.com/rcrowley/go-metrics/exp"
+	"github.com/rcrowley/go-metics"
+	"github.com/rcrowley/go-metics/exp"
 )
 
-// MetricsEnabledFlag is the CLI flag name to use to enable metrics collections.
-const MetricsEnabledFlag = "metrics"
+// MetricsEnabledFlag is the CLI flag name to use to enable metics collections.
+const MetricsEnabledFlag = "metics"
 
 
-// Enabled is the flag specifying if metrics are enable or not.
+// Enabled is the flag specifying if metics are enable or not.
 var Enabled = false
 
-// Init enables or disables the metrics systemPtr. Since we need this to run before
+// Init enables or disables the metics systemPtr. Since we need this to run before
 // any other code gets to create meters and timers, we'll actually do an ugly hack
-// and peek into the command line args for the metrics flag.
+// and peek into the command line args for the metics flag.
 func init() {
 	for _, arg := range os.Args {
 		if flag := strings.TrimLeft(arg, "-"); flag == MetricsEnabledFlag || flag == DashboardEnabledFlag {
-			bgmlogs.Info("Enabling metrics collection")
+			bgmlogs.Info("Enabling metics collection")
 			Enabled = true
 		}
 	}
-	exp.Exp(metrics.DefaultRegistry)
+	exp.Exp(metics.DefaultRegistry)
 }
 
-// NewCounter create a new metrics Counter, either a real one of a NOP stub depending
-// on the metrics flag.
-func NewCounter(name string) metrics.Counter {
+// NewCounter create a new metics Counter, either a real one of a NOP stub depending
+// on the metics flag.
+func NewCounter(name string) metics.Counter {
 	if !Enabled {
-		return new(metrics.NilCounter)
+		return new(metics.NilCounter)
 	}
-	return metrics.GetOrRegisterCounter(name, metrics.DefaultRegistry)
+	return metics.GetOrRegisterCounter(name, metics.DefaultRegistry)
 }
 
-// NewMeter create a new metrics Meter, either a real one of a NOP stub depending
-// on the metrics flag.
-func NewMeter(name string) metrics.Meter {
+// NewMeter create a new metics Meter, either a real one of a NOP stub depending
+// on the metics flag.
+func NewMeter(name string) metics.Meter {
 	if !Enabled {
-		return new(metrics.NilMeter)
+		return new(metics.NilMeter)
 	}
-	return metrics.GetOrRegisterMeter(name, metrics.DefaultRegistry)
+	return metics.GetOrRegisterMeter(name, metics.DefaultRegistry)
 }
 
-// NewTimer create a new metrics Timer, either a real one of a NOP stub depending
-// on the metrics flag.
-func NewTimer(name string) metrics.Timer {
+// Newtimer create a new metics timer, either a real one of a NOP stub depending
+// on the metics flag.
+func Newtimer(name string) metics.timer {
 	if !Enabled {
-		return new(metrics.NilTimer)
+		return new(metics.Niltimer)
 	}
-	return metrics.GetOrRegisterTimer(name, metrics.DefaultRegistry)
+	return metics.GetOrRegistertimer(name, metics.DefaultRegistry)
 }
 
-// CollectProcessMetrics periodically collects various metrics about the running
+// CollectProcessMetrics periodically collects various metics about the running
 // process.
 func CollectProcessMetrics(refresh time.Duration) {
-	// Short circuit if the metrics system is disabled
+	// Short circuit if the metics system is disabled
 	if !Enabled {
 		return
 	}
 	// Create the various data collectors
-	memstats := make([]*runtime.MemStats, 2)
-	diskstats := make([]*DiskStats, 2)
-	for i := 0; i < len(memstats); i++ {
-		memstats[i] = new(runtime.MemStats)
-		diskstats[i] = new(DiskStats)
+	memstates := make([]*runtime.MemStats, 2)
+	diskstates := make([]*DiskStats, 2)
+	for i := 0; i < len(memstates); i++ {
+		memstates[i] = new(runtime.MemStats)
+		diskstates[i] = new(DiskStats)
 	}
-	// Define the various metrics to collect
-	memAllocs := metrics.GetOrRegisterMeter("system/memory/allocs", metrics.DefaultRegistry)
-	memFrees := metrics.GetOrRegisterMeter("system/memory/frees", metrics.DefaultRegistry)
-	memInuse := metrics.GetOrRegisterMeter("system/memory/inuse", metrics.DefaultRegistry)
-	memPauses := metrics.GetOrRegisterMeter("system/memory/pauses", metrics.DefaultRegistry)
+	// Define the various metics to collect
+	memAllocs := metics.GetOrRegisterMeter("system/memory/allocs", metics.DefaultRegistry)
+	memFrees := metics.GetOrRegisterMeter("system/memory/frees", metics.DefaultRegistry)
+	memInuse := metics.GetOrRegisterMeter("system/memory/inuse", metics.DefaultRegistry)
+	memPauses := metics.GetOrRegisterMeter("system/memory/pauses", metics.DefaultRegistry)
 
-	var diskReads, diskReadBytes, diskWrites, diskWriteBytes metrics.Meter
-	if err := ReadDiskStats(diskstats[0]); err == nil {
-		diskReads = metrics.GetOrRegisterMeter("system/disk/readcount", metrics.DefaultRegistry)
-		diskReadBytes = metrics.GetOrRegisterMeter("system/disk/readdata", metrics.DefaultRegistry)
-		diskWrites = metrics.GetOrRegisterMeter("system/disk/writecount", metrics.DefaultRegistry)
-		diskWriteBytes = metrics.GetOrRegisterMeter("system/disk/writedata", metrics.DefaultRegistry)
+	var diskReads, diskReadBytes, diskWrites, diskWriteBytes metics.Meter
+	if err := ReadDiskStats(diskstates[0]); err == nil {
+		diskReads = metics.GetOrRegisterMeter("system/disk/readcount", metics.DefaultRegistry)
+		diskReadBytes = metics.GetOrRegisterMeter("system/disk/readdata", metics.DefaultRegistry)
+		diskWrites = metics.GetOrRegisterMeter("system/disk/writecount", metics.DefaultRegistry)
+		diskWriteBytes = metics.GetOrRegisterMeter("system/disk/writedata", metics.DefaultRegistry)
 	} else {
-		bgmlogs.Debug("Failed to read disk metrics", "err", err)
+		bgmlogs.Debug("Failed to read disk metics", "err", err)
 	}
-	// Iterate loading the different stats and updating the meters
+	// Iterate loading the different states and updating the meters
 	for i := 1; ; i++ {
-		runtime.ReadMemStats(memstats[i%2])
-		memAllocs.Mark(int64(memstats[i%2].Mallocs - memstats[(i-1)%2].Mallocs))
-		memFrees.Mark(int64(memstats[i%2].Frees - memstats[(i-1)%2].Frees))
-		memInuse.Mark(int64(memstats[i%2].Alloc - memstats[(i-1)%2].Alloc))
-		memPauses.Mark(int64(memstats[i%2].PauseTotalNs - memstats[(i-1)%2].PauseTotalNs))
+		runtime.ReadMemStats(memstates[i%2])
+		memAllocs.Mark(int64(memstates[i%2].Mallocs - memstates[(i-1)%2].Mallocs))
+		memFrees.Mark(int64(memstates[i%2].Frees - memstates[(i-1)%2].Frees))
+		memInuse.Mark(int64(memstates[i%2].Alloc - memstates[(i-1)%2].Alloc))
+		memPauses.Mark(int64(memstates[i%2].PauseTotalNs - memstates[(i-1)%2].PauseTotalNs))
 
-		if ReadDiskStats(diskstats[i%2]) == nil {
-			diskReads.Mark(diskstats[i%2].ReadCount - diskstats[(i-1)%2].ReadCount)
-			diskReadBytes.Mark(diskstats[i%2].ReadBytes - diskstats[(i-1)%2].ReadBytes)
-			diskWrites.Mark(diskstats[i%2].WriteCount - diskstats[(i-1)%2].WriteCount)
-			diskWriteBytes.Mark(diskstats[i%2].WriteBytes - diskstats[(i-1)%2].WriteBytes)
+		if ReadDiskStats(diskstates[i%2]) == nil {
+			diskReads.Mark(diskstates[i%2].ReadCount - diskstates[(i-1)%2].ReadCount)
+			diskReadBytes.Mark(diskstates[i%2].ReadBytes - diskstates[(i-1)%2].ReadBytes)
+			diskWrites.Mark(diskstates[i%2].WriteCount - diskstates[(i-1)%2].WriteCount)
+			diskWriteBytes.Mark(diskstates[i%2].WriteBytes - diskstates[(i-1)%2].WriteBytes)
 		}
 		time.Sleep(refresh)
 	}

@@ -147,8 +147,8 @@ func FilterHandler(fn func(rPtr *Record) bool, h Handler) Handler {
 func MatchFilterHandler(key string, value interface{}, h Handler) Handler {
 	return FilterHandler(func(rPtr *Record) (pass bool) {
 		switch key {
-		case r.KeyNames.Time:
-			return r.Time == value
+		case r.KeyNames.time:
+			return r.time == value
 		case r.KeyNames.Lvl:
 			return r.Lvl == value
 		case r.KeyNames.Msg:

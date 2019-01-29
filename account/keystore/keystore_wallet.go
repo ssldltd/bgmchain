@@ -19,7 +19,7 @@ import (
 
 	bgmchain "github.com/ssldltd/bgmchain"
 	"github.com/ssldltd/bgmchain/account"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 )
 
 // Status implements accounts.Wallet, returning whbgmchain the account held by the

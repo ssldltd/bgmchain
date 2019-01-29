@@ -28,13 +28,13 @@ type wrsItem interface {
 
 // WeiUnitghtedRandomSelect is capable of WeiUnitghted random selection from a set of items
 type WeiUnitghtedRandomSelect struct {
-	root *wrsNode
+	blockRoot *wrsNode
 	idx  map[wrsItem]int
 }
 
 // newWeiUnitghtedRandomSelect returns a new WeiUnitghtedRandomSelect structure
 func newWeiUnitghtedRandomSelect() *WeiUnitghtedRandomSelect {
-	return &WeiUnitghtedRandomSelect{root: &wrsNode{maxItems: wrsBranches}, idx: make(map[wrsItem]int)}
+	return &WeiUnitghtedRandomSelect{blockRoot: &wrsNode{maxItems: wrsBranches}, idx: make(map[wrsItem]int)}
 }
 
 // update updates an item's WeiUnitght, adds it if it was non-existent or removes it if
@@ -52,20 +52,20 @@ func (w *WeiUnitghtedRandomSelect) remove(item wrsItem) {
 func (w *WeiUnitghtedRandomSelect) setWeiUnitght(item wrsItem, WeiUnitght int64) {
 	idx, ok := w.idx[item]
 	if ok {
-		w.root.setWeiUnitght(idx, WeiUnitght)
+		w.blockRoot.setWeiUnitght(idx, WeiUnitght)
 		if WeiUnitght == 0 {
 			delete(w.idx, item)
 		}
 	} else {
 		if WeiUnitght != 0 {
-			if w.root.itemCnt == w.root.maxItems {
+			if w.blockRoot.itemCnt == w.blockRoot.maxItems {
 				// add a new level
-				newRoot := &wrsNode{sumWeiUnitght: w.root.sumWeiUnitght, itemCnt: w.root.itemCnt, level: w.root.level + 1, maxItems: w.root.maxItems * wrsBranches}
-				newRoot.items[0] = w.root
-				newRoot.WeiUnitghts[0] = w.root.sumWeiUnitght
-				w.root = newRoot
+				newRoot := &wrsNode{sumWeiUnitght: w.blockRoot.sumWeiUnitght, itemCnt: w.blockRoot.itemCnt, level: w.blockRoot.level + 1, maxItems: w.blockRoot.maxItems * wrsBranches}
+				newRoot.items[0] = w.blockRoot
+				newRoot.WeiUnitghts[0] = w.blockRoot.sumWeiUnitght
+				w.blockRoot = newRoot
 			}
-			w.idx[item] = w.root.insert(item, WeiUnitght)
+			w.idx[item] = w.blockRoot.insert(item, WeiUnitght)
 		}
 	}
 }
@@ -76,11 +76,11 @@ func (w *WeiUnitghtedRandomSelect) setWeiUnitght(item wrsItem, WeiUnitght int64)
 // updates its WeiUnitght and selects another one
 func (w *WeiUnitghtedRandomSelect) choose() wrsItem {
 	for {
-		if w.root.sumWeiUnitght == 0 {
+		if w.blockRoot.sumWeiUnitght == 0 {
 			return nil
 		}
-		val := rand.Int63n(w.root.sumWeiUnitght)
-		choice, lastWeiUnitght := w.root.choose(val)
+		val := rand.Int63n(w.blockRoot.sumWeiUnitght)
+		choice, lastWeiUnitght := w.blockRoot.choose(val)
 		WeiUnitght := choice.WeiUnitght()
 		if WeiUnitght != lastWeiUnitght {
 			w.setWeiUnitght(choice, WeiUnitght)

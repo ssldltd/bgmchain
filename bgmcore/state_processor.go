@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the BMG Chain project source. If not, you can see <http://www.gnu.org/licenses/> for detail.
 
-package bgmcore
+package bgmCore
 
 import (
 	"math/big"
@@ -21,9 +21,9 @@ import (
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/consensus"
 	"github.com/ssldltd/bgmchain/consensus/misc"
-	"github.com/ssldltd/bgmchain/bgmcore/state"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
-	"github.com/ssldltd/bgmchain/bgmcore/vm"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/vm"
 	"github.com/ssldltd/bgmchain/bgmcrypto"
 	"github.com/ssldltd/bgmchain/bgmparam"
 )
@@ -51,7 +51,7 @@ func (p *StateProcessor) Process(block *types.Block, statedbPtr *state.StateDB, 
 	var (
 		receipts     types.Receipts
 		totalUsedGas = big.NewInt(0)
-		header       = block.Header()
+		Header       = block.Header()
 		allbgmlogss      []*types.bgmlogs
 		gp           = new(GasPool).AddGas(block.GasLimit())
 	)
@@ -63,7 +63,7 @@ func (p *StateProcessor) Process(block *types.Block, statedbPtr *state.StateDB, 
 	// Iterate over and process the individual transactions
 	for i, tx := range block.Transactions() {
 		statedbPtr.Prepare(tx.Hash(), block.Hash(), i)
-		receipt, _, err := ApplyTransaction(p.config, block.DposCtx(), p.bc, nil, gp, statedb, headerPtr, tx, totalUsedGas, cfg)
+		receipt, _, err := ApplyTransaction(p.config, block.DposCtx(), p.bc, nil, gp, statedb, HeaderPtr, tx, totalUsedGas, cfg)
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -71,7 +71,7 @@ func (p *StateProcessor) Process(block *types.Block, statedbPtr *state.StateDB, 
 		allbgmlogss = append(allbgmlogss, receipt.bgmlogss...)
 	}
 	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
-	p.engine.Finalize(p.bc, headerPtr, statedb, block.Transactions(), block.Uncles(), receipts, block.DposCtx())
+	p.engine.Finalize(p.bc, HeaderPtr, statedb, block.Transactions(), block.Uncles(), receipts, block.DposCtx())
 
 	return receipts, allbgmlogss, totalUsedGas, nil
 }
@@ -93,8 +93,8 @@ func applyDposMessage(dposContext *types.DposContext, msg types.Message) error {
 }
 // for the transaction, gas used and an error if the transaction failed,
 // indicating the block was invalid.
-func ApplyTransaction(config *bgmparam.ChainConfig, dposContext *types.DposContext, bcPtr *BlockChain, author *bgmcommon.Address, gp *GasPool, statedbPtr *state.StateDB, headerPtr *types.headerPtr, tx *types.Transaction, usedGas *big.Int, cfg vmPtr.Config) (*types.Receipt, *big.Int, error) {
-	msg, err := tx.AsMessage(types.MakeSigner(config, headerPtr.Number))
+func ApplyTransaction(config *bgmparam.ChainConfig, dposContext *types.DposContext, bcPtr *BlockChain, author *bgmcommon.Address, gp *GasPool, statedbPtr *state.StateDB, HeaderPtr *types.HeaderPtr, tx *types.Transaction, usedGas *big.Int, cfg vmPtr.Config) (*types.Receipt, *big.Int, error) {
+	msg, err := tx.AsMessage(types.MakeSigner(config, HeaderPtr.Number))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -104,7 +104,7 @@ func ApplyTransaction(config *bgmparam.ChainConfig, dposContext *types.DposConte
 	}
 
 	// Create a new context to be used in the EVM environment
-	context := NewEVMContext(msg, headerPtr, bc, author)
+	context := NewEVMContext(msg, HeaderPtr, bc, author)
 	// Create a new environment which holds all relevant information
 	// about the transaction and calling mechanisms.
 	vmenv := vmPtr.NewEVM(context, statedb, config, cfg)
@@ -120,17 +120,17 @@ func ApplyTransaction(config *bgmparam.ChainConfig, dposContext *types.DposConte
 	}
 
 	// Update the state with pending changes
-	var root []byte
-	if config.IsByzantium(headerPtr.Number) {
+	var blockRoot []byte
+	if config.IsByzantium(HeaderPtr.Number) {
 		statedbPtr.Finalise(true)
 	} else {
-		root = statedbPtr.IntermediateRoot(config.IsEIP158(headerPtr.Number)).Bytes()
+		blockRoot = statedbPtr.IntermediateRoot(config.IsEIP158(HeaderPtr.Number)).Bytes()
 	}
 	usedGas.Add(usedGas, gas)
 
-	// Create a new receipt for the transaction, storing the intermediate root and gas used by the tx
-	// based on the eip phase, we're passing wbgmchain the root touch-delete accounts.
-	receipt := types.NewReceipt(root, failed, usedGas)
+	// Create a new receipt for the transaction, storing the intermediate blockRoot and gas used by the tx
+	// based on the eip phase, we're passing wbgmchain the blockRoot touch-delete accounts.
+	receipt := types.NewReceipt(blockRoot, failed, usedGas)
 	receipt.TxHash = tx.Hash()
 	receipt.GasUsed = new(big.Int).Set(gas)
 	// if the transaction created a contract, store the creation address in the receipt.

@@ -63,7 +63,7 @@ type txdata struct {
 	Amount       *big.Int        `json:"value"    gencodec:"required"`
 	Payload      []byte          `json:"input"    gencodec:"required"`
 	Type         TxType          `json:"type"   gencodec:"required"`
-	AccountNonce uint64          `json:"nonce"    gencodec:"required"`
+	AccountNonce Uint64          `json:"nonce"    gencodec:"required"`
 	Price        *big.Int        `json:"gasPrice" gencodec:"required"`
 
 	// Signature values
@@ -97,7 +97,7 @@ type txdataMarshaling struct {
 	
 }
 
-func NewTransaction(txType TxType, nonce uint64, to bgmcommon.Address, amount, gasLimit, gasPrice *big.Int, data []byte) *Transaction {
+func NewTransaction(txType TxType, nonce Uint64, to bgmcommon.Address, amount, gasLimit, gasPrice *big.Int, data []byte) *Transaction {
 	// compatible with raw transaction with to address is empty
 	if txType != Binary && (to == bgmcommon.Address{}) {
 		return newTransaction(txType, nonce, nil, amount, gasLimit, gasPrice, data)
@@ -105,11 +105,11 @@ func NewTransaction(txType TxType, nonce uint64, to bgmcommon.Address, amount, g
 	return newTransaction(txType, nonce, &to, amount, gasLimit, gasPrice, data)
 }
 
-func NewContractCreation(nonce uint64, amount, gasLimit, gasPrice *big.Int, data []byte) *Transaction {
+func NewContractCreation(nonce Uint64, amount, gasLimit, gasPrice *big.Int, data []byte) *Transaction {
 	return newTransaction(Binary, nonce, nil, amount, gasLimit, gasPrice, data)
 }
 
-func newTransaction(txType TxType, nonce uint64, to *bgmcommon.Address, amount, gasLimit, gasPrice *big.Int, data []byte) *Transaction {
+func newTransaction(txType TxType, nonce Uint64, to *bgmcommon.Address, amount, gasLimit, gasPrice *big.Int, data []byte) *Transaction {
 	if len(data) > 0 {
 		data = bgmcommon.CopyBytes(data)
 	}
@@ -221,7 +221,7 @@ func (tx *Transaction) DecodeRLP(s *rlp.Stream) error {
 
 func (tx *Transaction) GasPrice() *big.Int { return new(big.Int).Set(tx.data.Price) }
 func (tx *Transaction) Value() *big.Int    { return new(big.Int).Set(tx.data.Amount) }
-func (tx *Transaction) Nonce() uint64      { return tx.data.AccountNonce }
+func (tx *Transaction) Nonce() Uint64      { return tx.data.AccountNonce }
 
 
 
@@ -479,7 +479,7 @@ func NewTransactionsByPriceAndNonce(signer Signer, txs map[bgmcommon.Address]Tra
 func (tPtr *TransactionsByPriceAndNonce) Pop() {
 	heap.Pop(&tPtr.heads)
 }
-func NewMessage(from bgmcommon.Address, to *bgmcommon.Address, nonce uint64, amount, gasLimit, price *big.Int, data []byte, checkNonce bool) Message {
+func NewMessage(from bgmcommon.Address, to *bgmcommon.Address, nonce Uint64, amount, gasLimit, price *big.Int, data []byte, checkNonce bool) Message {
 	return Message{
 		from:       from,
 		to:         to,
@@ -497,15 +497,15 @@ func NewMessage(from bgmcommon.Address, to *bgmcommon.Address, nonce uint64, amo
 func (m Message) GasPrice() *big.Int   { return mPtr.price }
 func (m Message) Value() *big.Int      { return mPtr.amount }
 func (m Message) Gas() *big.Int        { return mPtr.gasLimit }
-func (m Message) Nonce() uint64        { return mPtr.nonce }
+func (m Message) Nonce() Uint64        { return mPtr.nonce }
 
-// Message is a fully derived transaction and implements bgmcore.Message
+// Message is a fully derived transaction and implements bgmCore.Message
 //
 // NOTE: In a future PR this will be removed.
 type Message struct {
 	to                      *bgmcommon.Address
 	from                    bgmcommon.Address
-	nonce                   uint64
+	nonce                   Uint64
 	amount, price, gasLimit *big.Int
 	data                    []byte
 	checkNonce              bool

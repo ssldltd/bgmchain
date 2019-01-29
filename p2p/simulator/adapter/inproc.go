@@ -199,18 +199,18 @@ func (self *SimNodes) Snapshots() (map[string][]byte, error) {
 
 // Start registers the services and starts the underlying devp2p Nodes
 func (self *SimNodes) Start(snapshots map[string][]byte) error {
-	newService := func(name string) func(ctx *Nodes.ServiceContext) (Nodes.Service, error) {
+	newService := func(name string) func(CTX *Nodes.ServiceContext) (Nodes.Service, error) {
 		return func(NodesCtx *Nodes.ServiceContext) (Nodes.Service, error) {
-			ctx := &ServiceContext{
+			CTX := &ServiceContext{
 				RPCDialer:   self.adapter,
 				NodesContext: NodesCtx,
 				Config:      self.config,
 			}
 			if snapshots != nil {
-				ctx.Snapshot = snapshots[name]
+				CTX.Snapshot = snapshots[name]
 			}
 			serviceFunc := self.adapter.services[name]
-			service, err := serviceFunc(ctx)
+			service, err := serviceFunc(CTX)
 			if err != nil {
 				return nil, err
 			}

@@ -22,7 +22,7 @@ import (
 
 type account struct {
 	stateObject *stateObject
-	nstart      uint64
+	nstart      Uint64
 	nonces      []bool
 }
 
@@ -50,13 +50,13 @@ func (ms *ManagedState) SetState(statedbPtr *StateDB) {
 }
 
 // RemoveNonce removed the nonce from the managed state and all future pending nonces
-func (ms *ManagedState) RemoveNonce(addr bgmcommon.Address, n uint64) {
+func (ms *ManagedState) RemoveNonce(addr bgmcommon.Address, n Uint64) {
 	if ms.hasAccount(addr) {
 		ms.mu.Lock()
 		defer ms.mu.Unlock()
 
 		account := ms.getAccount(addr)
-		if n-account.nstart <= uint64(len(account.nonces)) {
+		if n-account.nstart <= Uint64(len(account.nonces)) {
 			reslice := make([]bool, n-account.nstart)
 			copy(reslice, account.nonces[:n-account.nstart])
 			account.nonces = reslice
@@ -65,38 +65,38 @@ func (ms *ManagedState) RemoveNonce(addr bgmcommon.Address, n uint64) {
 }
 
 // NewNonce returns the new canonical nonce for the managed account
-func (ms *ManagedState) NewNonce(addr bgmcommon.Address) uint64 {
+func (ms *ManagedState) NewNonce(addr bgmcommon.Address) Uint64 {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
 	account := ms.getAccount(addr)
 	for i, nonce := range account.nonces {
 		if !nonce {
-			return account.nstart + uint64(i)
+			return account.nstart + Uint64(i)
 		}
 	}
 	account.nonces = append(account.nonces, true)
 
-	return uint64(len(account.nonces)-1) + account.nstart
+	return Uint64(len(account.nonces)-1) + account.nstart
 }
 
 // GetNonce returns the canonical nonce for the managed or unmanaged account.
 //
 // Because GetNonce mutates the DB, we must take a write lock.
-func (ms *ManagedState) GetNonce(addr bgmcommon.Address) uint64 {
+func (ms *ManagedState) GetNonce(addr bgmcommon.Address) Uint64 {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
 	if ms.hasAccount(addr) {
 		account := ms.getAccount(addr)
-		return uint64(len(account.nonces)) + account.nstart
+		return Uint64(len(account.nonces)) + account.nstart
 	} else {
 		return ms.StateDbPtr.GetNonce(addr)
 	}
 }
 
 // SetNonce sets the new canonical nonce for the managed state
-func (ms *ManagedState) SetNonce(addr bgmcommon.Address, nonce uint64) {
+func (ms *ManagedState) SetNonce(addr bgmcommon.Address, nonce Uint64) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 	so := ms.GetOrNewStateObject(addr)
@@ -126,7 +126,7 @@ func (ms *ManagedState) getAccount(addr bgmcommon.Address) *account {
 		// Always make sure the state account nonce isn't actually higher
 		// than the tracked one.
 		so := ms.StateDbPtr.getStateObject(addr)
-		if so != nil && uint64(len(account.nonces))+account.nstart < so.Nonce() {
+		if so != nil && Uint64(len(account.nonces))+account.nstart < so.Nonce() {
 			ms.accounts[addr] = newAccount(so)
 		}
 

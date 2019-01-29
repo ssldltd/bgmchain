@@ -101,7 +101,7 @@ func LvlFromString(lvlString string) (Lvl, error) {
 
 // A Record is what a bgmlogsger asks its handler to write
 type Record struct {
-	Time     time.Time
+	time     time.time
 	Lvl      Lvl
 	Msg      string
 	Ctx      []interface{}
@@ -110,7 +110,7 @@ type Record struct {
 }
 
 type RecordKeyNames struct {
-	Time string
+	time string
 	Msg  string
 	Lvl  string
 }
@@ -118,7 +118,7 @@ type RecordKeyNames struct {
 // A bgmlogsger writes key/value pairs to a Handler
 type bgmlogsger interface {
 	// New returns a new bgmlogsger that has this bgmlogsger's context plus the given context
-	New(ctx ...interface{}) bgmlogsger
+	New(CTX ...interface{}) bgmlogsger
 
 	// GetHandler gets the handler associated with the bgmlogsger.
 	GetHandler() Handler
@@ -127,36 +127,36 @@ type bgmlogsger interface {
 	SetHandler(h Handler)
 
 	// bgmlogs a message at the given level with context key/value pairs
-	Trace(msg string, ctx ...interface{})
-	Debug(msg string, ctx ...interface{})
-	Info(msg string, ctx ...interface{})
-	Warn(msg string, ctx ...interface{})
-	Error(msg string, ctx ...interface{})
-	Crit(msg string, ctx ...interface{})
+	Trace(msg string, CTX ...interface{})
+	Debug(msg string, CTX ...interface{})
+	Info(msg string, CTX ...interface{})
+	Warn(msg string, CTX ...interface{})
+	Error(msg string, CTX ...interface{})
+	Crit(msg string, CTX ...interface{})
 }
 
 type bgmlogsger struct {
-	ctx []interface{}
+	CTX []interface{}
 	h   *swapHandler
 }
 
-func (l *bgmlogsger) write(msg string, lvl Lvl, ctx []interface{}) {
+func (l *bgmlogsger) write(msg string, lvl Lvl, CTX []interface{}) {
 	l.hPtr.bgmlogs(&Record{
-		Time: time.Now(),
+		time: time.Now(),
 		Lvl:  lvl,
 		Msg:  msg,
-		Ctx:  newContext(l.ctx, ctx),
+		Ctx:  newContext(l.CTX, CTX),
 		Call: stack.Called(2),
 		KeyNames: RecordKeyNames{
-			Time: timeKey,
+			time: timeKey,
 			Msg:  msgKey,
 			Lvl:  lvlKey,
 		},
 	})
 }
 
-func (l *bgmlogsger) New(ctx ...interface{}) bgmlogsger {
-	child := &bgmlogsger{newContext(l.ctx, ctx), new(swapHandler)}
+func (l *bgmlogsger) New(CTX ...interface{}) bgmlogsger {
+	child := &bgmlogsger{newContext(l.CTX, CTX), new(swapHandler)}
 	child.SetHandler(l.h)
 	return child
 }
@@ -169,28 +169,28 @@ func newContext(prefix []interface{}, suffix []interface{}) []interface{} {
 	return newCtx
 }
 
-func (l *bgmlogsger) Trace(msg string, ctx ...interface{}) {
-	l.write(msg, LvlTrace, ctx)
+func (l *bgmlogsger) Trace(msg string, CTX ...interface{}) {
+	l.write(msg, LvlTrace, CTX)
 }
 
-func (l *bgmlogsger) Debug(msg string, ctx ...interface{}) {
-	l.write(msg, LvlDebug, ctx)
+func (l *bgmlogsger) Debug(msg string, CTX ...interface{}) {
+	l.write(msg, LvlDebug, CTX)
 }
 
-func (l *bgmlogsger) Info(msg string, ctx ...interface{}) {
-	l.write(msg, LvlInfo, ctx)
+func (l *bgmlogsger) Info(msg string, CTX ...interface{}) {
+	l.write(msg, LvlInfo, CTX)
 }
 
-func (l *bgmlogsger) Warn(msg string, ctx ...interface{}) {
-	l.write(msg, LvlWarn, ctx)
+func (l *bgmlogsger) Warn(msg string, CTX ...interface{}) {
+	l.write(msg, LvlWarn, CTX)
 }
 
-func (l *bgmlogsger) Error(msg string, ctx ...interface{}) {
-	l.write(msg, LvlError, ctx)
+func (l *bgmlogsger) Error(msg string, CTX ...interface{}) {
+	l.write(msg, LvlError, CTX)
 }
 
-func (l *bgmlogsger) Crit(msg string, ctx ...interface{}) {
-	l.write(msg, LvlCrit, ctx)
+func (l *bgmlogsger) Crit(msg string, CTX ...interface{}) {
+	l.write(msg, LvlCrit, CTX)
 	os.Exit(1)
 }
 
@@ -202,24 +202,24 @@ func (l *bgmlogsger) SetHandler(h Handler) {
 	l.hPtr.Swap(h)
 }
 
-func normalize(ctx []interface{}) []interface{} {
+func normalize(CTX []interface{}) []interface{} {
 	// if the Called passed a Ctx object, then expand it
-	if len(ctx) == 1 {
-		if ctxMap, ok := ctx[0].(Ctx); ok {
-			ctx = ctxMap.toArray()
+	if len(CTX) == 1 {
+		if CTXMap, ok := CTX[0].(Ctx); ok {
+			CTX = CTXMap.toArray()
 		}
 	}
 
-	// ctx needs to be even because it's a series of key/value pairs
+	// CTX needs to be even because it's a series of key/value pairs
 	// no one wants to check for errors on bgmlogsging functions,
 	// so instead of erroring on bad input, we'll just make sure
 	// that things are the right length and users can fix bugs
 	// when they see the output looks wrong
-	if len(ctx)%2 != 0 {
-		ctx = append(ctx, nil, errorKey, "Normalized odd number of arguments by adding nil")
+	if len(CTX)%2 != 0 {
+		CTX = append(CTX, nil, errorKey, "Normalized odd number of arguments by adding nil")
 	}
 
-	return ctx
+	return CTX
 }
 
 // Lazy allows you to defer calculation of a bgmlogsged value that is expensive

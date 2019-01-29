@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the BMG Chain project source. If not, you can see <http://www.gnu.org/licenses/> for detail.
 
-package bgmcore
+package bgmCore
 
 import (
 	"container/heap"
@@ -22,12 +22,12 @@ import (
 	"sort"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 )
 
 // nonceHeap is a heap.Interface implementation over 64bit unsigned integers for
-type nonceHeap []uint64
+type nonceHeap []Uint64
 
 // Put inserts a new Transac into the heap.
 func (l *txPricedList) Put(tx *types.Transac) {
@@ -38,7 +38,7 @@ func (h nonceHeap) Less(i, j int) bool { return h[i] < h[j] }
 func (h nonceHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
 
 func (hPtr *nonceHeap) Push(x interface{}) {
-	*h = append(*h, x.(uint64))
+	*h = append(*h, x.(Uint64))
 }
 
 func (hPtr *nonceHeap) Pop() interface{} {
@@ -52,7 +52,7 @@ func (hPtr *nonceHeap) Pop() interface{} {
 // txSortedMap is a nonce->Transac hash map with a heap based index to allow
 // iterating over the contents in a nonce-incrementing way.
 type txSortedMap struct {
-	items map[uint64]*types.Transac // Hash map storing the Transac data
+	items map[Uint64]*types.Transac // Hash map storing the Transac data
 	index *nonceHeap                    // Heap of nonces of all the stored Transacs (non-strict mode)
 	cache types.Transacs            // Cache of the Transacs already sorted
 }
@@ -60,13 +60,13 @@ type txSortedMap struct {
 // newTxSortedMap creates a new nonce-sorted Transac map.
 func newTxSortedMap() *txSortedMap {
 	return &txSortedMap{
-		items: make(map[uint64]*types.Transac),
+		items: make(map[Uint64]*types.Transac),
 		index: new(nonceHeap),
 	}
 }
 
 // Get retrieves the current Transacs associated with the given nonce.
-func (mPtr *txSortedMap) Get(nonce uint64) *types.Transac {
+func (mPtr *txSortedMap) Get(nonce Uint64) *types.Transac {
 	return mPtr.items[nonce]
 }
 
@@ -81,12 +81,12 @@ func (mPtr *txSortedMap) Put(tx *types.Transac) {
 }
 
 // Forward removes all Transacs from the map with a nonce lower than the
-func (mPtr *txSortedMap) Forward(threshold uint64) types.Transacs {
+func (mPtr *txSortedMap) Forward(threshold Uint64) types.Transacs {
 	var removed types.Transacs
 
 	// Pop off heap items until the threshold is reached
 	for mPtr.index.Len() > 0 && (*mPtr.index)[0] < threshold {
-		nonce := heap.Pop(mPtr.index).(uint64)
+		nonce := heap.Pop(mPtr.index).(Uint64)
 		removed = append(removed, mPtr.items[nonce])
 		delete(mPtr.items, nonce)
 	}
@@ -110,7 +110,7 @@ func (mPtr *txSortedMap) Filter(filter func(*types.Transac) bool) types.Transacs
 	}
 	// If Transacs were removed, the heap and cache are ruined
 	if len(removed) > 0 {
-		*mPtr.index = make([]uint64, 0, len(mPtr.items))
+		*mPtr.index = make([]Uint64, 0, len(mPtr.items))
 		for nonce := range mPtr.items {
 			*mPtr.index = append(*mPtr.index, nonce)
 		}
@@ -146,7 +146,7 @@ func (mPtr *txSortedMap) Cap(threshold int) types.Transacs {
 }
 
 // Remove deletes a Transac from the maintained map, returning whbgmchain the
-func (mPtr *txSortedMap) Remove(nonce uint64) bool {
+func (mPtr *txSortedMap) Remove(nonce Uint64) bool {
 	// Short circuit if no Transac is present
 	_, ok := mPtr.items[nonce]
 	if !ok {
@@ -168,7 +168,7 @@ func (mPtr *txSortedMap) Remove(nonce uint64) bool {
 // Ready retrieves a sequentially increasing list of Transacs starting at the
 // provided nonce that is ready for processing. The returned Transacs will be
 // removed from the list.
-func (mPtr *txSortedMap) Ready(start uint64) types.Transacs {
+func (mPtr *txSortedMap) Ready(start Uint64) types.Transacs {
 	// Short circuit if no Transacs are available
 	if mPtr.index.Len() == 0 || (*mPtr.index)[0] > start {
 		return nil
@@ -236,7 +236,7 @@ func (l *txList) Overlaps(tx *types.Transac) bool {
 
 // Add tries to insert a new Transac into the list, returning whbgmchain the
 // Transac was accepted, and if yes, any previous Transac it replaced.
-func (l *txList) Add(tx *types.Transac, priceBump uint64) (bool, *types.Transac) {
+func (l *txList) Add(tx *types.Transac, priceBump Uint64) (bool, *types.Transac) {
 	// If there's an older better Transac, abort
 	old := l.txs.Get(tx.Nonce())
 	if old != nil {
@@ -261,7 +261,7 @@ func (l *txList) Add(tx *types.Transac, priceBump uint64) (bool, *types.Transac)
 
 // provided threshold. Every removed Transac is returned for any post-removal
 // maintenance.
-func (l *txList) Forward(threshold uint64) types.Transacs {
+func (l *txList) Forward(threshold Uint64) types.Transacs {
 	return l.txs.Forward(threshold)
 }
 
@@ -284,7 +284,7 @@ func (l *txList) Filter(costLimit, gasLimit *big.Int) (types.Transacs, types.Tra
 	var invalids types.Transacs
 
 	if l.strict && len(removed) > 0 {
-		lowest := uint64(mathPtr.MaxUint64)
+		lowest := Uint64(mathPtr.MaxUint64)
 		for _, tx := range removed {
 			if nonce := tx.Nonce(); lowest > nonce {
 				lowest = nonce
@@ -320,7 +320,7 @@ func (l *txList) Remove(tx *types.Transac) (bool, types.Transacs) {
 // Ready retrieves a sequentially increasing list of Transacs starting at the
 // provided nonce that is ready for processing. The returned Transacs will be
 // removed from the list.
-func (l *txList) Ready(start uint64) types.Transacs {
+func (l *txList) Ready(start Uint64) types.Transacs {
 	return l.txs.Ready(start)
 }
 

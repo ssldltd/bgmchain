@@ -27,9 +27,9 @@ import (
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmcommon/hexutil"
 	"github.com/ssldltd/bgmchain/bgmcommon/math"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
-	"github.com/ssldltd/bgmchain/bgmcore/vm"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/vm"
 	"github.com/ssldltd/bgmchain/bgmcrypto"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 	"github.com/ssldltd/bgmchain/p2p"
@@ -57,8 +57,8 @@ func NewPublicBgmchainAPI(b Backend) *PublicBgmchainAPI {
 }
 
 // GasPrice returns a suggestion for a gas price.
-func (s *PublicBgmchainAPI) GasPrice(ctx context.Context) (*big.Int, error) {
-	return s.bPtr.SuggestPrice(ctx)
+func (s *PublicBgmchainAPI) GasPrice(CTX context.Context) (*big.Int, error) {
+	return s.bPtr.SuggestPrice(CTX)
 }
 
 // ProtocolVersion returns the current Bgmchain protocol version this node supports
@@ -67,10 +67,10 @@ func (s *PublicBgmchainAPI) ProtocolVersion() hexutil.Uint {
 }
 
 // Syncing returns false in case the node is currently not syncing with the network. It can be up to date or has not
-// yet received the latest block headers from its pears. In case it is synchronizing:
+// yet received the latest block Headers from its pears. In case it is synchronizing:
 // - startingBlock: block number this node started to synchronise from
 // - currentBlock:  block number this node is currently importing
-// - highestBlock:  block number of the highest block header this node has received from peers
+// - highestBlock:  block number of the highest block Header this node has received from peers
 // - pulledStates:  number of state entries processed until now
 // - knownStates:   number of known state entries that still need to be pulled
 func (s *PublicBgmchainAPI) Syncing() (interface{}, error) {
@@ -311,8 +311,8 @@ func (s *PrivateAccountAPI) ImportRawKey(privkey string, password string) (bgmco
 // UnlockAccount will unlock the account associated with the given address with
 // the given password for duration seconds. If duration is nil it will use a
 // default of 300 seconds. It returns an indication if the account was unlocked.
-func (s *PrivateAccountAPI) UnlockAccount(addr bgmcommon.Address, password string, duration *uint64) (bool, error) {
-	const max = uint64(time.Duration(mathPtr.MaxInt64) / time.Second)
+func (s *PrivateAccountAPI) UnlockAccount(addr bgmcommon.Address, password string, duration *Uint64) (bool, error) {
+	const max = Uint64(time.Duration(mathPtr.MaxInt64) / time.Second)
 	var d time.Duration
 	if duration == nil {
 		d = 300 * time.Second
@@ -321,7 +321,7 @@ func (s *PrivateAccountAPI) UnlockAccount(addr bgmcommon.Address, password strin
 	} else {
 		d = time.Duration(*duration) * time.Second
 	}
-	err := fetchKeystore(s.am).TimedUnlock(accounts.Account{Address: addr}, password, d)
+	err := fetchKeystore(s.am).timedUnlock(accounts.Account{Address: addr}, password, d)
 	return err == nil, err
 }
 
@@ -333,7 +333,7 @@ func (s *PrivateAccountAPI) LockAccount(addr bgmcommon.Address) bool {
 // SendTransaction will create a transaction from the given arguments and
 // tries to sign it with the key associated with args.To. If the given passwd isn't
 // able to decrypt the key it fails.
-func (s *PrivateAccountAPI) SendTransaction(ctx context.Context, args SendTxArgs, passwd string) (bgmcommon.Hash, error) {
+func (s *PrivateAccountAPI) SendTransaction(CTX context.Context, args SendTxArgs, passwd string) (bgmcommon.Hash, error) {
 	// Look up the wallet containing the requested signer
 	account := accounts.Account{Address: args.From}
 
@@ -350,7 +350,7 @@ func (s *PrivateAccountAPI) SendTransaction(ctx context.Context, args SendTxArgs
 	}
 
 	// Set some sanity defaults and terminate on failure
-	if err := args.setDefaults(ctx, s.b); err != nil {
+	if err := args.setDefaults(CTX, s.b); err != nil {
 		return bgmcommon.Hash{}, err
 	}
 	// Assemble the transaction and sign with the wallet
@@ -364,7 +364,7 @@ func (s *PrivateAccountAPI) SendTransaction(ctx context.Context, args SendTxArgs
 	if err != nil {
 		return bgmcommon.Hash{}, err
 	}
-	return submitTransaction(ctx, s.b, signed)
+	return submitTransaction(CTX, s.b, signed)
 }
 
 // signHash is a helper function that calculates a hash for the given message that can be
@@ -388,7 +388,7 @@ func signHash(data []byte) []byte {
 // The key used to calculate the signature is decrypted with the given password.
 //
 // https://github.com/ssldltd/bgmchain/wiki/Management-APIs#personal_sign
-func (s *PrivateAccountAPI) Sign(ctx context.Context, data hexutil.Bytes, addr bgmcommon.Address, passwd string) (hexutil.Bytes, error) {
+func (s *PrivateAccountAPI) Sign(CTX context.Context, data hexutil.Bytes, addr bgmcommon.Address, passwd string) (hexutil.Bytes, error) {
 	// Look up the wallet containing the requested signer
 	account := accounts.Account{Address: addr}
 
@@ -415,7 +415,7 @@ func (s *PrivateAccountAPI) Sign(ctx context.Context, data hexutil.Bytes, addr b
 // the V value must be be 27 or 28 for legacy reasons.
 //
 // https://github.com/ssldltd/bgmchain/wiki/Management-APIs#personal_ecRecover
-func (s *PrivateAccountAPI) EcRecover(ctx context.Context, data, sig hexutil.Bytes) (bgmcommon.Address, error) {
+func (s *PrivateAccountAPI) EcRecover(CTX context.Context, data, sig hexutil.Bytes) (bgmcommon.Address, error) {
 	if len(sig) != 65 {
 		return bgmcommon.Address{}, fmt.Errorf("signature must be 65 bytes long")
 	}
@@ -435,8 +435,8 @@ func (s *PrivateAccountAPI) EcRecover(ctx context.Context, data, sig hexutil.Byt
 
 // SignAndSendTransaction was renamed to SendTransaction. This method is deprecated
 // and will be removed in the future. It primary goal is to give clients time to update.
-func (s *PrivateAccountAPI) SignAndSendTransaction(ctx context.Context, args SendTxArgs, passwd string) (bgmcommon.Hash, error) {
-	return s.SendTransaction(ctx, args, passwd)
+func (s *PrivateAccountAPI) SignAndSendTransaction(CTX context.Context, args SendTxArgs, passwd string) (bgmcommon.Hash, error) {
+	return s.SendTransaction(CTX, args, passwd)
 }
 
 // PublicBlockChainAPI provides an apiPtr to access the Bgmchain blockchain.
@@ -450,17 +450,17 @@ func NewPublicBlockChainAPI(b Backend) *PublicBlockChainAPI {
 	return &PublicBlockChainAPI{b}
 }
 
-// BlockNumber returns the block number of the chain head.
-func (s *PublicBlockChainAPI) BlockNumber() *big.Int {
-	headerPtr, _ := s.bPtr.HeaderByNumber(context.Background(), rpcPtr.LatestBlockNumber) // latest header should always be available
-	return headerPtr.Number
+// number returns the block number of the chain head.
+func (s *PublicBlockChainAPI) number() *big.Int {
+	HeaderPtr, _ := s.bPtr.HeaderByNumber(context.Background(), rpcPtr.Latestnumber) // latest Header should always be available
+	return HeaderPtr.Number
 }
 
 // GetBalance returns the amount of WeiUnit for the given address in the state of the
-// given block number. The rpcPtr.LatestBlockNumber and rpcPtr.PendingBlockNumber meta
+// given block number. The rpcPtr.Latestnumber and rpcPtr.Pendingnumber meta
 // block numbers are also allowed.
-func (s *PublicBlockChainAPI) GetBalance(ctx context.Context, address bgmcommon.Address, blockNr rpcPtr.BlockNumber) (*big.Int, error) {
-	state, _, err := s.bPtr.StateAndHeaderByNumber(ctx, blockNr)
+func (s *PublicBlockChainAPI) GetBalance(CTX context.Context, address bgmcommon.Address, blockNr rpcPtr.number) (*big.Int, error) {
+	state, _, err := s.bPtr.StateAndHeaderByNumber(CTX, blockNr)
 	if state == nil || err != nil {
 		return nil, err
 	}
@@ -470,11 +470,11 @@ func (s *PublicBlockChainAPI) GetBalance(ctx context.Context, address bgmcommon.
 
 // GetBlockByNumber returns the requested block. When blockNr is -1 the chain head is returned. When fullTx is true all
 // transactions in the block are returned in full detail, otherwise only the transaction hash is returned.
-func (s *PublicBlockChainAPI) GetBlockByNumber(ctx context.Context, blockNr rpcPtr.BlockNumber, fullTx bool) (map[string]interface{}, error) {
-	block, err := s.bPtr.BlockByNumber(ctx, blockNr)
+func (s *PublicBlockChainAPI) GetBlockByNumber(CTX context.Context, blockNr rpcPtr.number, fullTx bool) (map[string]interface{}, error) {
+	block, err := s.bPtr.BlockByNumber(CTX, blockNr)
 	if block != nil {
 		response, err := s.rpcOutputBlock(block, true, fullTx)
-		if err == nil && blockNr == rpcPtr.PendingBlockNumber {
+		if err == nil && blockNr == rpcPtr.Pendingnumber {
 			// Pending blocks need to nil out a few fields
 			for _, field := range []string{"hash", "nonce", "miner"} {
 				response[field] = nil
@@ -487,18 +487,18 @@ func (s *PublicBlockChainAPI) GetBlockByNumber(ctx context.Context, blockNr rpcP
 
 // GetBlockByHash returns the requested block. When fullTx is true all transactions in the block are returned in full
 // detail, otherwise only the transaction hash is returned.
-func (s *PublicBlockChainAPI) GetBlockByHash(ctx context.Context, blockHash bgmcommon.Hash, fullTx bool) (map[string]interface{}, error) {
-	block, err := s.bPtr.GetBlock(ctx, blockHash)
+func (s *PublicBlockChainAPI) GetBlockByHash(CTX context.Context, blockHash bgmcommon.Hash, fullTx bool) (map[string]interface{}, error) {
+	block, err := s.bPtr.GetBlock(CTX, blockHash)
 	if block != nil {
 		return s.rpcOutputBlock(block, true, fullTx)
 	}
 	return nil, err
 }
 
-// GetUncleByBlockNumberAndIndex returns the uncle block for the given block hash and index. When fullTx is true
+// GetUncleBynumberAndIndex returns the uncle block for the given block hash and index. When fullTx is true
 // all transactions in the block are returned in full detail, otherwise only the transaction hash is returned.
-func (s *PublicBlockChainAPI) GetUncleByBlockNumberAndIndex(ctx context.Context, blockNr rpcPtr.BlockNumber, index hexutil.Uint) (map[string]interface{}, error) {
-	block, err := s.bPtr.BlockByNumber(ctx, blockNr)
+func (s *PublicBlockChainAPI) GetUncleBynumberAndIndex(CTX context.Context, blockNr rpcPtr.number, index hexutil.Uint) (map[string]interface{}, error) {
+	block, err := s.bPtr.BlockByNumber(CTX, blockNr)
 	if block != nil {
 		uncles := block.Uncles()
 		if index >= hexutil.Uint(len(uncles)) {
@@ -511,10 +511,10 @@ func (s *PublicBlockChainAPI) GetUncleByBlockNumberAndIndex(ctx context.Context,
 	return nil, err
 }
 
-// GetUncleByBlockHashAndIndex returns the uncle block for the given block hash and index. When fullTx is true
+// GetUncleByhashAndIndex returns the uncle block for the given block hash and index. When fullTx is true
 // all transactions in the block are returned in full detail, otherwise only the transaction hash is returned.
-func (s *PublicBlockChainAPI) GetUncleByBlockHashAndIndex(ctx context.Context, blockHash bgmcommon.Hash, index hexutil.Uint) (map[string]interface{}, error) {
-	block, err := s.bPtr.GetBlock(ctx, blockHash)
+func (s *PublicBlockChainAPI) GetUncleByhashAndIndex(CTX context.Context, blockHash bgmcommon.Hash, index hexutil.Uint) (map[string]interface{}, error) {
+	block, err := s.bPtr.GetBlock(CTX, blockHash)
 	if block != nil {
 		uncles := block.Uncles()
 		if index >= hexutil.Uint(len(uncles)) {
@@ -527,18 +527,18 @@ func (s *PublicBlockChainAPI) GetUncleByBlockHashAndIndex(ctx context.Context, b
 	return nil, err
 }
 
-// GetUncleCountByBlockNumber returns number of uncles in the block for the given block number
-func (s *PublicBlockChainAPI) GetUncleCountByBlockNumber(ctx context.Context, blockNr rpcPtr.BlockNumber) *hexutil.Uint {
-	if block, _ := s.bPtr.BlockByNumber(ctx, blockNr); block != nil {
+// GetUncleCountBynumber returns number of uncles in the block for the given block number
+func (s *PublicBlockChainAPI) GetUncleCountBynumber(CTX context.Context, blockNr rpcPtr.number) *hexutil.Uint {
+	if block, _ := s.bPtr.BlockByNumber(CTX, blockNr); block != nil {
 		n := hexutil.Uint(len(block.Uncles()))
 		return &n
 	}
 	return nil
 }
 
-// GetUncleCountByBlockHash returns number of uncles in the block for the given block hash
-func (s *PublicBlockChainAPI) GetUncleCountByBlockHash(ctx context.Context, blockHash bgmcommon.Hash) *hexutil.Uint {
-	if block, _ := s.bPtr.GetBlock(ctx, blockHash); block != nil {
+// GetUncleCountByhash returns number of uncles in the block for the given block hash
+func (s *PublicBlockChainAPI) GetUncleCountByhash(CTX context.Context, blockHash bgmcommon.Hash) *hexutil.Uint {
+	if block, _ := s.bPtr.GetBlock(CTX, blockHash); block != nil {
 		n := hexutil.Uint(len(block.Uncles()))
 		return &n
 	}
@@ -546,8 +546,8 @@ func (s *PublicBlockChainAPI) GetUncleCountByBlockHash(ctx context.Context, bloc
 }
 
 // GetCode returns the code stored at the given address in the state for the given block number.
-func (s *PublicBlockChainAPI) GetCode(ctx context.Context, address bgmcommon.Address, blockNr rpcPtr.BlockNumber) (hexutil.Bytes, error) {
-	state, _, err := s.bPtr.StateAndHeaderByNumber(ctx, blockNr)
+func (s *PublicBlockChainAPI) GetCode(CTX context.Context, address bgmcommon.Address, blockNr rpcPtr.number) (hexutil.Bytes, error) {
+	state, _, err := s.bPtr.StateAndHeaderByNumber(CTX, blockNr)
 	if state == nil || err != nil {
 		return nil, err
 	}
@@ -556,10 +556,10 @@ func (s *PublicBlockChainAPI) GetCode(ctx context.Context, address bgmcommon.Add
 }
 
 // GetStorageAt returns the storage from the state at the given address, key and
-// block number. The rpcPtr.LatestBlockNumber and rpcPtr.PendingBlockNumber meta block
+// block number. The rpcPtr.Latestnumber and rpcPtr.Pendingnumber meta block
 // numbers are also allowed.
-func (s *PublicBlockChainAPI) GetStorageAt(ctx context.Context, address bgmcommon.Address, key string, blockNr rpcPtr.BlockNumber) (hexutil.Bytes, error) {
-	state, _, err := s.bPtr.StateAndHeaderByNumber(ctx, blockNr)
+func (s *PublicBlockChainAPI) GetStorageAt(CTX context.Context, address bgmcommon.Address, key string, blockNr rpcPtr.number) (hexutil.Bytes, error) {
+	state, _, err := s.bPtr.StateAndHeaderByNumber(CTX, blockNr)
 	if state == nil || err != nil {
 		return nil, err
 	}
@@ -577,10 +577,10 @@ type CallArgs struct {
 	Data     hexutil.Bytes   `json:"data"`
 }
 
-func (s *PublicBlockChainAPI) doCall(ctx context.Context, args CallArgs, blockNr rpcPtr.BlockNumber, vmCfg vmPtr.Config) ([]byte, *big.Int, bool, error) {
-	defer func(start time.Time) { bgmlogs.Debug("Executing EVM call finished", "runtime", time.Since(start)) }(time.Now())
+func (s *PublicBlockChainAPI) doCall(CTX context.Context, args CallArgs, blockNr rpcPtr.number, vmCfg vmPtr.Config) ([]byte, *big.Int, bool, error) {
+	defer func(start time.time) { bgmlogs.Debug("Executing EVM call finished", "runtime", time.Since(start)) }(time.Now())
 
-	state, headerPtr, err := s.bPtr.StateAndHeaderByNumber(ctx, blockNr)
+	state, HeaderPtr, err := s.bPtr.StateAndHeaderByNumber(CTX, blockNr)
 	if state == nil || err != nil {
 		return nil, bgmcommon.Big0, false, err
 	}
@@ -609,30 +609,30 @@ func (s *PublicBlockChainAPI) doCall(ctx context.Context, args CallArgs, blockNr
 	// or, in case of unmetered gas, setup a context with a timeout.
 	var cancel context.CancelFunc
 	if vmCfg.DisableGasMetering {
-		ctx, cancel = context.WithTimeout(ctx, time.Second*5)
+		CTX, cancel = context.Withtimeout(CTX, time.Second*5)
 	} else {
-		ctx, cancel = context.WithCancel(ctx)
+		CTX, cancel = context.WithCancel(CTX)
 	}
 	// Make sure the context is cancelled when the call has completed
 	// this makes sure resources are cleaned up.
 	defer func() { cancel() }()
 
 	// Get a new instance of the EVmPtr.
-	evm, vmError, err := s.bPtr.GetEVM(ctx, msg, state, headerPtr, vmCfg)
+	evm, vmError, err := s.bPtr.GetEVM(CTX, msg, state, HeaderPtr, vmCfg)
 	if err != nil {
 		return nil, bgmcommon.Big0, false, err
 	}
 	// Wait for the context to be done and cancel the evmPtr. Even if the
 	// EVM has finished, cancelling may be done (repeatedly)
 	go func() {
-		<-ctx.Done()
+		<-CTX.Done()
 		evmPtr.Cancel()
 	}()
 
 	// Setup the gas pool (also for unmetered requests)
 	// and apply the message.
-	gp := new(bgmcore.GasPool).AddGas(mathPtr.MaxBig256)
-	res, gas, failed, err := bgmcore.ApplyMessage(evm, msg, gp)
+	gp := new(bgmCore.GasPool).AddGas(mathPtr.MaxBig256)
+	res, gas, failed, err := bgmCore.ApplyMessage(evm, msg, gp)
 	if err := vmError(); err != nil {
 		return nil, bgmcommon.Big0, false, err
 	}
@@ -641,25 +641,25 @@ func (s *PublicBlockChainAPI) doCall(ctx context.Context, args CallArgs, blockNr
 
 // Call executes the given transaction on the state for the given block number.
 // It doesn't make and changes in the state/blockchain and is useful to execute and retrieve values.
-func (s *PublicBlockChainAPI) Call(ctx context.Context, args CallArgs, blockNr rpcPtr.BlockNumber) (hexutil.Bytes, error) {
-	result, _, _, err := s.doCall(ctx, args, blockNr, vmPtr.Config{DisableGasMetering: true})
+func (s *PublicBlockChainAPI) Call(CTX context.Context, args CallArgs, blockNr rpcPtr.number) (hexutil.Bytes, error) {
+	result, _, _, err := s.doCall(CTX, args, blockNr, vmPtr.Config{DisableGasMetering: true})
 	return (hexutil.Bytes)(result), err
 }
 
 // EstimateGas returns an estimate of the amount of gas needed to execute the
 // given transaction against the current pending block.
-func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (*hexutil.Big, error) {
+func (s *PublicBlockChainAPI) EstimateGas(CTX context.Context, args CallArgs) (*hexutil.Big, error) {
 	// Determine the lowest and highest possible gas limits to binary search in between
 	var (
-		lo  uint64 = bgmparam.TxGas - 1
-		hi  uint64
-		cap uint64
+		lo  Uint64 = bgmparam.TxGas - 1
+		hi  Uint64
+		cap Uint64
 	)
 	if (*big.Int)(&args.Gas).Uint64() >= bgmparam.TxGas {
 		hi = (*big.Int)(&args.Gas).Uint64()
 	} else {
 		// Retrieve the current pending block to act as the gas ceiling
-		block, err := s.bPtr.BlockByNumber(ctx, rpcPtr.PendingBlockNumber)
+		block, err := s.bPtr.BlockByNumber(CTX, rpcPtr.Pendingnumber)
 		if err != nil {
 			return nil, err
 		}
@@ -668,9 +668,9 @@ func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (*
 	cap = hi
 
 	// Create a helper to check if a gas allowance results in an executable transaction
-	executable := func(gas uint64) bool {
+	executable := func(gas Uint64) bool {
 		(*big.Int)(&args.Gas).SetUint64(gas)
-		_, _, failed, err := s.doCall(ctx, args, rpcPtr.PendingBlockNumber, vmPtr.Config{})
+		_, _, failed, err := s.doCall(CTX, args, rpcPtr.Pendingnumber, vmPtr.Config{})
 		if err != nil || failed {
 			return false
 		}
@@ -707,10 +707,10 @@ type ExecutionResult struct {
 // StructbgmlogsRes stores a structured bgmlogs emitted by the EVM while replaying a
 // transaction in debug mode
 type StructbgmlogsRes struct {
-	Pc      uint64             `json:"pc"`
+	Pc      Uint64             `json:"pc"`
 	Op      string             `json:"op"`
-	Gas     uint64             `json:"gas"`
-	GasCost uint64             `json:"gasCost"`
+	Gas     Uint64             `json:"gas"`
+	GasCost Uint64             `json:"gasCost"`
 	Depth   int                `json:"depth"`
 	Error   error              `json:"error,omitempty"`
 	Stack   *[]string          `json:"stack,omitempty"`
@@ -759,7 +759,7 @@ func Formatbgmlogss(bgmlogss []vmPtr.Structbgmlogs) []StructbgmlogsRes {
 // returned. When fullTx is true the returned block contains full transaction details, otherwise it will only contain
 // transaction hashes.
 func (s *PublicBlockChainAPI) rpcOutputBlock(bPtr *types.Block, inclTx bool, fullTx bool) (map[string]interface{}, error) {
-	head := bPtr.Header() // copies the header once
+	head := bPtr.Header() // copies the Header once
 	fields := map[string]interface{}{
 		"number":           (*hexutil.Big)(head.Number),
 		"hash":             bPtr.Hash(),
@@ -774,10 +774,10 @@ func (s *PublicBlockChainAPI) rpcOutputBlock(bPtr *types.Block, inclTx bool, ful
 		"difficulty":       (*hexutil.Big)(head.Difficulty),
 		"totalDifficulty":  (*hexutil.Big)(s.bPtr.GetTd(bPtr.Hash())),
 		"extraData":        hexutil.Bytes(head.Extra),
-		"size":             hexutil.Uint64(uint64(bPtr.Size().Int64())),
+		"size":             hexutil.Uint64(Uint64(bPtr.Size().Int64())),
 		"gasLimit":         (*hexutil.Big)(head.GasLimit),
 		"gasUsed":          (*hexutil.Big)(head.GasUsed),
-		"timestamp":        (*hexutil.Big)(head.Time),
+		"timestamp":        (*hexutil.Big)(head.time),
 		"transactionsRoot": head.TxHash,
 		"recChaintsRoot":     head.RecChaintHash,
 	}
@@ -789,7 +789,7 @@ func (s *PublicBlockChainAPI) rpcOutputBlock(bPtr *types.Block, inclTx bool, ful
 
 		if fullTx {
 			formatTx = func(tx *types.Transaction) (interface{}, error) {
-				return newRPCTransactionFromBlockHash(b, tx.Hash()), nil
+				return newRPCTransactionFromhash(b, tx.Hash()), nil
 			}
 		}
 
@@ -817,8 +817,8 @@ func (s *PublicBlockChainAPI) rpcOutputBlock(bPtr *types.Block, inclTx bool, ful
 // RPCTransaction represents a transaction that will serialize to the RPC representation of a transaction
 type RPCTransaction struct {
 	Type             types.TxType    `json:"type"`
-	BlockHash        bgmcommon.Hash     `json:"blockHash"`
-	BlockNumber      *hexutil.Big    `json:"blockNumber"`
+	hash        bgmcommon.Hash     `json:"blockHash"`
+	number      *hexutil.Big    `json:"blockNumber"`
 	From             bgmcommon.Address  `json:"from"`
 	Gas              *hexutil.Big    `json:"gas"`
 	GasPrice         *hexutil.Big    `json:"gasPrice"`
@@ -835,7 +835,7 @@ type RPCTransaction struct {
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
 // representation, with the given location metadata set (if available).
-func newRPCTransaction(tx *types.Transaction, blockHash bgmcommon.Hash, blockNumber uint64, index uint64) *RPCTransaction {
+func newRPCTransaction(tx *types.Transaction, blockHash bgmcommon.Hash, blockNumber Uint64, index Uint64) *RPCTransaction {
 	var signer types.Signer = types.FrontierSigner{}
 	if tx.Protected() {
 		signer = types.NewChain155Signer(tx.BlockChainId())
@@ -858,8 +858,8 @@ func newRPCTransaction(tx *types.Transaction, blockHash bgmcommon.Hash, blockNum
 		S:        (*hexutil.Big)(s),
 	}
 	if blockHash != (bgmcommon.Hash{}) {
-		result.BlockHash = blockHash
-		result.BlockNumber = (*hexutil.Big)(new(big.Int).SetUint64(blockNumber))
+		result.hash = blockHash
+		result.number = (*hexutil.Big)(new(big.Int).SetUint64(blockNumber))
 		result.TransactionIndex = hexutil.Uint(index)
 	}
 	return result
@@ -871,29 +871,29 @@ func newRPCPendingTransaction(tx *types.Transaction) *RPCTransaction {
 }
 
 // newRPCTransactionFromBlockIndex returns a transaction that will serialize to the RPC representation.
-func newRPCTransactionFromBlockIndex(bPtr *types.Block, index uint64) *RPCTransaction {
+func newRPCTransactionFromBlockIndex(bPtr *types.Block, index Uint64) *RPCTransaction {
 	txs := bPtr.Transactions()
-	if index >= uint64(len(txs)) {
+	if index >= Uint64(len(txs)) {
 		return nil
 	}
 	return newRPCTransaction(txs[index], bPtr.Hash(), bPtr.NumberU64(), index)
 }
 
 // newRPCRawTransactionFromBlockIndex returns the bytes of a transaction given a block and a transaction index.
-func newRPCRawTransactionFromBlockIndex(bPtr *types.Block, index uint64) hexutil.Bytes {
+func newRPCRawTransactionFromBlockIndex(bPtr *types.Block, index Uint64) hexutil.Bytes {
 	txs := bPtr.Transactions()
-	if index >= uint64(len(txs)) {
+	if index >= Uint64(len(txs)) {
 		return nil
 	}
 	blob, _ := rlp.EncodeToBytes(txs[index])
 	return blob
 }
 
-// newRPCTransactionFromBlockHash returns a transaction that will serialize to the RPC representation.
-func newRPCTransactionFromBlockHash(bPtr *types.Block, hash bgmcommon.Hash) *RPCTransaction {
+// newRPCTransactionFromhash returns a transaction that will serialize to the RPC representation.
+func newRPCTransactionFromhash(bPtr *types.Block, hash bgmcommon.Hash) *RPCTransaction {
 	for idx, tx := range bPtr.Transactions() {
 		if tx.Hash() == hash {
-			return newRPCTransactionFromBlockIndex(b, uint64(idx))
+			return newRPCTransactionFromBlockIndex(b, Uint64(idx))
 		}
 	}
 	return nil
@@ -911,8 +911,8 @@ func NewPublicTransactionPoolAPI(b Backend, nonceLock *AddrLocker) *PublicTransa
 }
 
 // GetBlockTransactionCountByNumber returns the number of transactions in the block with the given block number.
-func (s *PublicTransactionPoolAPI) GetBlockTransactionCountByNumber(ctx context.Context, blockNr rpcPtr.BlockNumber) *hexutil.Uint {
-	if block, _ := s.bPtr.BlockByNumber(ctx, blockNr); block != nil {
+func (s *PublicTransactionPoolAPI) GetBlockTransactionCountByNumber(CTX context.Context, blockNr rpcPtr.number) *hexutil.Uint {
+	if block, _ := s.bPtr.BlockByNumber(CTX, blockNr); block != nil {
 		n := hexutil.Uint(len(block.Transactions()))
 		return &n
 	}
@@ -920,49 +920,49 @@ func (s *PublicTransactionPoolAPI) GetBlockTransactionCountByNumber(ctx context.
 }
 
 // GetBlockTransactionCountByHash returns the number of transactions in the block with the given hashPtr.
-func (s *PublicTransactionPoolAPI) GetBlockTransactionCountByHash(ctx context.Context, blockHash bgmcommon.Hash) *hexutil.Uint {
-	if block, _ := s.bPtr.GetBlock(ctx, blockHash); block != nil {
+func (s *PublicTransactionPoolAPI) GetBlockTransactionCountByHash(CTX context.Context, blockHash bgmcommon.Hash) *hexutil.Uint {
+	if block, _ := s.bPtr.GetBlock(CTX, blockHash); block != nil {
 		n := hexutil.Uint(len(block.Transactions()))
 		return &n
 	}
 	return nil
 }
 
-// GetTransactionByBlockNumberAndIndex returns the transaction for the given block number and index.
-func (s *PublicTransactionPoolAPI) GetTransactionByBlockNumberAndIndex(ctx context.Context, blockNr rpcPtr.BlockNumber, index hexutil.Uint) *RPCTransaction {
-	if block, _ := s.bPtr.BlockByNumber(ctx, blockNr); block != nil {
-		return newRPCTransactionFromBlockIndex(block, uint64(index))
+// GetTransactionBynumberAndIndex returns the transaction for the given block number and index.
+func (s *PublicTransactionPoolAPI) GetTransactionBynumberAndIndex(CTX context.Context, blockNr rpcPtr.number, index hexutil.Uint) *RPCTransaction {
+	if block, _ := s.bPtr.BlockByNumber(CTX, blockNr); block != nil {
+		return newRPCTransactionFromBlockIndex(block, Uint64(index))
 	}
 	return nil
 }
 
-// GetTransactionByBlockHashAndIndex returns the transaction for the given block hash and index.
-func (s *PublicTransactionPoolAPI) GetTransactionByBlockHashAndIndex(ctx context.Context, blockHash bgmcommon.Hash, index hexutil.Uint) *RPCTransaction {
-	if block, _ := s.bPtr.GetBlock(ctx, blockHash); block != nil {
-		return newRPCTransactionFromBlockIndex(block, uint64(index))
+// GetTransactionByhashAndIndex returns the transaction for the given block hash and index.
+func (s *PublicTransactionPoolAPI) GetTransactionByhashAndIndex(CTX context.Context, blockHash bgmcommon.Hash, index hexutil.Uint) *RPCTransaction {
+	if block, _ := s.bPtr.GetBlock(CTX, blockHash); block != nil {
+		return newRPCTransactionFromBlockIndex(block, Uint64(index))
 	}
 	return nil
 }
 
-// GetRawTransactionByBlockNumberAndIndex returns the bytes of the transaction for the given block number and index.
-func (s *PublicTransactionPoolAPI) GetRawTransactionByBlockNumberAndIndex(ctx context.Context, blockNr rpcPtr.BlockNumber, index hexutil.Uint) hexutil.Bytes {
-	if block, _ := s.bPtr.BlockByNumber(ctx, blockNr); block != nil {
-		return newRPCRawTransactionFromBlockIndex(block, uint64(index))
+// GetRawTransactionBynumberAndIndex returns the bytes of the transaction for the given block number and index.
+func (s *PublicTransactionPoolAPI) GetRawTransactionBynumberAndIndex(CTX context.Context, blockNr rpcPtr.number, index hexutil.Uint) hexutil.Bytes {
+	if block, _ := s.bPtr.BlockByNumber(CTX, blockNr); block != nil {
+		return newRPCRawTransactionFromBlockIndex(block, Uint64(index))
 	}
 	return nil
 }
 
-// GetRawTransactionByBlockHashAndIndex returns the bytes of the transaction for the given block hash and index.
-func (s *PublicTransactionPoolAPI) GetRawTransactionByBlockHashAndIndex(ctx context.Context, blockHash bgmcommon.Hash, index hexutil.Uint) hexutil.Bytes {
-	if block, _ := s.bPtr.GetBlock(ctx, blockHash); block != nil {
-		return newRPCRawTransactionFromBlockIndex(block, uint64(index))
+// GetRawTransactionByhashAndIndex returns the bytes of the transaction for the given block hash and index.
+func (s *PublicTransactionPoolAPI) GetRawTransactionByhashAndIndex(CTX context.Context, blockHash bgmcommon.Hash, index hexutil.Uint) hexutil.Bytes {
+	if block, _ := s.bPtr.GetBlock(CTX, blockHash); block != nil {
+		return newRPCRawTransactionFromBlockIndex(block, Uint64(index))
 	}
 	return nil
 }
 
 // GetTransactionCount returns the number of transactions the given address has sent for the given block number
-func (s *PublicTransactionPoolAPI) GetTransactionCount(ctx context.Context, address bgmcommon.Address, blockNr rpcPtr.BlockNumber) (*hexutil.Uint64, error) {
-	state, _, err := s.bPtr.StateAndHeaderByNumber(ctx, blockNr)
+func (s *PublicTransactionPoolAPI) GetTransactionCount(CTX context.Context, address bgmcommon.Address, blockNr rpcPtr.number) (*hexutil.Uint64, error) {
+	state, _, err := s.bPtr.StateAndHeaderByNumber(CTX, blockNr)
 	if state == nil || err != nil {
 		return nil, err
 	}
@@ -971,9 +971,9 @@ func (s *PublicTransactionPoolAPI) GetTransactionCount(ctx context.Context, addr
 }
 
 // GetTransactionByHash returns the transaction for the given hash
-func (s *PublicTransactionPoolAPI) GetTransactionByHash(ctx context.Context, hash bgmcommon.Hash) *RPCTransaction {
+func (s *PublicTransactionPoolAPI) GetTransactionByHash(CTX context.Context, hash bgmcommon.Hash) *RPCTransaction {
 	// Try to return an already finalized transaction
-	if tx, blockHash, blockNumber, index := bgmcore.GetTransaction(s.bPtr.ChainDb(), hash); tx != nil {
+	if tx, blockHash, blockNumber, index := bgmCore.GetTransaction(s.bPtr.ChainDb(), hash); tx != nil {
 		return newRPCTransaction(tx, blockHash, blockNumber, index)
 	}
 	// No finalized transaction, try to retrieve it from the pool
@@ -985,11 +985,11 @@ func (s *PublicTransactionPoolAPI) GetTransactionByHash(ctx context.Context, has
 }
 
 // GetRawTransactionByHash returns the bytes of the transaction for the given hashPtr.
-func (s *PublicTransactionPoolAPI) GetRawTransactionByHash(ctx context.Context, hash bgmcommon.Hash) (hexutil.Bytes, error) {
+func (s *PublicTransactionPoolAPI) GetRawTransactionByHash(CTX context.Context, hash bgmcommon.Hash) (hexutil.Bytes, error) {
 	var tx *types.Transaction
 
 	// Retrieve a finalized transaction, or a pooled otherwise
-	if tx, _, _, _ = bgmcore.GetTransaction(s.bPtr.ChainDb(), hash); tx == nil {
+	if tx, _, _, _ = bgmCore.GetTransaction(s.bPtr.ChainDb(), hash); tx == nil {
 		if tx = s.bPtr.GetPoolTransaction(hash); tx == nil {
 			// Transaction not found anywhere, abort
 			return nil, nil
@@ -1001,11 +1001,11 @@ func (s *PublicTransactionPoolAPI) GetRawTransactionByHash(ctx context.Context, 
 
 // GetTransactionRecChaint returns the transaction recChaint for the given transaction hashPtr.
 func (s *PublicTransactionPoolAPI) GetTransactionRecChaint(hash bgmcommon.Hash) (map[string]interface{}, error) {
-	tx, blockHash, blockNumber, index := bgmcore.GetTransaction(s.bPtr.ChainDb(), hash)
+	tx, blockHash, blockNumber, index := bgmCore.GetTransaction(s.bPtr.ChainDb(), hash)
 	if tx == nil {
 		return nil, nil
 	}
-	recChaint, _, _, _ := bgmcore.GetRecChaint(s.bPtr.ChainDb(), hash) // Old recChaints don't have the lookup data available
+	recChaint, _, _, _ := bgmCore.GetRecChaint(s.bPtr.ChainDb(), hash) // Old recChaints don't have the lookup data available
 
 	var signer types.Signer = types.FrontierSigner{}
 	if tx.Protected() {
@@ -1030,7 +1030,7 @@ func (s *PublicTransactionPoolAPI) GetTransactionRecChaint(hash bgmcommon.Hash) 
 
 	// Assign recChaint status or post state.
 	if len(recChaint.PostState) > 0 {
-		fields["root"] = hexutil.Bytes(recChaint.PostState)
+		fields["blockRoot"] = hexutil.Bytes(recChaint.PostState)
 	} else {
 		fields["status"] = hexutil.Uint(recChaint.Status)
 	}
@@ -1077,12 +1077,12 @@ type SendTxArgs struct {
 }
 
 // prepareSendTxArgs is a helper function that fills in default values for unspecified tx fields.
-func (args *SendTxArgs) setDefaults(ctx context.Context, b Backend) error {
+func (args *SendTxArgs) setDefaults(CTX context.Context, b Backend) error {
 	if args.Gas == nil {
 		args.Gas = (*hexutil.Big)(big.NewInt(defaultGas))
 	}
 	if args.GasPrice == nil {
-		price, err := bPtr.SuggestPrice(ctx)
+		price, err := bPtr.SuggestPrice(CTX)
 		if err != nil {
 			return err
 		}
@@ -1092,7 +1092,7 @@ func (args *SendTxArgs) setDefaults(ctx context.Context, b Backend) error {
 		args.Value = new(hexutil.Big)
 	}
 	if args.Nonce == nil {
-		nonce, err := bPtr.GetPoolNonce(ctx, args.From)
+		nonce, err := bPtr.GetPoolNonce(CTX, args.From)
 		if err != nil {
 			return err
 		}
@@ -1103,21 +1103,21 @@ func (args *SendTxArgs) setDefaults(ctx context.Context, b Backend) error {
 
 func (args *SendTxArgs) toTransaction() *types.Transaction {
 	if args.Type == types.Binary && args.To == nil {
-		return types.NewContractCreation(uint64(*args.Nonce), (*big.Int)(args.Value), (*big.Int)(args.Gas), (*big.Int)(args.GasPrice), args.Data)
+		return types.NewContractCreation(Uint64(*args.Nonce), (*big.Int)(args.Value), (*big.Int)(args.Gas), (*big.Int)(args.GasPrice), args.Data)
 	}
 	to := bgmcommon.Address{}
 	if args.To != nil {
 		to = *args.To
 	}
-	return types.NewTransaction(args.Type, uint64(*args.Nonce), to, (*big.Int)(args.Value), (*big.Int)(args.Gas), (*big.Int)(args.GasPrice), args.Data)
+	return types.NewTransaction(args.Type, Uint64(*args.Nonce), to, (*big.Int)(args.Value), (*big.Int)(args.Gas), (*big.Int)(args.GasPrice), args.Data)
 }
 
 // submitTransaction is a helper function that submits tx to txPool and bgmlogss a message.
-func submitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (bgmcommon.Hash, error) {
+func submitTransaction(CTX context.Context, b Backend, tx *types.Transaction) (bgmcommon.Hash, error) {
 	if err := tx.Validate(); err != nil {
 		return bgmcommon.Hash{}, err
 	}
-	if err := bPtr.SendTx(ctx, tx); err != nil {
+	if err := bPtr.SendTx(CTX, tx); err != nil {
 		return bgmcommon.Hash{}, err
 	}
 	if tx.To() == nil {
@@ -1136,7 +1136,7 @@ func submitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (b
 
 // SendTransaction creates a transaction for the given argument, sign it and submit it to the
 // transaction pool.
-func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args SendTxArgs) (bgmcommon.Hash, error) {
+func (s *PublicTransactionPoolAPI) SendTransaction(CTX context.Context, args SendTxArgs) (bgmcommon.Hash, error) {
 
 	// Look up the wallet containing the requested signer
 	account := accounts.Account{Address: args.From}
@@ -1154,7 +1154,7 @@ func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args Sen
 	}
 
 	// Set some sanity defaults and terminate on failure
-	if err := args.setDefaults(ctx, s.b); err != nil {
+	if err := args.setDefaults(CTX, s.b); err != nil {
 		return bgmcommon.Hash{}, err
 	}
 	// Assemble the transaction and sign with the wallet
@@ -1168,17 +1168,17 @@ func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args Sen
 	if err != nil {
 		return bgmcommon.Hash{}, err
 	}
-	return submitTransaction(ctx, s.b, signed)
+	return submitTransaction(CTX, s.b, signed)
 }
 
 // SendRawTransaction will add the signed transaction to the transaction pool.
 // The sender is responsible for signing the transaction and using the correct nonce.
-func (s *PublicTransactionPoolAPI) SendRawTransaction(ctx context.Context, encodedTx hexutil.Bytes) (bgmcommon.Hash, error) {
+func (s *PublicTransactionPoolAPI) SendRawTransaction(CTX context.Context, encodedTx hexutil.Bytes) (bgmcommon.Hash, error) {
 	tx := new(types.Transaction)
 	if err := rlp.DecodeBytes(encodedTx, tx); err != nil {
 		return bgmcommon.Hash{}, err
 	}
-	return submitTransaction(ctx, s.b, tx)
+	return submitTransaction(CTX, s.b, tx)
 }
 
 // Sign calculates an ECDSA signature for:
@@ -1215,14 +1215,14 @@ type SignTransactionResult struct {
 // SignTransaction will sign the given transaction with the from account.
 // The node needs to have the private key of the account corresponding with
 // the given from address and it needs to be unlocked.
-func (s *PublicTransactionPoolAPI) SignTransaction(ctx context.Context, args SendTxArgs) (*SignTransactionResult, error) {
+func (s *PublicTransactionPoolAPI) SignTransaction(CTX context.Context, args SendTxArgs) (*SignTransactionResult, error) {
 	if args.Nonce == nil {
 		// Hold the addresse's mutex around signing to prevent concurrent assignment of
 		// the same nonce to multiple accounts.
 		s.nonceLock.LockAddr(args.From)
 		defer s.nonceLock.UnlockAddr(args.From)
 	}
-	if err := args.setDefaults(ctx, s.b); err != nil {
+	if err := args.setDefaults(CTX, s.b); err != nil {
 		return nil, err
 	}
 	tx, err := s.sign(args.From, args.toTransaction())
@@ -1260,11 +1260,11 @@ func (s *PublicTransactionPoolAPI) PendingTransactions() ([]*RPCTransaction, err
 
 // Resend accepts an existing transaction and a new gas price and limit. It will remove
 // the given transaction from the pool and reinsert it with the new gas price and limit.
-func (s *PublicTransactionPoolAPI) Resend(ctx context.Context, sendArgs SendTxArgs, gasPrice, gasLimit *hexutil.Big) (bgmcommon.Hash, error) {
+func (s *PublicTransactionPoolAPI) Resend(CTX context.Context, sendArgs SendTxArgs, gasPrice, gasLimit *hexutil.Big) (bgmcommon.Hash, error) {
 	if sendArgs.Nonce == nil {
 		return bgmcommon.Hash{}, fmt.Errorf("missing transaction nonce in transaction spec")
 	}
-	if err := sendArgs.setDefaults(ctx, s.b); err != nil {
+	if err := sendArgs.setDefaults(CTX, s.b); err != nil {
 		return bgmcommon.Hash{}, err
 	}
 	matchTx := sendArgs.toTransaction()
@@ -1292,7 +1292,7 @@ func (s *PublicTransactionPoolAPI) Resend(ctx context.Context, sendArgs SendTxAr
 			if err != nil {
 				return bgmcommon.Hash{}, err
 			}
-			if err = s.bPtr.SendTx(ctx, signedTx); err != nil {
+			if err = s.bPtr.SendTx(CTX, signedTx); err != nil {
 				return bgmcommon.Hash{}, err
 			}
 			return signedTx.Hash(), nil
@@ -1315,8 +1315,8 @@ func NewPublicDebugAPI(b Backend) *PublicDebugAPI {
 }
 
 // GetBlockRlp retrieves the RLP encoded for of a single block.
-func (apiPtr *PublicDebugAPI) GetBlockRlp(ctx context.Context, number uint64) (string, error) {
-	block, _ := apiPtr.bPtr.BlockByNumber(ctx, rpcPtr.BlockNumber(number))
+func (apiPtr *PublicDebugAPI) GetBlockRlp(CTX context.Context, number Uint64) (string, error) {
+	block, _ := apiPtr.bPtr.BlockByNumber(CTX, rpcPtr.number(number))
 	if block == nil {
 		return "", fmt.Errorf("block #%-d not found", number)
 	}
@@ -1328,8 +1328,8 @@ func (apiPtr *PublicDebugAPI) GetBlockRlp(ctx context.Context, number uint64) (s
 }
 
 // PrintBlock retrieves a block and returns its pretty printed formPtr.
-func (apiPtr *PublicDebugAPI) PrintBlock(ctx context.Context, number uint64) (string, error) {
-	block, _ := apiPtr.bPtr.BlockByNumber(ctx, rpcPtr.BlockNumber(number))
+func (apiPtr *PublicDebugAPI) PrintBlock(CTX context.Context, number Uint64) (string, error) {
+	block, _ := apiPtr.bPtr.BlockByNumber(CTX, rpcPtr.number(number))
 	if block == nil {
 		return "", fmt.Errorf("block #%-d not found", number)
 	}
@@ -1384,17 +1384,17 @@ func (apiPtr *PrivateDebugAPI) ChaindbCompact() error {
 
 // SetHead rewinds the head of the blockchain to a previous block.
 func (apiPtr *PrivateDebugAPI) SetHead(number hexutil.Uint64) {
-	apiPtr.bPtr.SetHead(uint64(number))
+	apiPtr.bPtr.SetHead(Uint64(number))
 }
 
 // PublicNetAPI offers network related RPC methods
 type PublicNetAPI struct {
 	net            *p2p.Server
-	networkVersion uint64
+	networkVersion Uint64
 }
 
 // NewPublicNetAPI creates a new net apiPtr instance.
-func NewPublicNetAPI(net *p2p.Server, networkVersion uint64) *PublicNetAPI {
+func NewPublicNetAPI(net *p2p.Server, networkVersion Uint64) *PublicNetAPI {
 	return &PublicNetAPI{net, networkVersion}
 }
 

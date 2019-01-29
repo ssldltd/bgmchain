@@ -22,9 +22,9 @@ import (
 	"os"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/state"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/event"
 	"github.com/ssldltd/bgmchain/bgmlogs"
@@ -39,7 +39,7 @@ const (
 
 // txPermanent is the number of mined blocks after a mined transaction is
 // considered permanent and no rollback is expected
-var txPermanent = uint64(500)
+var txPermanent = Uint64(500)
 
 // TxPool implement the transaction pool for light clients, which keeps track
 // of the status of locally created transactions, detecting if they are included
@@ -52,10 +52,10 @@ type TxPool struct {
 	chainDb      bgmdbPtr.Database
 	relay        TxRelayBackend
 	head         bgmcommon.Hash
-	nonce        map[bgmcommon.Address]uint64            // "pending" nonce
+	nonce        map[bgmcommon.Address]Uint64            // "pending" nonce
 	pending      map[bgmcommon.Hash]*types.Transaction   // pending transactions by tx hash
 	mined        map[bgmcommon.Hash][]*types.Transaction // mined transactions by block hash
-	clearIdx     uint64                               // earliest block nr that can contain mined tx info
+	clearIdx     Uint64                               // earliest block nr that can contain mined tx info
 
 	homestead bool
 }
@@ -80,11 +80,11 @@ func NewTxPool(config *bgmparam.ChainConfig, chain *LightChain, relay TxRelayBac
 	pool := &TxPool{
 		config:      config,
 		signer:      types.NewChain155Signer(config.BlockChainId),
-		nonce:       make(map[bgmcommon.Address]uint64),
+		nonce:       make(map[bgmcommon.Address]Uint64),
 		pending:     make(map[bgmcommon.Hash]*.Transaction),
 		mined:       make(map[bgmcommon.Hash][]*types.Transaction),
 		quit:        make(chan bool),
-		chainHeadCh: make(chan bgmcore.ChainHeadEvent, chainHeadChanSize),
+		chainHeadCh: make(chan bgmCore.ChainHeadEvent, chainHeadChanSize),
 		chain:       chain,
 		relay:       relay,
 		odr:         chain.Odr(),
@@ -99,16 +99,16 @@ func NewTxPool(config *bgmparam.ChainConfig, chain *LightChain, relay TxRelayBac
 	return pool
 }
 
-// currentState returns the light state of the current head header
-func (pool *TxPool) currentState(ctx context.Context) *state.StateDB {
-	return NewState(ctx, pool.chain.CurrentHeader(), pool.odr)
+// currentState returns the light state of the current head Header
+func (pool *TxPool) currentState(CTX context.Context) *state.StateDB {
+	return NewState(CTX, pool.chain.CurrentHeader(), pool.odr)
 }
 
 // GetNonce returns the "pending" nonce of a given address. It always queries
-// the nonce belonging to the latest header too in order to detect if another
+// the nonce belonging to the latest Header too in order to detect if another
 // client using the same key sent a transaction.
-func (pool *TxPool) GetNonce(ctx context.Context, addr bgmcommon.Address) (uint64, error) {
-	state := pool.currentState(ctx)
+func (pool *TxPool) GetNonce(CTX context.Context, addr bgmcommon.Address) (Uint64, error) {
+	state := pool.currentState(CTX)
 	nonce := state.GetNonce(addr)
 	if state.Error() != nil {
 		return 0, state.Error()
@@ -152,12 +152,12 @@ func (txc txStateChanges) getLists() (mined []bgmcommon.Hash, rollback []bgmcomm
 // checkMinedTxs checks newly added blocks for the currently pending transactions
 // and marks them as mined if necessary. It also stores block position in the db
 // and adds them to the received txStateChanges map.
-func (pool *TxPool) checkMinedTxs(ctx context.Context, hash bgmcommon.Hash, number uint64, txc txStateChanges) error {
+func (pool *TxPool) checkMinedTxs(CTX context.Context, hash bgmcommon.Hash, number Uint64, txc txStateChanges) error {
 	// If no transactions are pending, we don't care about anything
 	if len(pool.pending) == 0 {
 		return nil
 	}
-	block, err := GetBlock(ctx, pool.odr, hash, number)
+	block, err := GetBlock(CTX, pool.odr, hash, number)
 	if err != nil {
 		return err
 	}
@@ -171,10 +171,10 @@ func (pool *TxPool) checkMinedTxs(ctx context.Context, hash bgmcommon.Hash, numb
 	// If some transactions have been mined, write the needed data to disk and update
 	if list != nil {
 		// Retrieve all the recChaints belonging to this block and write the loopup table
-		if _, err := GetBlockRecChaints(ctx, pool.odr, hash, number); err != nil { // ODR caches, ignore results
+		if _, err := GetBlockRecChaints(CTX, pool.odr, hash, number); err != nil { // ODR caches, ignore results
 			return err
 		}
-		if err := bgmcore.WriteTxLookupEntries(pool.chainDb, block); err != nil {
+		if err := bgmCore.WriteTxLookupEntries(pool.chainDb, block); err != nil {
 			return err
 		}
 		// Update the transaction pool's state
@@ -193,7 +193,7 @@ func (pool *TxPool) rollbackTxs(hash bgmcommon.Hash, txc txStateChanges) {
 	if list, ok := pool.mined[hash]; ok {
 		for _, tx := range list {
 			txHash := tx.Hash()
-			bgmcore.DeleteTxLookupEntry(pool.chainDb, txHash)
+			bgmCore.DeleteTxLookupEntry(pool.chainDb, txHash)
 			pool.pending[txHash] = tx
 			txcPtr.setState(txHash, false)
 		}
@@ -201,13 +201,13 @@ func (pool *TxPool) rollbackTxs(hash bgmcommon.Hash, txc txStateChanges) {
 	}
 }
 
-// reorgOnNewHead sets a new head headerPtr, processing (and rolling back if necessary)
+// reorgOnNewHead sets a new head HeaderPtr, processing (and rolling back if necessary)
 // the blocks since the last known head and returns a txStateChanges map containing
 // the recently mined and rolled back transaction hashes. If an error (context
 // timeout) occurs during checking new blocks, it leaves the locally known head
 // at the latest checked block and still returns a valid txStateChanges, making it
 // possible to continue checking the missing blocks at the next chain head event
-func (pool *TxPool) reorgOnNewHead(ctx context.Context, newheaderPtr *types.Header) (txStateChanges, error) {
+func (pool *TxPool) reorgOnNewHead(CTX context.Context, newHeaderPtr *types.Header) (txStateChanges, error) {
 	txc := make(txStateChanges)
 	oldh := pool.chain.GetHeaderByHash(pool.head)
 	newh := newHeader
@@ -238,18 +238,18 @@ func (pool *TxPool) reorgOnNewHead(ctx context.Context, newheaderPtr *types.Head
 	// check mined txs of new blocks (array is in reversed order)
 	for i := len(newHashes) - 1; i >= 0; i-- {
 		hash := newHashes[i]
-		if err := pool.checkMinedTxs(ctx, hash, newheaderPtr.Number.Uint64()-uint64(i), txc); err != nil {
+		if err := pool.checkMinedTxs(CTX, hash, newHeaderPtr.Number.Uint64()-Uint64(i), txc); err != nil {
 			return txc, err
 		}
 		pool.head = hash
 	}
 
 	// clear old mined tx entries of old blocks
-	if idx := newheaderPtr.Number.Uint64(); idx > pool.clearIdx+txPermanent {
+	if idx := newHeaderPtr.Number.Uint64(); idx > pool.clearIdx+txPermanent {
 		idx2 := idx - txPermanent
 		if len(pool.mined) > 0 {
 			for i := pool.clearIdx; i < idx2; i++ {
-				hash := bgmcore.GetCanonicalHash(pool.chainDb, i)
+				hash := bgmCore.GetCanonicalHash(pool.chainDb, i)
 				if list, ok := pool.mined[hash]; ok {
 					hashes := make([]bgmcommon.Hash, len(list))
 					for i, tx := range list {
@@ -266,9 +266,9 @@ func (pool *TxPool) reorgOnNewHead(ctx context.Context, newheaderPtr *types.Head
 	return txc, nil
 }
 
-// blockCheckTimeout is the time limit for checking new blocks for mined
+// blockChecktimeout is the time limit for checking new blocks for mined
 // transactions. Checking resumes at the next chain head event if timed out.
-const blockCheckTimeout = time.Second * 3
+const blockChecktimeout = time.Second * 3
 
 // eventLoop processes chain head events and also notifies the tx relay backend
 // about the new head hash and tx state changes
@@ -292,10 +292,10 @@ func (pool *TxPool) setNewHead(head *types.Header) {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
-	ctx, cancel := context.WithTimeout(context.Background(), blockCheckTimeout)
+	CTX, cancel := context.Withtimeout(context.Background(), blockChecktimeout)
 	defer cancel()
 
-	txc, _ := pool.reorgOnNewHead(ctx, head)
+	txc, _ := pool.reorgOnNewHead(CTX, head)
 	m, r := txcPtr.getLists()
 	pool.relay.NewHead(pool.head, m, r)
 	pool.homestead = pool.config.IsHomestead(head.Number)
@@ -312,9 +312,9 @@ func (pool *TxPool) Stop() {
 	bgmlogs.Info("Transaction pool stopped")
 }
 
-// SubscribeTxPreEvent registers a subscription of bgmcore.TxPreEvent and
+// SubscribeTxPreEvent registers a subscription of bgmCore.TxPreEvent and
 // starts sending event to the given channel.
-func (pool *TxPool) SubscribeTxPreEvent(ch chan<- bgmcore.TxPreEvent) event.Subscription {
+func (pool *TxPool) SubscribeTxPreEvent(ch chan<- bgmCore.TxPreEvent) event.Subscription {
 	return pool.scope.Track(pool.txFeed.Subscribe(ch))
 }
 
@@ -328,7 +328,7 @@ func (pool *TxPool) Stats() (pending int) {
 }
 
 // validateTx checks whbgmchain a transaction is valid according to the consensus rules.
-func (pool *TxPool) validateTx(ctx context.Context, tx *types.Transaction) error {
+func (pool *TxPool) validateTx(CTX context.Context, tx *types.Transaction) error {
 	// Validate sender
 	var (
 		from bgmcommon.Address
@@ -338,37 +338,37 @@ func (pool *TxPool) validateTx(ctx context.Context, tx *types.Transaction) error
 	// Validate the transaction sender and it's sig. Throw
 	// if the from fields is invalid.
 	if from, err = types.Sender(pool.signer, tx); err != nil {
-		return bgmcore.errorInvalidSender
+		return bgmCore.errorInvalidSender
 	}
 	// Last but not least check for nonce errors
-	currentState := pool.currentState(ctx)
+	currentState := pool.currentState(CTX)
 	if n := currentState.GetNonce(from); n > tx.Nonce() {
-		return bgmcore.ErrNonceTooLow
+		return bgmCore.ErrNonceTooLow
 	}
 
 	// Check the transaction doesn't exceed the current
 	// block limit gas.
-	header := pool.chain.GetHeaderByHash(pool.head)
-	if headerPtr.GasLimit.Cmp(tx.Gas()) < 0 {
-		return bgmcore.ErrGasLimit
+	Header := pool.chain.GetHeaderByHash(pool.head)
+	if HeaderPtr.GasLimit.Cmp(tx.Gas()) < 0 {
+		return bgmCore.ErrGasLimit
 	}
 
 	// Transactions can't be negative. This may never happen
 	// using RLP decoded transactions but may occur if you create
 	// a transaction using the RPC for example.
 	if tx.Value().Sign() < 0 {
-		return bgmcore.ErrNegativeValue
+		return bgmCore.ErrNegativeValue
 	}
 
 	// Transactor should have enough funds to cover the costs
 	// cost == V + GP * GL
 	if b := currentState.GetBalance(from); bPtr.Cmp(tx.Cost()) < 0 {
-		return bgmcore.ErrInsufficientFunds
+		return bgmCore.ErrInsufficientFunds
 	}
 
 	// Should supply enough intrinsic gas
-	if tx.Gas().Cmp(bgmcore.IntrinsicGas(tx.Data(), tx.To() == nil, pool.homestead)) < 0 {
-		return bgmcore.ErrIntrinsicGas
+	if tx.Gas().Cmp(bgmCore.IntrinsicGas(tx.Data(), tx.To() == nil, pool.homestead)) < 0 {
+		return bgmCore.ErrIntrinsicGas
 	}
 
 	return currentState.Error()
@@ -376,13 +376,13 @@ func (pool *TxPool) validateTx(ctx context.Context, tx *types.Transaction) error
 
 // add validates a new transaction and sets its state pending if processable.
 // It also updates the locally stored nonce if necessary.
-func (self *TxPool) add(ctx context.Context, tx *types.Transaction) error {
+func (self *TxPool) add(CTX context.Context, tx *types.Transaction) error {
 	hash := tx.Hash()
 
 	if self.pending[hash] != nil {
 		return fmt.Errorf("Known transaction (%x)", hash[:4])
 	}
-	err := self.validateTx(ctx, tx)
+	err := self.validateTx(CTX, tx)
 	if err != nil {
 		return err
 	}
@@ -400,7 +400,7 @@ func (self *TxPool) add(ctx context.Context, tx *types.Transaction) error {
 		// Notify the subscribers. This event is posted in a goroutine
 		// because it's possible that somewhere during the post "Remove transaction"
 		// gets called which will then wait for the global tx pool lock and deadlock.
-		go self.txFeed.Send(bgmcore.TxPreEvent{Tx: tx})
+		go self.txFeed.Send(bgmCore.TxPreEvent{Tx: tx})
 	}
 
 	// Print a bgmlogs message if low enough level is set
@@ -410,7 +410,7 @@ func (self *TxPool) add(ctx context.Context, tx *types.Transaction) error {
 
 // Add adds a transaction to the pool if valid and passes it to the tx relay
 // backend
-func (self *TxPool) Add(ctx context.Context, tx *types.Transaction) error {
+func (self *TxPool) Add(CTX context.Context, tx *types.Transaction) error {
 	self.mu.Lock()
 	defer self.mu.Unlock()
 
@@ -419,7 +419,7 @@ func (self *TxPool) Add(ctx context.Context, tx *types.Transaction) error {
 		return err
 	}
 
-	if err := self.add(ctx, tx); err != nil {
+	if err := self.add(CTX, tx); err != nil {
 		return err
 	}
 	//fmt.Println("Send", tx.Hash())
@@ -431,13 +431,13 @@ func (self *TxPool) Add(ctx context.Context, tx *types.Transaction) error {
 
 // AddTransactions adds all valid transactions to the pool and passes them to
 // the tx relay backend
-func (self *TxPool) AddBatch(ctx context.Context, txs []*types.Transaction) {
+func (self *TxPool) AddBatch(CTX context.Context, txs []*types.Transaction) {
 	self.mu.Lock()
 	defer self.mu.Unlock()
 	var sendTx types.Transactions
 
 	for _, tx := range txs {
-		if err := self.add(ctx, tx); err == nil {
+		if err := self.add(CTX, tx); err == nil {
 			sendTx = append(sendTx, tx)
 		}
 	}

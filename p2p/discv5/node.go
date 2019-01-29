@@ -377,7 +377,7 @@ func parseComplete(rawurl string) (*Nodes, error) {
 	var (
 		id               NodesID
 		ip               net.IP
-		tcpPort, udpPort uint64
+		tcpPort, udpPort Uint64
 	)
 	u, err := url.Parse(rawurl)
 	if err != nil {

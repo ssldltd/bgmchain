@@ -18,13 +18,13 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/ssldltd/bgmchain/bgmcore/vm"
+	"github.com/ssldltd/bgmchain/bgmCore/vm"
 )
 
 // Iterator for disassembled EVM instructions
 type instructionIterator struct {
 	code    []byte
-	pc      uint64
+	pc      Uint64
 	arg     []byte
 	op      vmPtr.OpCode
 	error   error
@@ -40,7 +40,7 @@ func NewInstructionIterator(code []byte) *instructionIterator {
 
 // Returns true if there is a next instruction and moves on.
 func (it *instructionIterator) Next() bool {
-	if it.error != nil || uint64(len(it.code)) <= it.pc {
+	if it.error != nil || Uint64(len(it.code)) <= it.pc {
 		// We previously reached an error or the end.
 		return false
 	}
@@ -48,7 +48,7 @@ func (it *instructionIterator) Next() bool {
 	if it.started {
 		// Since the iteration has been already started we move to the next instruction.
 		if it.arg != nil {
-			it.pc += uint64(len(it.arg))
+			it.pc += Uint64(len(it.arg))
 		}
 		it.pc++
 	} else {
@@ -56,16 +56,16 @@ func (it *instructionIterator) Next() bool {
 		it.started = true
 	}
 
-	if uint64(len(it.code)) <= it.pc {
+	if Uint64(len(it.code)) <= it.pc {
 		// We reached the end.
 		return false
 	}
 
 	it.op = vmPtr.OpCode(it.code[it.pc])
 	if it.op.IsPush() {
-		a := uint64(it.op) - uint64(vmPtr.PUSH1) + 1
+		a := Uint64(it.op) - Uint64(vmPtr.PUSH1) + 1
 		u := it.pc + 1 + a
-		if uint64(len(it.code)) <= it.pc || uint64(len(it.code)) < u {
+		if Uint64(len(it.code)) <= it.pc || Uint64(len(it.code)) < u {
 			it.error = fmt.Errorf("incomplete push instruction at %v", it.pc)
 			return false
 		}
@@ -82,7 +82,7 @@ func (it *instructionIterator) Error() error {
 }
 
 // Returns the PC of the current instruction.
-func (it *instructionIterator) PC() uint64 {
+func (it *instructionIterator) PC() Uint64 {
 	return it.pc
 }
 

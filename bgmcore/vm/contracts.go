@@ -31,7 +31,7 @@ import (
 // requires a deterministic gas count based on the input size of the Run method of the
 // contract.
 type PrecompiledContract interface {
-	RequiredGas(input []byte) uint64  // RequiredPrice calculates the contract gas use
+	RequiredGas(input []byte) Uint64  // RequiredPrice calculates the contract gas use
 	Run(input []byte) ([]byte, error) // Run runs the precompiled contract
 }
 
@@ -71,7 +71,7 @@ func RunPrecompiledContract(p PrecompiledContract, input []byte, contract *Contr
 // ECRECOVER implemented as a native contract.
 type ecrecover struct{}
 
-func (cPtr *ecrecover) RequiredGas(input []byte) uint64 {
+func (cPtr *ecrecover) RequiredGas(input []byte) Uint64 {
 	return bgmparam.EcrecoverGas
 }
 
@@ -105,8 +105,8 @@ func (cPtr *ecrecover) Run(input []byte) ([]byte, error) {
 type sha256hash struct{}
 
 // required for anything significant is so high it's impossible to pay for.
-func (cPtr *sha256hash) RequiredGas(input []byte) uint64 {
-	return uint64(len(input)+31)/32*bgmparam.Sha256PerWordGas + bgmparam.Sha256BaseGas
+func (cPtr *sha256hash) RequiredGas(input []byte) Uint64 {
+	return Uint64(len(input)+31)/32*bgmparam.Sha256PerWordGas + bgmparam.Sha256BaseGas
 }
 func (cPtr *sha256hash) Run(input []byte) ([]byte, error) {
 	h := sha256.Sum256(input)
@@ -118,8 +118,8 @@ type ripemd160hash struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 // required for anything significant is so high it's impossible to pay for.
-func (cPtr *ripemd160hash) RequiredGas(input []byte) uint64 {
-	return uint64(len(input)+31)/32*bgmparam.Ripemd160PerWordGas + bgmparam.Ripemd160BaseGas
+func (cPtr *ripemd160hash) RequiredGas(input []byte) Uint64 {
+	return Uint64(len(input)+31)/32*bgmparam.Ripemd160PerWordGas + bgmparam.Ripemd160BaseGas
 }
 func (cPtr *ripemd160hash) Run(input []byte) ([]byte, error) {
 	ripemd := ripemd160.New()
@@ -132,8 +132,8 @@ type dataCopy struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 // required for anything significant is so high it's impossible to pay for.
-func (cPtr *dataCopy) RequiredGas(input []byte) uint64 {
-	return uint64(len(input)+31)/32*bgmparam.IdentityPerWordGas + bgmparam.IdentityBaseGas
+func (cPtr *dataCopy) RequiredGas(input []byte) Uint64 {
+	return Uint64(len(input)+31)/32*bgmparam.IdentityPerWordGas + bgmparam.IdentityBaseGas
 }
 func (cPtr *dataCopy) Run(in []byte) ([]byte, error) {
 	return in, nil
@@ -158,7 +158,7 @@ var (
 )
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
-func (cPtr *bigModExp) RequiredGas(input []byte) uint64 {
+func (cPtr *bigModExp) RequiredGas(input []byte) Uint64 {
 	var (
 		baseLen = new(big.Int).SetBytes(getData(input, 0, 32))
 		expLen  = new(big.Int).SetBytes(getData(input, 32, 32))
@@ -290,7 +290,7 @@ func newTwistPoint(blob []byte) (*bn256.G2, error) {
 type bn256Add struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
-func (cPtr *bn256Add) RequiredGas(input []byte) uint64 {
+func (cPtr *bn256Add) RequiredGas(input []byte) Uint64 {
 	return bgmparam.Bn256AddGas
 }
 
@@ -313,7 +313,7 @@ func (cPtr *bn256Add) Run(input []byte) ([]byte, error) {
 type bn256ScalarMul struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
-func (cPtr *bn256ScalarMul) RequiredGas(input []byte) uint64 {
+func (cPtr *bn256ScalarMul) RequiredGas(input []byte) Uint64 {
 	return bgmparam.Bn256ScalarMulGas
 }
 
@@ -342,8 +342,8 @@ var (
 type bn256Pairing struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
-func (cPtr *bn256Pairing) RequiredGas(input []byte) uint64 {
-	return bgmparam.Bn256PairingBaseGas + uint64(len(input)/192)*bgmparam.Bn256PairingPerPointGas
+func (cPtr *bn256Pairing) RequiredGas(input []byte) Uint64 {
+	return bgmparam.Bn256PairingBaseGas + Uint64(len(input)/192)*bgmparam.Bn256PairingPerPointGas
 }
 
 func (cPtr *bn256Pairing) Run(input []byte) ([]byte, error) {

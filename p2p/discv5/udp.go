@@ -129,7 +129,7 @@ func (tPtr *udp) sendPing(remote *Nodes, toaddr *net.UDPAddr, topics []Topic) (h
 		Version:    Version,
 		From:       tPtr.ourEndpoint,
 		To:         makeEndpoint(toaddr, uint16(toaddr.Port)), // TODO: maybe use known TCP port from DB
-		Expiration: uint64(time.Now().Add(expiration).Unix()),
+		Expiration: Uint64(time.Now().Add(expiration).Unix()),
 		Topics:     topics,
 	})
 	return hash
@@ -138,14 +138,14 @@ func (tPtr *udp) sendPing(remote *Nodes, toaddr *net.UDPAddr, topics []Topic) (h
 func (tPtr *udp) sendFindNodes(remote *Nodes, target NodesID) {
 	tPtr.sendPacket(remote.ID, remote.addr(), byte(findNodesPacket), findNodes{
 		Target:     target,
-		Expiration: uint64(time.Now().Add(expiration).Unix()),
+		Expiration: Uint64(time.Now().Add(expiration).Unix()),
 	})
 }
 
 func (tPtr *udp) sendNeighbours(remote *Nodes, results []*Nodes) {
 	// Send neighbors in chunks with at most maxNeighbors per packet
 	// to stay below the 1280 byte limit.
-	p := neighbors{Expiration: uint64(time.Now().Add(expiration).Unix())}
+	p := neighbors{Expiration: Uint64(time.Now().Add(expiration).Unix())}
 	for i, result := range results {
 		ptr.Nodess = append(ptr.Nodess, NodesToRPC(result))
 		if len(ptr.Nodess) == maxNeighbors || i == len(results)-1 {
@@ -158,7 +158,7 @@ func (tPtr *udp) sendNeighbours(remote *Nodes, results []*Nodes) {
 func (tPtr *udp) sendFindNodesHash(remote *Nodes, target bgmcommon.Hash) {
 	tPtr.sendPacket(remote.ID, remote.addr(), byte(findNodesHashPacket), findNodesHash{
 		Target:     target,
-		Expiration: uint64(time.Now().Add(expiration).Unix()),
+		Expiration: Uint64(time.Now().Add(expiration).Unix()),
 	})
 }
 
@@ -267,15 +267,15 @@ var (
 	errExpired          = errors.New("expired")
 	errUnsolicitedReply = errors.New("unsolicited reply")
 	errUnknownNodes      = errors.New("unknown Nodes")
-	errTimeout          = errors.New("RPC timeout")
+	errtimeout          = errors.New("RPC timeout")
 	errClockWarp        = errors.New("reply deadline too far in the future")
 	errClosed           = errors.New("socket closed")
 )
 
-// Timeouts
+// timeouts
 const (
-	respTimeout = 500 * time.Millisecond
-	sendTimeout = 500 * time.Millisecond
+	resptimeout = 500 * time.Millisecond
+	sendtimeout = 500 * time.Millisecond
 	expiration  = 20 * time.Second
 
 	ntpFailureThreshold = 32               // Continuous timeouts after which to check NTP
@@ -288,7 +288,7 @@ type (
 	ping struct {
 		Version    uint
 		From, To   rpcEndpoint
-		Expiration uint64
+		Expiration Uint64
 
 		// v5
 		Topics []Topic
@@ -305,7 +305,7 @@ type (
 		To rpcEndpoint
 
 		ReplyTok   []byte // This contains the hash of the ping packet.
-		Expiration uint64 // Absolute timestamp at which the packet becomes invalid.
+		Expiration Uint64 // Absolute timestamp at which the packet becomes invalid.
 
 		// v5
 		TopicHash    bgmcommon.Hash
@@ -319,7 +319,7 @@ type (
 	// findNodes is a query for Nodess close to the given target.
 	findNodes struct {
 		Target     NodesID // doesn't need to be an actual public key
-		Expiration uint64
+		Expiration Uint64
 		// Ignore additional fields (for forward compatibility).
 		Rest []rlp.RawValue `rlp:"tail"`
 	}
@@ -327,7 +327,7 @@ type (
 	// findNodes is a query for Nodess close to the given target.
 	findNodesHash struct {
 		Target     bgmcommon.Hash
-		Expiration uint64
+		Expiration Uint64
 		// Ignore additional fields (for forward compatibility).
 		Rest []rlp.RawValue `rlp:"tail"`
 	}
@@ -335,7 +335,7 @@ type (
 	// reply to findNodes
 	neighbors struct {
 		Nodess      []rpcNodes
-		Expiration uint64
+		Expiration Uint64
 		// Ignore additional fields (for forward compatibility).
 		Rest []rlp.RawValue `rlp:"tail"`
 	}
@@ -348,7 +348,7 @@ type (
 
 	topicQuery struct {
 		Topic      Topic
-		Expiration uint64
+		Expiration Uint64
 	}
 
 	// reply to topicQuery
@@ -381,7 +381,7 @@ const (
 // stay below the 1280 byte limit. We compute the maximum number
 // of entries by stuffing a packet until it grows too large.
 var maxNeighbors = func() int {
-	p := neighbors{Expiration: ^uint64(0)}
+	p := neighbors{Expiration: ^Uint64(0)}
 	maxSizeNodes := rpcNodes{IP: make(net.IP, 16), UDP: ^uint16(0), TCP: ^uint16(0)}
 	for n := 0; ; n++ {
 		ptr.Nodess = append(ptr.Nodess, maxSizeNodes)

@@ -40,9 +40,9 @@ func (srv *Server) ServeListener(l net.Listener) error {
 // the endpoint is the full path to a unix socket, and Windows the endpoint is an
 // identifier for a named pipe.
 
-func DialIPC(ctx context.Context, endpoint string) (*Client, error) {
-	return newClient(ctx, func(ctx context.Context) (net.Conn, error) {
-		return newIPCConnection(ctx, endpoint)
+func DialIPC(CTX context.Context, endpoint string) (*Client, error) {
+	return newClient(CTX, func(CTX context.Context) (net.Conn, error) {
+		return newIPCConnection(CTX, endpoint)
 	})
 }
 

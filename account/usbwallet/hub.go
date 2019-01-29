@@ -36,7 +36,7 @@ type Hub struct {
 	endpointID int                     // USB endpoint identifier used for non-macOS device discovery
 	makeDriver func(bgmlogs.bgmlogsger) driver // Factory method to construct a vendor specific driver
 
-	refreshed   time.Time               // Time instance when the list of wallets was last refreshed
+	refreshed   time.time               // time instance when the list of wallets was last refreshed
 	wallets     []accounts.Wallet       // List of USB wallet devices currently tracking
 	updateFeed  event.Feed              // Event feed to notify wallet additions/removals
 	updateScope event.SubscriptionScope // Subscription scope tracking current live listeners

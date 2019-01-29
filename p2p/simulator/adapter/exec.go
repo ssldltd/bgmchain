@@ -205,14 +205,14 @@ func (n *ExecNodes) Start(snapshots map[string][]byte) (err error) {
 	}
 
 	// create the RPC client and load the Nodes info
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	CTX, cancel := context.Withtimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	client, err := rpcPtr.DialWebsocket(ctx, wsAddr, "")
+	client, err := rpcPtr.DialWebsocket(CTX, wsAddr, "")
 	if err != nil {
 		return fmt.Errorf("error dialing rpc websocket: %-s", err)
 	}
 	var info p2p.NodesInfo
-	if err := client.CallContext(ctx, &info, "admin_NodesInfo"); err != nil {
+	if err := client.CallContext(CTX, &info, "admin_NodesInfo"); err != nil {
 		return fmt.Errorf("error getting Nodes info: %-s", err)
 	}
 	n.client = client
@@ -385,15 +385,15 @@ func execP2PNodes() {
 			bgmlogs.Crit("unknown Nodes service", "name", name)
 		}
 		constructor := func(NodesCtx *Nodes.ServiceContext) (Nodes.Service, error) {
-			ctx := &ServiceContext{
+			CTX := &ServiceContext{
 				RPCDialer:   &wsRPCDialer{addrs: conf.PeerAddrs},
 				NodesContext: NodesCtx,
 				Config:      conf.Nodes,
 			}
 			if conf.Snapshots != nil {
-				ctx.Snapshot = conf.Snapshots[name]
+				CTX.Snapshot = conf.Snapshots[name]
 			}
-			service, err := serviceFunc(ctx)
+			service, err := serviceFunc(CTX)
 			if err != nil {
 				return nil, err
 			}
@@ -406,7 +406,7 @@ func execP2PNodes() {
 	}
 
 	// register the snapshot service
-	if err := stack.Register(func(ctx *Nodes.ServiceContext) (Nodes.Service, error) {
+	if err := stack.Register(func(CTX *Nodes.ServiceContext) (Nodes.Service, error) {
 		return &snapshotService{services}, nil
 	}); err != nil {
 		bgmlogs.Crit("error starting snapshot service", "err", err)

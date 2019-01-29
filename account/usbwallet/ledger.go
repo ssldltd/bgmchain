@@ -25,7 +25,7 @@ import (
 	"github.com/ssldltd/bgmchain/account"
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmcommon/hexutil"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 	"github.com/ssldltd/bgmchain/rlp"
 )
@@ -44,9 +44,9 @@ const (
 )
 
 // errLedgerReplyInvalidHeader is the error message returned by a Ledger data exchange
-// if the device replies with a mismatching headerPtr. This usually means the device
+// if the device replies with a mismatching HeaderPtr. This usually means the device
 // is in browser mode.
-var errLedgerReplyInvalidHeader = errors.New("ledger: invalid reply header")
+var errLedgerReplyInvalidHeader = errors.New("ledger: invalid reply Header")
 
 // errLedgerInvalidVersionReply is the error message returned by a Ledger version retrieval
 // when a response does arrive, but it does not contain the expected data.
@@ -351,7 +351,7 @@ func (w *ledgerDriver) ledgerSign(derivationPath []uint32, tx *types.Transaction
 // ledgerExchange performs a data exchange with the Ledger wallet, sending it a
 // message and retrieving the response.
 //
-// The bgmcommon transport header is defined as follows:
+// The bgmcommon transport Header is defined as follows:
 //
 //  Description                           | Length
 //  --------------------------------------+----------
@@ -390,13 +390,13 @@ func (w *ledgerDriver) ledgerExchange(opcode ledgerOpcode, p1 ledgerbgmparam1, p
 	apdu = append(apdu, data...)
 
 	// Stream all the chunks to the device
-	header := []byte{0x01, 0x01, 0x05, 0x00, 0x00} // Channel ID and command tag appended
+	Header := []byte{0x01, 0x01, 0x05, 0x00, 0x00} // Channel ID and command tag appended
 	chunk := make([]byte, 64)
-	space := len(chunk) - len(header)
+	space := len(chunk) - len(Header)
 
 	for i := 0; len(apdu) > 0; i++ {
 		// Construct the new message to stream
-		chunk = append(chunk[:0], headerPtr...)
+		chunk = append(chunk[:0], HeaderPtr...)
 		binary.BigEndian.PutUint16(chunk[3:], uint16(i))
 
 		if len(apdu) > space {
@@ -422,7 +422,7 @@ func (w *ledgerDriver) ledgerExchange(opcode ledgerOpcode, p1 ledgerbgmparam1, p
 		}
 		w.bgmlogs.Trace("Data chunk received from the Ledger", "chunk", hexutil.Bytes(chunk))
 
-		// Make sure the transport header matches
+		// Make sure the transport Header matches
 		if chunk[0] != 0x01 || chunk[1] != 0x01 || chunk[2] != 0x05 {
 			return nil, errLedgerReplyInvalidHeader
 		}

@@ -27,7 +27,7 @@ import (
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/bgmcommon/hexutil"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/event"
 	"github.com/ssldltd/bgmchain/rpc"
@@ -136,7 +136,7 @@ func (api *PublicFilterAPI) NewPendingTransactionFilter() rpcPtr.ID {
 	)
 
 	api.filtersMu.Lock()
-	api.filters[pendingTxSubPtr.ID] = &filter{typ: PendingTransactionsSubscription, deadline: time.NewTimer(deadline), hashes: make([]bgmcommon.Hash, 0), s: pendingTxSub}
+	api.filters[pendingTxSubPtr.ID] = &filter{typ: PendingTransactionsSubscription, deadline: time.Newtimer(deadline), hashes: make([]bgmcommon.Hash, 0), s: pendingTxSub}
 	api.filtersMu.Unlock()
 
 	go func() {
@@ -162,8 +162,8 @@ func (api *PublicFilterAPI) NewPendingTransactionFilter() rpcPtr.ID {
 
 // NewPendingTransactions creates a subscription that is triggered each time a transaction
 // enters the transaction pool and was signed from one of the transactions this nodes manages.
-func (api *PublicFilterAPI) NewPendingTransactions(ctx context.Context) (*rpcPtr.Subscription, error) {
-	notifier, supported := rpcPtr.NotifierFromContext(ctx)
+func (api *PublicFilterAPI) NewPendingTransactions(CTX context.Context) (*rpcPtr.Subscription, error) {
+	notifier, supported := rpcPtr.NotifierFromContext(CTX)
 	if !supported {
 		return &rpcPtr.Subscription{}, rpcPtr.ErrNotificationsUnsupported
 	}
@@ -197,38 +197,38 @@ func (api *PublicFilterAPI) NewPendingTransactions(ctx context.Context) (*rpcPtr
 // https://github.com/bgmchain/wiki/wiki/JSON-RPC#bgm_newblockfilter
 func (api *PublicFilterAPI) NewBlockFilter() rpcPtr.ID {
 	var (
-		headers   = make(chan *types.Header)
-		headerSub = api.events.SubscribeNewHeads(headers)
+		Headers   = make(chan *types.Header)
+		HeaderSub = api.events.SubscribeNewHeads(Headers)
 	)
 
 	api.filtersMu.Lock()
-	api.filters[headerSubPtr.ID] = &filter{typ: BlocksSubscription, deadline: time.NewTimer(deadline), hashes: make([]bgmcommon.Hash, 0), s: headerSub}
+	api.filters[HeaderSubPtr.ID] = &filter{typ: BlocksSubscription, deadline: time.Newtimer(deadline), hashes: make([]bgmcommon.Hash, 0), s: HeaderSub}
 	api.filtersMu.Unlock()
 
 	go func() {
 		for {
 			select {
-			case h := <-headers:
+			case h := <-Headers:
 				api.filtersMu.Lock()
-				if f, found := api.filters[headerSubPtr.ID]; found {
+				if f, found := api.filters[HeaderSubPtr.ID]; found {
 					f.hashes = append(f.hashes, hPtr.Hash())
 				}
 				api.filtersMu.Unlock()
-			case <-headerSubPtr.Err():
+			case <-HeaderSubPtr.Err():
 				api.filtersMu.Lock()
-				delete(api.filters, headerSubPtr.ID)
+				delete(api.filters, HeaderSubPtr.ID)
 				api.filtersMu.Unlock()
 				return
 			}
 		}
 	}()
 
-	return headerSubPtr.ID
+	return HeaderSubPtr.ID
 }
 
-// NewHeads send a notification each time a new (header) block is appended to the chain.
-func (api *PublicFilterAPI) NewHeads(ctx context.Context) (*rpcPtr.Subscription, error) {
-	notifier, supported := rpcPtr.NotifierFromContext(ctx)
+// NewHeads send a notification each time a new (Header) block is appended to the chain.
+func (api *PublicFilterAPI) NewHeads(CTX context.Context) (*rpcPtr.Subscription, error) {
+	notifier, supported := rpcPtr.NotifierFromContext(CTX)
 	if !supported {
 		return &rpcPtr.Subscription{}, rpcPtr.ErrNotificationsUnsupported
 	}
@@ -236,18 +236,18 @@ func (api *PublicFilterAPI) NewHeads(ctx context.Context) (*rpcPtr.Subscription,
 	rpcSub := notifier.CreateSubscription()
 
 	go func() {
-		headers := make(chan *types.Header)
-		headersSub := api.events.SubscribeNewHeads(headers)
+		Headers := make(chan *types.Header)
+		HeadersSub := api.events.SubscribeNewHeads(Headers)
 
 		for {
 			select {
-			case h := <-headers:
+			case h := <-Headers:
 				notifier.Notify(rpcSubPtr.ID, h)
 			case <-rpcSubPtr.Err():
-				headersSubPtr.Unsubscribe()
+				HeadersSubPtr.Unsubscribe()
 				return
 			case <-notifier.Closed():
-				headersSubPtr.Unsubscribe()
+				HeadersSubPtr.Unsubscribe()
 				return
 			}
 		}
@@ -257,8 +257,8 @@ func (api *PublicFilterAPI) NewHeads(ctx context.Context) (*rpcPtr.Subscription,
 }
 
 // bgmlogss creates a subscription that fires for all new bgmlogs that match the given filter criteria.
-func (api *PublicFilterAPI) bgmlogss(ctx context.Context, crit FilterCriteria) (*rpcPtr.Subscription, error) {
-	notifier, supported := rpcPtr.NotifierFromContext(ctx)
+func (api *PublicFilterAPI) bgmlogss(CTX context.Context, crit FilterCriteria) (*rpcPtr.Subscription, error) {
+	notifier, supported := rpcPtr.NotifierFromContext(CTX)
 	if !supported {
 		return &rpcPtr.Subscription{}, rpcPtr.ErrNotificationsUnsupported
 	}
@@ -323,7 +323,7 @@ func (api *PublicFilterAPI) NewFilter(crit FilterCriteria) (rpcPtr.ID, error) {
 	}
 
 	api.filtersMu.Lock()
-	api.filters[bgmlogssSubPtr.ID] = &filter{typ: bgmlogssSubscription, crit: crit, deadline: time.NewTimer(deadline), bgmlogss: make([]*types.bgmlogs, 0), s: bgmlogssSub}
+	api.filters[bgmlogssSubPtr.ID] = &filter{typ: bgmlogssSubscription, crit: crit, deadline: time.Newtimer(deadline), bgmlogss: make([]*types.bgmlogs, 0), s: bgmlogssSub}
 	api.filtersMu.Unlock()
 
 	go func() {
@@ -350,18 +350,18 @@ func (api *PublicFilterAPI) NewFilter(crit FilterCriteria) (rpcPtr.ID, error) {
 // Getbgmlogss returns bgmlogss matching the given argument that are stored within the state.
 //
 // https://github.com/bgmchain/wiki/wiki/JSON-RPC#bgm_getbgmlogss
-func (api *PublicFilterAPI) Getbgmlogss(ctx context.Context, crit FilterCriteria) ([]*types.bgmlogs, error) {
+func (api *PublicFilterAPI) Getbgmlogss(CTX context.Context, crit FilterCriteria) ([]*types.bgmlogs, error) {
 	// Convert the RPC block numbers into internal representations
 	if crit.FromBlock == nil {
-		crit.FromBlock = big.NewInt(rpcPtr.LatestBlockNumber.Int64())
+		crit.FromBlock = big.NewInt(rpcPtr.Latestnumber.Int64())
 	}
 	if crit.ToBlock == nil {
-		crit.ToBlock = big.NewInt(rpcPtr.LatestBlockNumber.Int64())
+		crit.ToBlock = big.NewInt(rpcPtr.Latestnumber.Int64())
 	}
 	// Create and run the filter to get all the bgmlogss
 	filter := New(api.backend, crit.FromBlock.Int64(), crit.ToBlock.Int64(), crit.Addresses, crit.Topics)
 
-	bgmlogss, err := filter.bgmlogss(ctx)
+	bgmlogss, err := filter.bgmlogss(CTX)
 	if err != nil {
 		return nil, err
 	}
@@ -389,7 +389,7 @@ func (api *PublicFilterAPI) UninstallFilter(id rpcPtr.ID) bool {
 // If the filter could not be found an empty array of bgmlogss is returned.
 //
 // https://github.com/bgmchain/wiki/wiki/JSON-RPC#bgm_getfilterbgmlogss
-func (api *PublicFilterAPI) GetFilterbgmlogss(ctx context.Context, id rpcPtr.ID) ([]*types.bgmlogs, error) {
+func (api *PublicFilterAPI) GetFilterbgmlogss(CTX context.Context, id rpcPtr.ID) ([]*types.bgmlogs, error) {
 	api.filtersMu.Lock()
 	f, found := api.filters[id]
 	api.filtersMu.Unlock()
@@ -398,18 +398,18 @@ func (api *PublicFilterAPI) GetFilterbgmlogss(ctx context.Context, id rpcPtr.ID)
 		return nil, fmt.Errorf("filter not found")
 	}
 
-	begin := rpcPtr.LatestBlockNumber.Int64()
+	begin := rpcPtr.Latestnumber.Int64()
 	if f.crit.FromBlock != nil {
 		begin = f.crit.FromBlock.Int64()
 	}
-	end := rpcPtr.LatestBlockNumber.Int64()
+	end := rpcPtr.Latestnumber.Int64()
 	if f.crit.ToBlock != nil {
 		end = f.crit.ToBlock.Int64()
 	}
 	// Create and run the filter to get all the bgmlogss
 	filter := New(api.backend, begin, end, f.crit.Addresses, f.crit.Topics)
 
-	bgmlogss, err := filter.bgmlogss(ctx)
+	bgmlogss, err := filter.bgmlogss(CTX)
 	if err != nil {
 		return nil, err
 	}
@@ -428,8 +428,8 @@ func returnbgmlogss(bgmlogss []*types.bgmlogs) []*types.bgmlogs {
 // UnmarshalJSON sets *args fields with given data.
 func (args *FilterCriteria) UnmarshalJSON(data []byte) error {
 	type input struct {
-		From      *rpcPtr.BlockNumber `json:"fromBlock"`
-		ToBlock   *rpcPtr.BlockNumber `json:"toBlock"`
+		From      *rpcPtr.number `json:"fromBlock"`
+		ToBlock   *rpcPtr.number `json:"toBlock"`
 		Addresses interface{}      `json:"address"`
 		Topics    []interface{}    `json:"topics"`
 	}
@@ -539,7 +539,7 @@ var (
 )
 type filter struct {
 	typ      Type
-	deadline *time.Timer // filter is inactiv when deadline triggers
+	deadline *time.timer // filter is inactiv when deadline triggers
 	hashes   []bgmcommon.Hash
 	crit     FilterCriteria
 	bgmlogss     []*types.bgmlogs

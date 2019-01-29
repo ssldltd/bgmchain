@@ -28,10 +28,10 @@ import (
 	"github.com/ssldltd/bgmchain/consensus"
 	"github.com/ssldltd/bgmchain/consensus/dpos"
 	"github.com/ssldltd/bgmchain/consensus/misc"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/state"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
-	"github.com/ssldltd/bgmchain/bgmcore/vm"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/vm"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/event"
 	"github.com/ssldltd/bgmchain/bgmlogs"
@@ -59,7 +59,7 @@ func (self *worker) pending() (*types.Block, *state.StateDB) {
 
 	if atomicPtr.LoadInt32(&self.mining) == 0 {
 		return types.NewBlock(
-			self.current.headerPtr,
+			self.current.HeaderPtr,
 			self.current.txs,
 			nil,
 			self.current.recChaints,
@@ -74,7 +74,7 @@ func (self *worker) pendingBlock() *types.Block {
 
 	if atomicPtr.LoadInt32(&self.mining) == 0 {
 		return types.NewBlock(
-			self.current.headerPtr,
+			self.current.HeaderPtr,
 			self.current.txs,
 			nil,
 			self.current.recChaints,
@@ -103,7 +103,7 @@ func (self *worker) mintBlock(now int64) {
 		case dpos.ErrWaitForPrevBlock,
 			dpos.ErrMintFutureBlock,
 			dpos.errorInvalidBlockValidator,
-			dpos.errorInvalidMintBlockTime:
+			dpos.errorInvalidMintBlocktime:
 			bgmlogs.Debug("Failed to mint the block, while ", "err", err)
 		default:
 			bgmlogs.Error("Failed to mint the block", "err", err)
@@ -215,11 +215,11 @@ type Work struct {
 
 	Block *types.Block // the new block
 
-	header   *types.Header
+	Header   *types.Header
 	txs      []*types.Transaction
 	recChaints []*types.RecChaint
 
-	createdAt time.Time
+	createdAt time.time
 }
 
 type Result struct {
@@ -236,9 +236,9 @@ type worker struct {
 
 	// update loop
 	mux         *event.TypeMux
-	txCh        chan bgmcore.TxPreEvent
+	txCh        chan bgmCore.TxPreEvent
 	txSub       event.Subscription
-	chainHeadCh chan bgmcore.ChainHeadEvent
+	chainHeadCh chan bgmCore.ChainHeadEvent
 
 	chainHeadSub event.Subscription
 	wg           syncPtr.WaitGroup
@@ -246,8 +246,8 @@ type worker struct {
 	recv chan *Result
 
 	bgm     Backend
-	chain   *bgmcore.BlockChain
-	proc    bgmcore.Validator
+	chain   *bgmCore.BlockChain
+	proc    bgmCore.Validator
 	chainDb bgmdbPtr.Database
 
 	coinbase bgmcommon.Address
@@ -275,8 +275,8 @@ func newWorker(config *bgmparam.ChainConfig, engine consensus.Engine, coinbase b
 		engine:         engine,
 		bgm:            bgm,
 		mux:            mux,
-		txCh:           make(chan bgmcore.TxPreEvent, txChanSize),
-		chainHeadCh:    make(chan bgmcore.ChainHeadEvent, chainHeadChanSize),
+		txCh:           make(chan bgmCore.TxPreEvent, txChanSize),
+		chainHeadCh:    make(chan bgmCore.ChainHeadEvent, chainHeadChanSize),
 		chainDb:        bgmPtr.ChainDb(),
 		recv:           make(chan *Result, resultQueueSize),
 		chain:          bgmPtr.BlockChain(),
@@ -300,8 +300,8 @@ func newWorker(config *bgmparam.ChainConfig, engine consensus.Engine, coinbase b
 }
 
 
-func (env *Work) commitTransactions(mux *event.TypeMux, txs *types.TransactionsByPriceAndNonce, bcPtr *bgmcore.BlockChain, coinbase bgmcommon.Address) {
-	gp := new(bgmcore.GasPool).AddGas(env.headerPtr.GasLimit)
+func (env *Work) commitTransactions(mux *event.TypeMux, txs *types.TransactionsByPriceAndNonce, bcPtr *bgmCore.BlockChain, coinbase bgmcommon.Address) {
+	gp := new(bgmCore.GasPool).AddGas(env.HeaderPtr.GasLimit)
 
 	var coalescedbgmlogss []*types.bgmlogs
 
@@ -319,7 +319,7 @@ func (env *Work) commitTransactions(mux *event.TypeMux, txs *types.TransactionsB
 		from, _ := types.Sender(env.signer, tx)
 		// Check whbgmchain the tx is replay protected. If we're not in the Chain155 hf
 		// phase, start ignoring the sender until we do.
-		if tx.Protected() && !env.config.IsChain155(env.headerPtr.Number) {
+		if tx.Protected() && !env.config.IsChain155(env.HeaderPtr.Number) {
 			bgmlogs.Trace("Ignoring reply protected transaction", "hash", tx.Hash(), "Chain155", env.config.Chain90Block)
 
 			txs.Pop()
@@ -330,17 +330,17 @@ func (env *Work) commitTransactions(mux *event.TypeMux, txs *types.TransactionsB
 
 		err, bgmlogss := env.commitTransaction(tx, bc, coinbase, gp)
 		switch err {
-		case bgmcore.ErrGasLimitReached:
+		case bgmCore.ErrGasLimitReached:
 			// Pop the current out-of-gas transaction without shifting in the next from the account
 			bgmlogs.Trace("Gas limit exceeded for current block", "sender", from)
 			txs.Pop()
 
-		case bgmcore.ErrNonceTooLow:
+		case bgmCore.ErrNonceTooLow:
 			// New head notification data race between the transaction pool and miner, shift
 			bgmlogs.Trace("Skipping transaction with low nonce", "sender", from, "nonce", tx.Nonce())
 			txs.Shift()
 
-		case bgmcore.ErrNonceTooHigh:
+		case bgmCore.ErrNonceTooHigh:
 			// Reorg notification data race between the transaction pool and miner, skip account =
 			bgmlogs.Trace("Skipping account with hight nonce", "sender", from, "nonce", tx.Nonce())
 			txs.Pop()
@@ -370,19 +370,19 @@ func (env *Work) commitTransactions(mux *event.TypeMux, txs *types.TransactionsB
 		}
 		go func(bgmlogss []*types.bgmlogs, tcount int) {
 			if len(bgmlogss) > 0 {
-				mux.Post(bgmcore.PendingbgmlogssEvent{bgmlogss: bgmlogss})
+				mux.Post(bgmCore.PendingbgmlogssEvent{bgmlogss: bgmlogss})
 			}
 			if tcount > 0 {
-				mux.Post(bgmcore.PendingStateEvent{})
+				mux.Post(bgmCore.PendingStateEvent{})
 			}
 		}(cpy, env.tcount)
 	}
 }
 
-func (env *Work) commitTransaction(tx *types.Transaction, bcPtr *bgmcore.BlockChain, coinbase bgmcommon.Address, gp *bgmcore.GasPool) (error, []*types.bgmlogs) {
+func (env *Work) commitTransaction(tx *types.Transaction, bcPtr *bgmCore.BlockChain, coinbase bgmcommon.Address, gp *bgmCore.GasPool) (error, []*types.bgmlogs) {
 	snap := env.state.Snapshot()
 	dposSnap := env.dposContext.Snapshot()
-	recChaint, _, err := bgmcore.ApplyTransaction(env.config, env.dposContext, bc, &coinbase, gp, env.state, env.headerPtr, tx, env.headerPtr.GasUsed, vmPtr.Config{})
+	recChaint, _, err := bgmCore.ApplyTransaction(env.config, env.dposContext, bc, &coinbase, gp, env.state, env.HeaderPtr, tx, env.HeaderPtr.GasUsed, vmPtr.Config{})
 	if err != nil {
 		env.state.RevertToSnapshot(snap)
 		env.dposContext.RevertToSnapShot(dposSnap)
@@ -408,11 +408,11 @@ func (self *worker) wait() {
 			// recChaint/bgmlogs of individual transactions were created.
 			for _, r := range work.recChaints {
 				for _, l := range r.bgmlogss {
-					l.BlockHash = block.Hash()
+					l.hash = block.Hash()
 				}
 			}
 			for _, bgmlogs := range work.state.bgmlogss() {
-				bgmlogs.BlockHash = block.Hash()
+				bgmlogs.hash = block.Hash()
 			}
 			stat, err := self.chain.WriteBlockAndState(block, work.recChaints, work.state)
 			if err != nil {
@@ -420,18 +420,18 @@ func (self *worker) wait() {
 				continue
 			}
 			// check if canon block and write transactions
-			if stat == bgmcore.CanonStatTy {
+			if stat == bgmCore.CanonStatTy {
 				// implicit by posting ChainHeadEvent
 			}
 			// Broadcast the block and announce chain insertion event
-			self.mux.Post(bgmcore.NewMinedBlockEvent{Block: block})
+			self.mux.Post(bgmCore.NewMinedBlockEvent{Block: block})
 			var (
 				events []interface{}
 				bgmlogss   = work.state.bgmlogss()
 			)
-			events = append(events, bgmcore.ChainEvent{Block: block, Hash: block.Hash(), bgmlogss: bgmlogss})
-			if stat == bgmcore.CanonStatTy {
-				events = append(events, bgmcore.ChainHeadEvent{Block: block})
+			events = append(events, bgmCore.ChainEvent{Block: block, Hash: block.Hash(), bgmlogss: bgmlogss})
+			if stat == bgmCore.CanonStatTy {
+				events = append(events, bgmCore.ChainHeadEvent{Block: block})
 			}
 			self.chain.PostChainEvents(events, bgmlogss)
 
@@ -443,7 +443,7 @@ func (self *worker) wait() {
 }
 
 // makeCurrent creates a new environment for the current cycle.
-func (self *worker) makeCurrent(parent *types.Block, headerPtr *types.Header) error {
+func (self *worker) makeCurrent(parent *types.Block, HeaderPtr *types.Header) error {
 	state, err := self.chain.StateAt(parent.Root())
 	if err != nil {
 		return err
@@ -460,7 +460,7 @@ func (self *worker) makeCurrent(parent *types.Block, headerPtr *types.Header) er
 		ancestors:   set.New(),
 		family:      set.New(),
 		uncles:      set.New(),
-		header:      headerPtr,
+		Header:      HeaderPtr,
 		createdAt:   time.Now(),
 	}
 
@@ -491,8 +491,8 @@ func (self *worker) createNewWork() (*Work, error) {
 	parent := self.chain.CurrentBlock()
 
 	tstamp := tstart.Unix()
-	if parent.Time().Cmp(new(big.Int).SetInt64(tstamp)) >= 0 {
-		tstamp = parent.Time().Int64() + 1
+	if parent.time().Cmp(new(big.Int).SetInt64(tstamp)) >= 0 {
+		tstamp = parent.time().Int64() + 1
 	}
 	// this will ensure we're not going off too far in the future
 	if now := time.Now().Unix(); tstamp > now+1 {
@@ -502,43 +502,43 @@ func (self *worker) createNewWork() (*Work, error) {
 	}
 
 	num := parent.Number()
-	header := &types.Header{
+	Header := &types.Header{
 		ParentHash: parent.Hash(),
 		Number:     numPtr.Add(num, bgmcommon.Big1),
-		GasLimit:   bgmcore.CalcGasLimit(parent),
+		GasLimit:   bgmCore.CalcGasLimit(parent),
 		GasUsed:    new(big.Int),
 		Extra:      self.extra,
-		Time:       big.NewInt(tstamp),
+		time:       big.NewInt(tstamp),
 	}
 	// Only set the coinbase if we are mining (avoid spurious block rewards)
 	if atomicPtr.LoadInt32(&self.mining) == 1 {
-		headerPtr.Coinbase = self.coinbase
+		HeaderPtr.Coinbase = self.coinbase
 	}
-	if err := self.engine.Prepare(self.chain, header); err != nil {
-		return nil, fmt.Errorf("got error when preparing headerPtr, err: %-s", err)
+	if err := self.engine.Prepare(self.chain, Header); err != nil {
+		return nil, fmt.Errorf("got error when preparing HeaderPtr, err: %-s", err)
 	}
 	// If we are care about TheDAO hard-fork check whbgmchain to override the extra-data or not
 	if daoBlock := self.config.DAOForkBlock; daoBlock != nil {
 		// Check whbgmchain the block is among the fork extra-override range
 		limit := new(big.Int).Add(daoBlock, bgmparam.DAOForkExtraRange)
-		if headerPtr.Number.Cmp(daoBlock) >= 0 && headerPtr.Number.Cmp(limit) < 0 {
+		if HeaderPtr.Number.Cmp(daoBlock) >= 0 && HeaderPtr.Number.Cmp(limit) < 0 {
 			// Depending whbgmchain we support or oppose the fork, override differently
 			if self.config.DAOForkSupport {
-				headerPtr.Extra = bgmcommon.CopyBytes(bgmparam.DAOForkBlockExtra)
-			} else if bytes.Equal(headerPtr.Extra, bgmparam.DAOForkBlockExtra) {
-				headerPtr.Extra = []byte{} // If miner opposes, don't let it use the reserved extra-data
+				HeaderPtr.Extra = bgmcommon.CopyBytes(bgmparam.DAOForkBlockExtra)
+			} else if bytes.Equal(HeaderPtr.Extra, bgmparam.DAOForkBlockExtra) {
+				HeaderPtr.Extra = []byte{} // If miner opposes, don't let it use the reserved extra-data
 			}
 		}
 	}
 
 	// Could potentially happen if starting to mine in an odd state.
-	err := self.makeCurrent(parent, header)
+	err := self.makeCurrent(parent, Header)
 	if err != nil {
 		return nil, fmt.Errorf("got error when create mining context, err: %-s", err)
 	}
 	// Create the current work task and check any fork transitions needed
 	work := self.current
-	if self.config.DAOForkSupport && self.config.DAOForkBlock != nil && self.config.DAOForkBlock.Cmp(headerPtr.Number) == 0 {
+	if self.config.DAOForkSupport && self.config.DAOForkBlock != nil && self.config.DAOForkBlock.Cmp(HeaderPtr.Number) == 0 {
 		miscPtr.ApplyDAOHardFork(work.state)
 	}
 	pending, err := self.bgmPtr.TxPool().Pending()
@@ -571,7 +571,7 @@ func (self *worker) createNewWork() (*Work, error) {
 		delete(self.possibleUncles, hash)
 	}
 	// Create the new block to seal with the consensus engine
-	if work.Block, err = self.engine.Finalize(self.chain, headerPtr, work.state, work.txs, uncles, work.recChaints, work.dposContext); err != nil {
+	if work.Block, err = self.engine.Finalize(self.chain, HeaderPtr, work.state, work.txs, uncles, work.recChaints, work.dposContext); err != nil {
 		return nil, fmt.Errorf("got error when finalize block for sealing, err: %-s", err)
 	}
 	work.Block.DposContext = work.dposContext

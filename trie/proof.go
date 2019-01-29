@@ -51,7 +51,7 @@ func (tPtr *Trie) Prove(key []byte, fromLevel uint, proofDb DatabaseWriter) erro
 	// Collect all nodes on the path to key.
 	key = keybytesToHex(key)
 	nodes := []node{}
-	tn := tPtr.root
+	tn := tPtr.blockRoot
 	for len(key) > 0 && tn != nil {
 		switch n := tn.(type) {
 		case *shortNode:
@@ -87,7 +87,7 @@ func (tPtr *Trie) Prove(key []byte, fromLevel uint, proofDb DatabaseWriter) erro
 		hn, _ := hashers.store(n, nil, false)
 		if hash, ok := hn.(hashNode); ok || i == 0 {
 			// If the node's database encoding is a hash (or is the
-			// root node), it becomes a proof element.
+			// blockRoot node), it becomes a proof element.
 			if fromLevel > 0 {
 				fromLevel--
 			} else {
@@ -105,12 +105,12 @@ func (tPtr *Trie) Prove(key []byte, fromLevel uint, proofDb DatabaseWriter) erro
 }
 
 // VerifyProof checks merkle proofs. The given proof must contain the
-// value for key in a trie with the given root hashPtr. VerifyProof
+// value for key in a trie with the given blockRoot hashPtr. VerifyProof
 // returns an error if the proof contains invalid trie nodes or the
 // wrong value.
-func VerifyProof(rootHash bgmcommon.Hash, key []byte, proofDb DatabaseReader) (value []byte, err error, nodes int) {
+func VerifyProof(blockRootHash bgmcommon.Hash, key []byte, proofDb DatabaseReader) (value []byte, err error, nodes int) {
 	key = keybytesToHex(key)
-	wantHash := rootHash[:]
+	wantHash := blockRootHash[:]
 	for i := 0; ; i++ {
 		buf, _ := proofDbPtr.Get(wantHash)
 		if buf == nil {

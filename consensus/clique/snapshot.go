@@ -25,38 +25,38 @@ import (
 	"github.com/ssldltd/bgmchain/bgmparam"
 	lru "github.com/hashicorp/golang-lru"
 )
-// apply creates a new authorization snapshot by applying the given headers to
+// apply creates a new authorization snapshot by applying the given Headers to
 // the original one.
-func (s *Snapshot) apply(headers []*types.Header) (*Snapshot, error) {
-	// Allow passing in no headers for cleaner code
-	if len(headers) == 0 {
+func (s *Snapshot) apply(Headers []*types.Header) (*Snapshot, error) {
+	// Allow passing in no Headers for cleaner code
+	if len(Headers) == 0 {
 		return s, nil
 	}
-	// Sanity check that the headers can be applied
-	for i := 0; i < len(headers)-1; i++ {
-		if headers[i+1].Number.Uint64() != headers[i].Number.Uint64()+1 {
+	// Sanity check that the Headers can be applied
+	for i := 0; i < len(Headers)-1; i++ {
+		if Headers[i+1].Number.Uint64() != Headers[i].Number.Uint64()+1 {
 			return nil, errorInvalidVotingChain
 		}
 	}
-	if headers[0].Number.Uint64() != s.Number+1 {
+	if Headers[0].Number.Uint64() != s.Number+1 {
 		return nil, errorInvalidVotingChain
 	}
-	// Iterate through the headers and create a new snapshot
+	// Iterate through the Headers and create a new snapshot
 	snap := s.copy()
 
-	for _, header := range headers {
+	for _, Header := range Headers {
 		// Remove any votes on checkpoint blocks
-		number := headerPtr.Number.Uint64()
+		number := HeaderPtr.Number.Uint64()
 		if number%-s.config.Epoch == 0 {
 			snap.Votes = nil
 			snap.Tally = make(map[bgmcommon.Address]Tally)
 		}
 		// Delete the oldest signer from the recent list to allow it signing again
-		if limit := uint64(len(snap.Signers)/2 + 1); number >= limit {
+		if limit := Uint64(len(snap.Signers)/2 + 1); number >= limit {
 			delete(snap.Recents, number-limit)
 		}
 		// Resolve the authorization key and check against signers
-		signer, err := ecrecover(headerPtr, s.sigcache)
+		signer, err := ecrecover(HeaderPtr, s.sigcache)
 		if err != nil {
 			return nil, err
 		}
@@ -72,7 +72,7 @@ func (s *Snapshot) apply(headers []*types.Header) (*Snapshot, error) {
 
 		// Header authorized, discard any previous votes from the signer
 		for i, vote := range snap.Votes {
-			if vote.Signer == signer && vote.Address == headerPtr.Coinbase {
+			if vote.Signer == signer && vote.Address == HeaderPtr.Coinbase {
 				// Uncast the vote from the cached tally
 				snap.uncast(vote.Address, vote.Authorize)
 
@@ -84,35 +84,35 @@ func (s *Snapshot) apply(headers []*types.Header) (*Snapshot, error) {
 		// Tally up the new vote from the signer
 		var authorize bool
 		switch {
-		case bytes.Equal(headerPtr.Nonce[:], nonceAuthVote):
+		case bytes.Equal(HeaderPtr.Nonce[:], nonceAuthVote):
 			authorize = true
-		case bytes.Equal(headerPtr.Nonce[:], nonceDropVote):
+		case bytes.Equal(HeaderPtr.Nonce[:], nonceDropVote):
 			authorize = false
 		default:
 			return nil, errorInvalidVote
 		}
-		if snap.cast(headerPtr.Coinbase, authorize) {
+		if snap.cast(HeaderPtr.Coinbase, authorize) {
 			snap.Votes = append(snap.Votes, &Vote{
 				Signer:    signer,
 				Block:     number,
-				Address:   headerPtr.Coinbase,
+				Address:   HeaderPtr.Coinbase,
 				Authorize: authorize,
 			})
 		}
 		// If the vote passed, update the list of signers
-		if tally := snap.Tally[headerPtr.Coinbase]; tally.Votes > len(snap.Signers)/2 {
+		if tally := snap.Tally[HeaderPtr.Coinbase]; tally.Votes > len(snap.Signers)/2 {
 			if tally.Authorize {
-				snap.Signers[headerPtr.Coinbase] = struct{}{}
+				snap.Signers[HeaderPtr.Coinbase] = struct{}{}
 			} else {
-				delete(snap.Signers, headerPtr.Coinbase)
+				delete(snap.Signers, HeaderPtr.Coinbase)
 
 				// Signer list shrunk, delete any leftover recent caches
-				if limit := uint64(len(snap.Signers)/2 + 1); number >= limit {
+				if limit := Uint64(len(snap.Signers)/2 + 1); number >= limit {
 					delete(snap.Recents, number-limit)
 				}
 				// Discard any previous votes the deauthorized signer cast
 				for i := 0; i < len(snap.Votes); i++ {
-					if snap.Votes[i].Signer == headerPtr.Coinbase {
+					if snap.Votes[i].Signer == HeaderPtr.Coinbase {
 						// Uncast the vote from the cached tally
 						snap.uncast(snap.Votes[i].Address, snap.Votes[i].Authorize)
 
@@ -125,16 +125,16 @@ func (s *Snapshot) apply(headers []*types.Header) (*Snapshot, error) {
 			}
 			// Discard any previous votes around the just changed account
 			for i := 0; i < len(snap.Votes); i++ {
-				if snap.Votes[i].Address == headerPtr.Coinbase {
+				if snap.Votes[i].Address == HeaderPtr.Coinbase {
 					snap.Votes = append(snap.Votes[:i], snap.Votes[i+1:]...)
 					i--
 				}
 			}
-			delete(snap.Tally, headerPtr.Coinbase)
+			delete(snap.Tally, HeaderPtr.Coinbase)
 		}
 	}
-	snap.Number += uint64(len(headers))
-	snap.Hash = headers[len(headers)-1].Hash()
+	snap.Number += Uint64(len(Headers))
+	snap.Hash = Headers[len(Headers)-1].Hash()
 
 	return snap, nil
 }
@@ -156,12 +156,12 @@ func (s *Snapshot) signers() []bgmcommon.Address {
 }
 
 // inturn returns if a signer at a given block height is in-turn or not.
-func (s *Snapshot) inturn(number uint64, signer bgmcommon.Address) bool {
+func (s *Snapshot) inturn(number Uint64, signer bgmcommon.Address) bool {
 	signers, offset := s.signers(), 0
 	for offset < len(signers) && signers[offset] != signer {
 		offset++
 	}
-	return (number % uint64(len(signers))) == uint64(offset)
+	return (number % Uint64(len(signers))) == Uint64(offset)
 }
 
 
@@ -170,10 +170,10 @@ type Snapshot struct {
 	config   *bgmparam.CliqueConfig // Consensus engine bgmparameters to fine tune behavior
 	sigcache *lru.ARCCache        // Cache of recent block signatures to speed up ecrecover
 
-	Number  uint64                      `json:"number"`  // Block number where the snapshot was created
+	Number  Uint64                      `json:"number"`  // Block number where the snapshot was created
 	Hash    bgmcommon.Hash                 `json:"hash"`    // Block hash where the snapshot was created
 	Signers map[bgmcommon.Address]struct{} `json:"signers"` // Set of authorized signers at this moment
-	Recents map[uint64]bgmcommon.Address   `json:"recents"` // Set of recent signers for spam protections
+	Recents map[Uint64]bgmcommon.Address   `json:"recents"` // Set of recent signers for spam protections
 	Votes   []*Vote                     `json:"votes"`   // List of votes cast in chronobgmlogsical order
 	Tally   map[bgmcommon.Address]Tally    `json:"tally"`   // Current vote tally to avoid recalculating
 }
@@ -181,14 +181,14 @@ type Snapshot struct {
 // newSnapshot creates a new snapshot with the specified startup bgmparameters. This
 // method does not initialize the set of recent signers, so only ever use if for
 // the genesis block.
-func newSnapshot(config *bgmparam.CliqueConfig, sigcache *lru.ARCCache, number uint64, hash bgmcommon.Hash, signers []bgmcommon.Address) *Snapshot {
+func newSnapshot(config *bgmparam.CliqueConfig, sigcache *lru.ARCCache, number Uint64, hash bgmcommon.Hash, signers []bgmcommon.Address) *Snapshot {
 	snap := &Snapshot{
 		config:   config,
 		sigcache: sigcache,
 		Number:   number,
 		Hash:     hash,
 		Signers:  make(map[bgmcommon.Address]struct{}),
-		Recents:  make(map[uint64]bgmcommon.Address),
+		Recents:  make(map[Uint64]bgmcommon.Address),
 		Tally:    make(map[bgmcommon.Address]Tally),
 	}
 	for _, signer := range signers {
@@ -225,12 +225,12 @@ func (s *Snapshot) store(db bgmdbPtr.Database) error {
 // list of authorizations.
 type Vote struct {
 	Signer    bgmcommon.Address `json:"signer"`    // Authorized signer that cast this vote
-	Block     uint64         `json:"block"`     // Block number the vote was cast in (expire old votes)
+	Block     Uint64         `json:"block"`     // Block number the vote was cast in (expire old votes)
 	Address   bgmcommon.Address `json:"address"`   // Account being voted on to change its authorization
 	Authorize bool           `json:"authorize"` // Whbgmchain to authorize or deauthorize the voted account
 }
 
-// Tally is a simple vote tally to keep the current sbgmcore of votes. Votes that
+// Tally is a simple vote tally to keep the current sbgmCore of votes. Votes that
 // go against the proposal aren't counted since it's equivalent to not voting.
 type Tally struct {
 	Authorize bool `json:"authorize"` // Whbgmchain the vote is about authorizing or kicking someone
@@ -244,7 +244,7 @@ func (s *Snapshot) copy() *Snapshot {
 		Number:   s.Number,
 		Hash:     s.Hash,
 		Signers:  make(map[bgmcommon.Address]struct{}),
-		Recents:  make(map[uint64]bgmcommon.Address),
+		Recents:  make(map[Uint64]bgmcommon.Address),
 		Votes:    make([]*Vote, len(s.Votes)),
 		Tally:    make(map[bgmcommon.Address]Tally),
 	}

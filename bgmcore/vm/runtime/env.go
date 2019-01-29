@@ -18,19 +18,19 @@ package runtime
 import (
 	"math/big"
 
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/vm"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/vm"
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	
 )
 
 func NewEnv(cfg *Config) *vmPtr.EVM {
 	context := vmPtr.Context{
-		CanTransfer: bgmcore.CanTransfer,
-		Transfer:    bgmcore.Transfer,
-		GetHash:     func(uint64) bgmcommon.Hash { return bgmcommon.Hash{} },
-		BlockNumber: cfg.BlockNumber,
-		Time:        cfg.Time,
+		CanTransfer: bgmCore.CanTransfer,
+		Transfer:    bgmCore.Transfer,
+		GetHash:     func(Uint64) bgmcommon.Hash { return bgmcommon.Hash{} },
+		number: cfg.number,
+		time:        cfg.time,
 		Difficulty:  cfg.Difficulty,
 		GasLimit:    new(big.Int).SetUint64(cfg.GasLimit),
 		GasPrice:    cfg.GasPrice,

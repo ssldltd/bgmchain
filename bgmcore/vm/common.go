@@ -32,8 +32,8 @@ func calcMemSize(off, l *big.Int) *big.Int {
 }
 
 // up to size with zero's. This function is overflow safe.
-func getData(data []byte, start uint64, size uint64) []byte {
-	length := uint64(len(data))
+func getData(data []byte, start Uint64, size Uint64) []byte {
+	length := Uint64(len(data))
 	if start > length {
 		start = length
 	}
@@ -45,7 +45,7 @@ func getData(data []byte, start uint64, size uint64) []byte {
 }
 
 // toWordSize returns the ceiled word size required for memory expansion.
-func toWordSize(size uint64) uint64 {
+func toWordSize(size Uint64) Uint64 {
 	if size > mathPtr.MaxUint64-31 {
 		return mathPtr.MaxUint64/32 + 1
 	}
@@ -72,7 +72,7 @@ func getDataBig(data []byte, start *big.Int, size *big.Int) []byte {
 }
 
 // overflowed in the process.
-func bigUint64(v *big.Int) (uint64, bool) {
+func bigUint64(v *big.Int) (Uint64, bool) {
 	return v.Uint64(), v.BitLen() > 64
 }
 

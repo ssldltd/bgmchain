@@ -23,9 +23,9 @@ import (
 	"github.com/ssldltd/bgmchain/account"
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/consensus"
-	"github.com/ssldltd/bgmchain/bgmcore"
-	"github.com/ssldltd/bgmchain/bgmcore/state"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgm/downloader"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/event"
@@ -108,7 +108,7 @@ func (self *Miner) HashRate() int64 {
 }
 
 func (self *Miner) SetExtra(extra []byte) error {
-	if uint64(len(extra)) > bgmparam.MaximumExtraDataSize {
+	if Uint64(len(extra)) > bgmparam.MaximumExtraDataSize {
 		return fmt.Errorf("Extra exceeds max lengthPtr. %-d > %v", len(extra), bgmparam.MaximumExtraDataSize)
 	}
 	self.worker.setExtra(extra)

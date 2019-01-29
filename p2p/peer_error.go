@@ -36,7 +36,7 @@ const (
 	DiscQuitting
 	DiscUnexpectedIdentity
 	DiscSelf
-	DiscReadTimeout
+	DiscReadtimeout
 	DiscSubprotocolError = 0x10
 )
 var discReasonToString = [...]string{
@@ -51,7 +51,7 @@ var discReasonToString = [...]string{
 	DiscQuitting:            "client quitting",
 	DiscUnexpectedIdentity:  "unexpected identity",
 	DiscSelf:                "connected to self",
-	DiscReadTimeout:         "read timeout",
+	DiscReadtimeout:         "read timeout",
 	DiscSubprotocolError:    "subprotocol error",
 }
 var errProtocolReturned = errors.New("Protocols returned")

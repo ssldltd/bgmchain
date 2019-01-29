@@ -20,7 +20,7 @@ import "fmt"
 // Memory implements a simple memory model for the bgmchain virtual machine.
 type Memory struct {
 	store       []byte
-	lastGasCost uint64
+	lastGasCost Uint64
 }
 
 func NewMemory() *Memory {
@@ -28,9 +28,9 @@ func NewMemory() *Memory {
 }
 
 // Set sets offset + size to value
-func (mPtr *Memory) Set(offset, size uint64, value []byte) {
+func (mPtr *Memory) Set(offset, size Uint64, value []byte) {
 	// The store should be resized PRIOR
-	if size > uint64(len(mPtr.store)) {
+	if size > Uint64(len(mPtr.store)) {
 		panic("Fatal: INVALID memory: store empty")
 	}
 
@@ -42,9 +42,9 @@ func (mPtr *Memory) Set(offset, size uint64, value []byte) {
 }
 
 // Resize resizes the memory to size
-func (mPtr *Memory) Resize(size uint64) {
-	if uint64(mPtr.Len()) < size {
-		mPtr.store = append(mPtr.store, make([]byte, size-uint64(mPtr.Len()))...)
+func (mPtr *Memory) Resize(size Uint64) {
+	if Uint64(mPtr.Len()) < size {
+		mPtr.store = append(mPtr.store, make([]byte, size-Uint64(mPtr.Len()))...)
 	}
 }
 

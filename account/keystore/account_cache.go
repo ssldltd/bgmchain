@@ -59,7 +59,7 @@ type accountCache struct {
 	mu       syncPtr.Mutex
 	all      accountsByURL
 	byAddr   map[bgmcommon.Address][]accounts.Account
-	throttle *time.Timer
+	throttle *time.timer
 	notify   chan struct{}
 	fileC    fileCache
 }
@@ -189,7 +189,7 @@ func (acPtr *accountCache) maybeReload() {
 		return // A watcher is running and will keep the cache up-to-date.
 	}
 	if acPtr.throttle == nil {
-		acPtr.throttle = time.NewTimer(0)
+		acPtr.throttle = time.Newtimer(0)
 	} else {
 		select {
 		case <-acPtr.throttle.C:

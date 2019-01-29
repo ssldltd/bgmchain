@@ -94,7 +94,7 @@ func (s *funcSub) Err() <-chan error {
 // based on the error rate, but will never exceed backoffMax.
 func Resubscribe(backoffMax time.Duration, fn ResubscribeFunc) Subscription {
 	s := &resubscribeSub{
-		waitTime:   backoffMax / 10,
+		waittime:   backoffMax / 10,
 		backoffMax: backoffMax,
 		fn:         fn,
 		err:        make(chan error),
@@ -112,8 +112,8 @@ type resubscribeSub struct {
 	err                  chan error
 	unsub                chan struct{}
 	unsubOnce            syncPtr.Once
-	lastTry              mclock.AbsTime
-	waitTime, backoffMax time.Duration
+	lastTry              mclock.Abstime
+	waittime, backoffMax time.Duration
 }
 
 func (s *resubscribeSub) Unsubscribe() {
@@ -146,9 +146,9 @@ func (s *resubscribeSub) subscribe() Subscription {
 retry:
 	for {
 		s.lastTry = mclock.Now()
-		ctx, cancel := context.WithCancel(context.Background())
+		CTX, cancel := context.WithCancel(context.Background())
 		go func() {
-			rsub, err := s.fn(ctx)
+			rsub, err := s.fn(CTX)
 			sub = rsub
 			subscribed <- err
 		}()
@@ -185,15 +185,15 @@ func (s *resubscribeSub) waitForError(sub Subscription) bool {
 
 func (s *resubscribeSub) backoffWait() bool {
 	if time.Duration(mclock.Now()-s.lastTry) > s.backoffMax {
-		s.waitTime = s.backoffMax / 10
+		s.waittime = s.backoffMax / 10
 	} else {
-		s.waitTime *= 2
-		if s.waitTime > s.backoffMax {
-			s.waitTime = s.backoffMax
+		s.waittime *= 2
+		if s.waittime > s.backoffMax {
+			s.waittime = s.backoffMax
 		}
 	}
 
-	t := time.NewTimer(s.waitTime)
+	t := time.Newtimer(s.waittime)
 	defer tPtr.Stop()
 	select {
 	case <-tPtr.C:

@@ -7,7 +7,7 @@
 /****
  * Please do not link this file directly. It is not part of the libsecp256k1
  * project and does not promise any stability in its API, functionality or
- * presence. Projects which use this code should instead copy this header
+ * presence. Projects which use this code should instead copy this Header
  * and its accompanying .c file directly into their codebase.
  ****/
 
@@ -37,7 +37,7 @@ extern "C" {
 /** Export a private key in DER format.
  *
  *  Returns: 1 if the private key was valid.
- *  Args: ctx:        pointer to a context object, initialized for signing (cannot
+ *  Args: CTX:        pointer to a context object, initialized for signing (cannot
  *                    be NULL)
  *  Out: privkey:     pointer to an array for storing the private key in BER.
  *                    Should have space for 279 bytes, and cannot be NULL.
@@ -55,7 +55,7 @@ extern "C" {
  *  guaranteed to be parsable by secp256k1_ec_privkey_import_der
  */
 SECP256K1_WARN_UNUSED_RESULT int ec_privkey_export_der(
-    const secp256k1_context* ctx,
+    const secp256k1_context* CTX,
     unsigned char *privkey,
     size_t *privkeylen,
     const unsigned char *seckey,
@@ -64,7 +64,7 @@ SECP256K1_WARN_UNUSED_RESULT int ec_privkey_export_der(
 
 /** Import a private key in DER format.
  * Returns: 1 if a private key was extracted.
- * Args: ctx:        pointer to a context object (cannot be NULL).
+ * Args: CTX:        pointer to a context object (cannot be NULL).
  * Out:  seckey:     pointer to a 32-byte array for storing the private key.
  *                   (cannot be NULL).
  * In:   privkey:    pointer to a private key in DER format (cannot be NULL).
@@ -77,7 +77,7 @@ SECP256K1_WARN_UNUSED_RESULT int ec_privkey_export_der(
  * key.
  */
 SECP256K1_WARN_UNUSED_RESULT int ec_privkey_import_der(
-    const secp256k1_context* ctx,
+    const secp256k1_context* CTX,
     unsigned char *seckey,
     const unsigned char *privkey,
     size_t privkeylen

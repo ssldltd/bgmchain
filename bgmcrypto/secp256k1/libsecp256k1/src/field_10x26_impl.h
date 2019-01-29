@@ -438,8 +438,8 @@ void secp256k1_fe_sqr_inner(uint32_t *r, const uint32_t *a);
 #endif
 
 SECP256K1_INLINE static void secp256k1_fe_mul_inner(uint32_t *r, const uint32_t *a, const uint32_t * SECP256K1_RESTRICT b) {
-    uint64_t c, d;
-    uint64_t u0, u1, u2, u3, u4, u5, u6, u7, u8;
+    Uint64_t c, d;
+    Uint64_t u0, u1, u2, u3, u4, u5, u6, u7, u8;
     uint32_t t9, t1, t0, t2, t3, t4, t5, t6, t7;
     const uint32_t M = 0x3FFFFFFUL, R0 = 0x3D10UL, R1 = 0x400UL;
 
@@ -469,16 +469,16 @@ SECP256K1_INLINE static void secp256k1_fe_mul_inner(uint32_t *r, const uint32_t 
      *  Note that [x 0 0 0 0 0 0 0 0 0 0] = [x*R1 x*R0].
      */
 
-    d  = (uint64_t)a[0] * b[9]
-       + (uint64_t)a[1] * b[8]
-       + (uint64_t)a[2] * b[7]
-       + (uint64_t)a[3] * b[6]
-       + (uint64_t)a[4] * b[5]
-       + (uint64_t)a[5] * b[4]
-       + (uint64_t)a[6] * b[3]
-       + (uint64_t)a[7] * b[2]
-       + (uint64_t)a[8] * b[1]
-       + (uint64_t)a[9] * b[0];
+    d  = (Uint64_t)a[0] * b[9]
+       + (Uint64_t)a[1] * b[8]
+       + (Uint64_t)a[2] * b[7]
+       + (Uint64_t)a[3] * b[6]
+       + (Uint64_t)a[4] * b[5]
+       + (Uint64_t)a[5] * b[4]
+       + (Uint64_t)a[6] * b[3]
+       + (Uint64_t)a[7] * b[2]
+       + (Uint64_t)a[8] * b[1]
+       + (Uint64_t)a[9] * b[0];
     /* VERIFY_BITS(d, 64); */
     /* [d 0 0 0 0 0 0 0 0 0] = [p9 0 0 0 0 0 0 0 0 0] */
     t9 = d & M; d >>= 26;
@@ -486,18 +486,18 @@ SECP256K1_INLINE static void secp256k1_fe_mul_inner(uint32_t *r, const uint32_t 
     VERIFY_BITS(d, 38);
     /* [d t9 0 0 0 0 0 0 0 0 0] = [p9 0 0 0 0 0 0 0 0 0] */
 
-    c  = (uint64_t)a[0] * b[0];
+    c  = (Uint64_t)a[0] * b[0];
     VERIFY_BITS(c, 60);
     /* [d t9 0 0 0 0 0 0 0 0 c] = [p9 0 0 0 0 0 0 0 0 p0] */
-    d += (uint64_t)a[1] * b[9]
-       + (uint64_t)a[2] * b[8]
-       + (uint64_t)a[3] * b[7]
-       + (uint64_t)a[4] * b[6]
-       + (uint64_t)a[5] * b[5]
-       + (uint64_t)a[6] * b[4]
-       + (uint64_t)a[7] * b[3]
-       + (uint64_t)a[8] * b[2]
-       + (uint64_t)a[9] * b[1];
+    d += (Uint64_t)a[1] * b[9]
+       + (Uint64_t)a[2] * b[8]
+       + (Uint64_t)a[3] * b[7]
+       + (Uint64_t)a[4] * b[6]
+       + (Uint64_t)a[5] * b[5]
+       + (Uint64_t)a[6] * b[4]
+       + (Uint64_t)a[7] * b[3]
+       + (Uint64_t)a[8] * b[2]
+       + (Uint64_t)a[9] * b[1];
     VERIFY_BITS(d, 63);
     /* [d t9 0 0 0 0 0 0 0 0 c] = [p10 p9 0 0 0 0 0 0 0 0 p0] */
     u0 = d & M; d >>= 26; c += u0 * R0;
@@ -511,18 +511,18 @@ SECP256K1_INLINE static void secp256k1_fe_mul_inner(uint32_t *r, const uint32_t 
     /* [d u0 t9 0 0 0 0 0 0 0 c-u0*R1 t0-u0*R0] = [p10 p9 0 0 0 0 0 0 0 0 p0] */
     /* [d 0 t9 0 0 0 0 0 0 0 c t0] = [p10 p9 0 0 0 0 0 0 0 0 p0] */
 
-    c += (uint64_t)a[0] * b[1]
-       + (uint64_t)a[1] * b[0];
+    c += (Uint64_t)a[0] * b[1]
+       + (Uint64_t)a[1] * b[0];
     VERIFY_BITS(c, 62);
     /* [d 0 t9 0 0 0 0 0 0 0 c t0] = [p10 p9 0 0 0 0 0 0 0 p1 p0] */
-    d += (uint64_t)a[2] * b[9]
-       + (uint64_t)a[3] * b[8]
-       + (uint64_t)a[4] * b[7]
-       + (uint64_t)a[5] * b[6]
-       + (uint64_t)a[6] * b[5]
-       + (uint64_t)a[7] * b[4]
-       + (uint64_t)a[8] * b[3]
-       + (uint64_t)a[9] * b[2];
+    d += (Uint64_t)a[2] * b[9]
+       + (Uint64_t)a[3] * b[8]
+       + (Uint64_t)a[4] * b[7]
+       + (Uint64_t)a[5] * b[6]
+       + (Uint64_t)a[6] * b[5]
+       + (Uint64_t)a[7] * b[4]
+       + (Uint64_t)a[8] * b[3]
+       + (Uint64_t)a[9] * b[2];
     VERIFY_BITS(d, 63);
     /* [d 0 t9 0 0 0 0 0 0 0 c t0] = [p11 p10 p9 0 0 0 0 0 0 0 p1 p0] */
     u1 = d & M; d >>= 26; c += u1 * R0;
@@ -536,18 +536,18 @@ SECP256K1_INLINE static void secp256k1_fe_mul_inner(uint32_t *r, const uint32_t 
     /* [d u1 0 t9 0 0 0 0 0 0 c-u1*R1 t1-u1*R0 t0] = [p11 p10 p9 0 0 0 0 0 0 0 p1 p0] */
     /* [d 0 0 t9 0 0 0 0 0 0 c t1 t0] = [p11 p10 p9 0 0 0 0 0 0 0 p1 p0] */
 
-    c += (uint64_t)a[0] * b[2]
-       + (uint64_t)a[1] * b[1]
-       + (uint64_t)a[2] * b[0];
+    c += (Uint64_t)a[0] * b[2]
+       + (Uint64_t)a[1] * b[1]
+       + (Uint64_t)a[2] * b[0];
     VERIFY_BITS(c, 62);
     /* [d 0 0 t9 0 0 0 0 0 0 c t1 t0] = [p11 p10 p9 0 0 0 0 0 0 p2 p1 p0] */
-    d += (uint64_t)a[3] * b[9]
-       + (uint64_t)a[4] * b[8]
-       + (uint64_t)a[5] * b[7]
-       + (uint64_t)a[6] * b[6]
-       + (uint64_t)a[7] * b[5]
-       + (uint64_t)a[8] * b[4]
-       + (uint64_t)a[9] * b[3];
+    d += (Uint64_t)a[3] * b[9]
+       + (Uint64_t)a[4] * b[8]
+       + (Uint64_t)a[5] * b[7]
+       + (Uint64_t)a[6] * b[6]
+       + (Uint64_t)a[7] * b[5]
+       + (Uint64_t)a[8] * b[4]
+       + (Uint64_t)a[9] * b[3];
     VERIFY_BITS(d, 63);
     /* [d 0 0 t9 0 0 0 0 0 0 c t1 t0] = [p12 p11 p10 p9 0 0 0 0 0 0 p2 p1 p0] */
     u2 = d & M; d >>= 26; c += u2 * R0;
@@ -561,18 +561,18 @@ SECP256K1_INLINE static void secp256k1_fe_mul_inner(uint32_t *r, const uint32_t 
     /* [d u2 0 0 t9 0 0 0 0 0 c-u2*R1 t2-u2*R0 t1 t0] = [p12 p11 p10 p9 0 0 0 0 0 0 p2 p1 p0] */
     /* [d 0 0 0 t9 0 0 0 0 0 c t2 t1 t0] = [p12 p11 p10 p9 0 0 0 0 0 0 p2 p1 p0] */
 
-    c += (uint64_t)a[0] * b[3]
-       + (uint64_t)a[1] * b[2]
-       + (uint64_t)a[2] * b[1]
-       + (uint64_t)a[3] * b[0];
+    c += (Uint64_t)a[0] * b[3]
+       + (Uint64_t)a[1] * b[2]
+       + (Uint64_t)a[2] * b[1]
+       + (Uint64_t)a[3] * b[0];
     VERIFY_BITS(c, 63);
     /* [d 0 0 0 t9 0 0 0 0 0 c t2 t1 t0] = [p12 p11 p10 p9 0 0 0 0 0 p3 p2 p1 p0] */
-    d += (uint64_t)a[4] * b[9]
-       + (uint64_t)a[5] * b[8]
-       + (uint64_t)a[6] * b[7]
-       + (uint64_t)a[7] * b[6]
-       + (uint64_t)a[8] * b[5]
-       + (uint64_t)a[9] * b[4];
+    d += (Uint64_t)a[4] * b[9]
+       + (Uint64_t)a[5] * b[8]
+       + (Uint64_t)a[6] * b[7]
+       + (Uint64_t)a[7] * b[6]
+       + (Uint64_t)a[8] * b[5]
+       + (Uint64_t)a[9] * b[4];
     VERIFY_BITS(d, 63);
     /* [d 0 0 0 t9 0 0 0 0 0 c t2 t1 t0] = [p13 p12 p11 p10 p9 0 0 0 0 0 p3 p2 p1 p0] */
     u3 = d & M; d >>= 26; c += u3 * R0;
@@ -586,18 +586,18 @@ SECP256K1_INLINE static void secp256k1_fe_mul_inner(uint32_t *r, const uint32_t 
     /* [d u3 0 0 0 t9 0 0 0 0 c-u3*R1 t3-u3*R0 t2 t1 t0] = [p13 p12 p11 p10 p9 0 0 0 0 0 p3 p2 p1 p0] */
     /* [d 0 0 0 0 t9 0 0 0 0 c t3 t2 t1 t0] = [p13 p12 p11 p10 p9 0 0 0 0 0 p3 p2 p1 p0] */
 
-    c += (uint64_t)a[0] * b[4]
-       + (uint64_t)a[1] * b[3]
-       + (uint64_t)a[2] * b[2]
-       + (uint64_t)a[3] * b[1]
-       + (uint64_t)a[4] * b[0];
+    c += (Uint64_t)a[0] * b[4]
+       + (Uint64_t)a[1] * b[3]
+       + (Uint64_t)a[2] * b[2]
+       + (Uint64_t)a[3] * b[1]
+       + (Uint64_t)a[4] * b[0];
     VERIFY_BITS(c, 63);
     /* [d 0 0 0 0 t9 0 0 0 0 c t3 t2 t1 t0] = [p13 p12 p11 p10 p9 0 0 0 0 p4 p3 p2 p1 p0] */
-    d += (uint64_t)a[5] * b[9]
-       + (uint64_t)a[6] * b[8]
-       + (uint64_t)a[7] * b[7]
-       + (uint64_t)a[8] * b[6]
-       + (uint64_t)a[9] * b[5];
+    d += (Uint64_t)a[5] * b[9]
+       + (Uint64_t)a[6] * b[8]
+       + (Uint64_t)a[7] * b[7]
+       + (Uint64_t)a[8] * b[6]
+       + (Uint64_t)a[9] * b[5];
     VERIFY_BITS(d, 62);
     /* [d 0 0 0 0 t9 0 0 0 0 c t3 t2 t1 t0] = [p14 p13 p12 p11 p10 p9 0 0 0 0 p4 p3 p2 p1 p0] */
     u4 = d & M; d >>= 26; c += u4 * R0;
@@ -611,18 +611,18 @@ SECP256K1_INLINE static void secp256k1_fe_mul_inner(uint32_t *r, const uint32_t 
     /* [d u4 0 0 0 0 t9 0 0 0 c-u4*R1 t4-u4*R0 t3 t2 t1 t0] = [p14 p13 p12 p11 p10 p9 0 0 0 0 p4 p3 p2 p1 p0] */
     /* [d 0 0 0 0 0 t9 0 0 0 c t4 t3 t2 t1 t0] = [p14 p13 p12 p11 p10 p9 0 0 0 0 p4 p3 p2 p1 p0] */
 
-    c += (uint64_t)a[0] * b[5]
-       + (uint64_t)a[1] * b[4]
-       + (uint64_t)a[2] * b[3]
-       + (uint64_t)a[3] * b[2]
-       + (uint64_t)a[4] * b[1]
-       + (uint64_t)a[5] * b[0];
+    c += (Uint64_t)a[0] * b[5]
+       + (Uint64_t)a[1] * b[4]
+       + (Uint64_t)a[2] * b[3]
+       + (Uint64_t)a[3] * b[2]
+       + (Uint64_t)a[4] * b[1]
+       + (Uint64_t)a[5] * b[0];
     VERIFY_BITS(c, 63);
     /* [d 0 0 0 0 0 t9 0 0 0 c t4 t3 t2 t1 t0] = [p14 p13 p12 p11 p10 p9 0 0 0 p5 p4 p3 p2 p1 p0] */
-    d += (uint64_t)a[6] * b[9]
-       + (uint64_t)a[7] * b[8]
-       + (uint64_t)a[8] * b[7]
-       + (uint64_t)a[9] * b[6];
+    d += (Uint64_t)a[6] * b[9]
+       + (Uint64_t)a[7] * b[8]
+       + (Uint64_t)a[8] * b[7]
+       + (Uint64_t)a[9] * b[6];
     VERIFY_BITS(d, 62);
     /* [d 0 0 0 0 0 t9 0 0 0 c t4 t3 t2 t1 t0] = [p15 p14 p13 p12 p11 p10 p9 0 0 0 p5 p4 p3 p2 p1 p0] */
     u5 = d & M; d >>= 26; c += u5 * R0;
@@ -636,18 +636,18 @@ SECP256K1_INLINE static void secp256k1_fe_mul_inner(uint32_t *r, const uint32_t 
     /* [d u5 0 0 0 0 0 t9 0 0 c-u5*R1 t5-u5*R0 t4 t3 t2 t1 t0] = [p15 p14 p13 p12 p11 p10 p9 0 0 0 p5 p4 p3 p2 p1 p0] */
     /* [d 0 0 0 0 0 0 t9 0 0 c t5 t4 t3 t2 t1 t0] = [p15 p14 p13 p12 p11 p10 p9 0 0 0 p5 p4 p3 p2 p1 p0] */
 
-    c += (uint64_t)a[0] * b[6]
-       + (uint64_t)a[1] * b[5]
-       + (uint64_t)a[2] * b[4]
-       + (uint64_t)a[3] * b[3]
-       + (uint64_t)a[4] * b[2]
-       + (uint64_t)a[5] * b[1]
-       + (uint64_t)a[6] * b[0];
+    c += (Uint64_t)a[0] * b[6]
+       + (Uint64_t)a[1] * b[5]
+       + (Uint64_t)a[2] * b[4]
+       + (Uint64_t)a[3] * b[3]
+       + (Uint64_t)a[4] * b[2]
+       + (Uint64_t)a[5] * b[1]
+       + (Uint64_t)a[6] * b[0];
     VERIFY_BITS(c, 63);
     /* [d 0 0 0 0 0 0 t9 0 0 c t5 t4 t3 t2 t1 t0] = [p15 p14 p13 p12 p11 p10 p9 0 0 p6 p5 p4 p3 p2 p1 p0] */
-    d += (uint64_t)a[7] * b[9]
-       + (uint64_t)a[8] * b[8]
-       + (uint64_t)a[9] * b[7];
+    d += (Uint64_t)a[7] * b[9]
+       + (Uint64_t)a[8] * b[8]
+       + (Uint64_t)a[9] * b[7];
     VERIFY_BITS(d, 61);
     /* [d 0 0 0 0 0 0 t9 0 0 c t5 t4 t3 t2 t1 t0] = [p16 p15 p14 p13 p12 p11 p10 p9 0 0 p6 p5 p4 p3 p2 p1 p0] */
     u6 = d & M; d >>= 26; c += u6 * R0;
@@ -661,19 +661,19 @@ SECP256K1_INLINE static void secp256k1_fe_mul_inner(uint32_t *r, const uint32_t 
     /* [d u6 0 0 0 0 0 0 t9 0 c-u6*R1 t6-u6*R0 t5 t4 t3 t2 t1 t0] = [p16 p15 p14 p13 p12 p11 p10 p9 0 0 p6 p5 p4 p3 p2 p1 p0] */
     /* [d 0 0 0 0 0 0 0 t9 0 c t6 t5 t4 t3 t2 t1 t0] = [p16 p15 p14 p13 p12 p11 p10 p9 0 0 p6 p5 p4 p3 p2 p1 p0] */
 
-    c += (uint64_t)a[0] * b[7]
-       + (uint64_t)a[1] * b[6]
-       + (uint64_t)a[2] * b[5]
-       + (uint64_t)a[3] * b[4]
-       + (uint64_t)a[4] * b[3]
-       + (uint64_t)a[5] * b[2]
-       + (uint64_t)a[6] * b[1]
-       + (uint64_t)a[7] * b[0];
+    c += (Uint64_t)a[0] * b[7]
+       + (Uint64_t)a[1] * b[6]
+       + (Uint64_t)a[2] * b[5]
+       + (Uint64_t)a[3] * b[4]
+       + (Uint64_t)a[4] * b[3]
+       + (Uint64_t)a[5] * b[2]
+       + (Uint64_t)a[6] * b[1]
+       + (Uint64_t)a[7] * b[0];
     /* VERIFY_BITS(c, 64); */
     VERIFY_CHECK(c <= 0x8000007C00000007ULL);
     /* [d 0 0 0 0 0 0 0 t9 0 c t6 t5 t4 t3 t2 t1 t0] = [p16 p15 p14 p13 p12 p11 p10 p9 0 p7 p6 p5 p4 p3 p2 p1 p0] */
-    d += (uint64_t)a[8] * b[9]
-       + (uint64_t)a[9] * b[8];
+    d += (Uint64_t)a[8] * b[9]
+       + (Uint64_t)a[9] * b[8];
     VERIFY_BITS(d, 58);
     /* [d 0 0 0 0 0 0 0 t9 0 c t6 t5 t4 t3 t2 t1 t0] = [p17 p16 p15 p14 p13 p12 p11 p10 p9 0 p7 p6 p5 p4 p3 p2 p1 p0] */
     u7 = d & M; d >>= 26; c += u7 * R0;
@@ -688,19 +688,19 @@ SECP256K1_INLINE static void secp256k1_fe_mul_inner(uint32_t *r, const uint32_t 
     /* [d u7 0 0 0 0 0 0 0 t9 c-u7*R1 t7-u7*R0 t6 t5 t4 t3 t2 t1 t0] = [p17 p16 p15 p14 p13 p12 p11 p10 p9 0 p7 p6 p5 p4 p3 p2 p1 p0] */
     /* [d 0 0 0 0 0 0 0 0 t9 c t7 t6 t5 t4 t3 t2 t1 t0] = [p17 p16 p15 p14 p13 p12 p11 p10 p9 0 p7 p6 p5 p4 p3 p2 p1 p0] */
 
-    c += (uint64_t)a[0] * b[8]
-       + (uint64_t)a[1] * b[7]
-       + (uint64_t)a[2] * b[6]
-       + (uint64_t)a[3] * b[5]
-       + (uint64_t)a[4] * b[4]
-       + (uint64_t)a[5] * b[3]
-       + (uint64_t)a[6] * b[2]
-       + (uint64_t)a[7] * b[1]
-       + (uint64_t)a[8] * b[0];
+    c += (Uint64_t)a[0] * b[8]
+       + (Uint64_t)a[1] * b[7]
+       + (Uint64_t)a[2] * b[6]
+       + (Uint64_t)a[3] * b[5]
+       + (Uint64_t)a[4] * b[4]
+       + (Uint64_t)a[5] * b[3]
+       + (Uint64_t)a[6] * b[2]
+       + (Uint64_t)a[7] * b[1]
+       + (Uint64_t)a[8] * b[0];
     /* VERIFY_BITS(c, 64); */
     VERIFY_CHECK(c <= 0x9000007B80000008ULL);
     /* [d 0 0 0 0 0 0 0 0 t9 c t7 t6 t5 t4 t3 t2 t1 t0] = [p17 p16 p15 p14 p13 p12 p11 p10 p9 p8 p7 p6 p5 p4 p3 p2 p1 p0] */
-    d += (uint64_t)a[9] * b[9];
+    d += (Uint64_t)a[9] * b[9];
     VERIFY_BITS(d, 57);
     /* [d 0 0 0 0 0 0 0 0 t9 c t7 t6 t5 t4 t3 t2 t1 t0] = [p18 p17 p16 p15 p14 p13 p12 p11 p10 p9 p8 p7 p6 p5 p4 p3 p2 p1 p0] */
     u8 = d & M; d >>= 26; c += u8 * R0;
@@ -767,8 +767,8 @@ SECP256K1_INLINE static void secp256k1_fe_mul_inner(uint32_t *r, const uint32_t 
 }
 
 SECP256K1_INLINE static void secp256k1_fe_sqr_inner(uint32_t *r, const uint32_t *a) {
-    uint64_t c, d;
-    uint64_t u0, u1, u2, u3, u4, u5, u6, u7, u8;
+    Uint64_t c, d;
+    Uint64_t u0, u1, u2, u3, u4, u5, u6, u7, u8;
     uint32_t t9, t0, t1, t2, t3, t4, t5, t6, t7;
     const uint32_t M = 0x3FFFFFFUL, R0 = 0x3D10UL, R1 = 0x400UL;
 
@@ -788,11 +788,11 @@ SECP256K1_INLINE static void secp256k1_fe_sqr_inner(uint32_t *r, const uint32_t 
      *  Note that [x 0 0 0 0 0 0 0 0 0 0] = [x*R1 x*R0].
      */
 
-    d  = (uint64_t)(a[0]*2) * a[9]
-       + (uint64_t)(a[1]*2) * a[8]
-       + (uint64_t)(a[2]*2) * a[7]
-       + (uint64_t)(a[3]*2) * a[6]
-       + (uint64_t)(a[4]*2) * a[5];
+    d  = (Uint64_t)(a[0]*2) * a[9]
+       + (Uint64_t)(a[1]*2) * a[8]
+       + (Uint64_t)(a[2]*2) * a[7]
+       + (Uint64_t)(a[3]*2) * a[6]
+       + (Uint64_t)(a[4]*2) * a[5];
     /* VERIFY_BITS(d, 64); */
     /* [d 0 0 0 0 0 0 0 0 0] = [p9 0 0 0 0 0 0 0 0 0] */
     t9 = d & M; d >>= 26;
@@ -800,14 +800,14 @@ SECP256K1_INLINE static void secp256k1_fe_sqr_inner(uint32_t *r, const uint32_t 
     VERIFY_BITS(d, 38);
     /* [d t9 0 0 0 0 0 0 0 0 0] = [p9 0 0 0 0 0 0 0 0 0] */
 
-    c  = (uint64_t)a[0] * a[0];
+    c  = (Uint64_t)a[0] * a[0];
     VERIFY_BITS(c, 60);
     /* [d t9 0 0 0 0 0 0 0 0 c] = [p9 0 0 0 0 0 0 0 0 p0] */
-    d += (uint64_t)(a[1]*2) * a[9]
-       + (uint64_t)(a[2]*2) * a[8]
-       + (uint64_t)(a[3]*2) * a[7]
-       + (uint64_t)(a[4]*2) * a[6]
-       + (uint64_t)a[5] * a[5];
+    d += (Uint64_t)(a[1]*2) * a[9]
+       + (Uint64_t)(a[2]*2) * a[8]
+       + (Uint64_t)(a[3]*2) * a[7]
+       + (Uint64_t)(a[4]*2) * a[6]
+       + (Uint64_t)a[5] * a[5];
     VERIFY_BITS(d, 63);
     /* [d t9 0 0 0 0 0 0 0 0 c] = [p10 p9 0 0 0 0 0 0 0 0 p0] */
     u0 = d & M; d >>= 26; c += u0 * R0;
@@ -821,13 +821,13 @@ SECP256K1_INLINE static void secp256k1_fe_sqr_inner(uint32_t *r, const uint32_t 
     /* [d u0 t9 0 0 0 0 0 0 0 c-u0*R1 t0-u0*R0] = [p10 p9 0 0 0 0 0 0 0 0 p0] */
     /* [d 0 t9 0 0 0 0 0 0 0 c t0] = [p10 p9 0 0 0 0 0 0 0 0 p0] */
 
-    c += (uint64_t)(a[0]*2) * a[1];
+    c += (Uint64_t)(a[0]*2) * a[1];
     VERIFY_BITS(c, 62);
     /* [d 0 t9 0 0 0 0 0 0 0 c t0] = [p10 p9 0 0 0 0 0 0 0 p1 p0] */
-    d += (uint64_t)(a[2]*2) * a[9]
-       + (uint64_t)(a[3]*2) * a[8]
-       + (uint64_t)(a[4]*2) * a[7]
-       + (uint64_t)(a[5]*2) * a[6];
+    d += (Uint64_t)(a[2]*2) * a[9]
+       + (Uint64_t)(a[3]*2) * a[8]
+       + (Uint64_t)(a[4]*2) * a[7]
+       + (Uint64_t)(a[5]*2) * a[6];
     VERIFY_BITS(d, 63);
     /* [d 0 t9 0 0 0 0 0 0 0 c t0] = [p11 p10 p9 0 0 0 0 0 0 0 p1 p0] */
     u1 = d & M; d >>= 26; c += u1 * R0;
@@ -841,14 +841,14 @@ SECP256K1_INLINE static void secp256k1_fe_sqr_inner(uint32_t *r, const uint32_t 
     /* [d u1 0 t9 0 0 0 0 0 0 c-u1*R1 t1-u1*R0 t0] = [p11 p10 p9 0 0 0 0 0 0 0 p1 p0] */
     /* [d 0 0 t9 0 0 0 0 0 0 c t1 t0] = [p11 p10 p9 0 0 0 0 0 0 0 p1 p0] */
 
-    c += (uint64_t)(a[0]*2) * a[2]
-       + (uint64_t)a[1] * a[1];
+    c += (Uint64_t)(a[0]*2) * a[2]
+       + (Uint64_t)a[1] * a[1];
     VERIFY_BITS(c, 62);
     /* [d 0 0 t9 0 0 0 0 0 0 c t1 t0] = [p11 p10 p9 0 0 0 0 0 0 p2 p1 p0] */
-    d += (uint64_t)(a[3]*2) * a[9]
-       + (uint64_t)(a[4]*2) * a[8]
-       + (uint64_t)(a[5]*2) * a[7]
-       + (uint64_t)a[6] * a[6];
+    d += (Uint64_t)(a[3]*2) * a[9]
+       + (Uint64_t)(a[4]*2) * a[8]
+       + (Uint64_t)(a[5]*2) * a[7]
+       + (Uint64_t)a[6] * a[6];
     VERIFY_BITS(d, 63);
     /* [d 0 0 t9 0 0 0 0 0 0 c t1 t0] = [p12 p11 p10 p9 0 0 0 0 0 0 p2 p1 p0] */
     u2 = d & M; d >>= 26; c += u2 * R0;
@@ -862,13 +862,13 @@ SECP256K1_INLINE static void secp256k1_fe_sqr_inner(uint32_t *r, const uint32_t 
     /* [d u2 0 0 t9 0 0 0 0 0 c-u2*R1 t2-u2*R0 t1 t0] = [p12 p11 p10 p9 0 0 0 0 0 0 p2 p1 p0] */
     /* [d 0 0 0 t9 0 0 0 0 0 c t2 t1 t0] = [p12 p11 p10 p9 0 0 0 0 0 0 p2 p1 p0] */
 
-    c += (uint64_t)(a[0]*2) * a[3]
-       + (uint64_t)(a[1]*2) * a[2];
+    c += (Uint64_t)(a[0]*2) * a[3]
+       + (Uint64_t)(a[1]*2) * a[2];
     VERIFY_BITS(c, 63);
     /* [d 0 0 0 t9 0 0 0 0 0 c t2 t1 t0] = [p12 p11 p10 p9 0 0 0 0 0 p3 p2 p1 p0] */
-    d += (uint64_t)(a[4]*2) * a[9]
-       + (uint64_t)(a[5]*2) * a[8]
-       + (uint64_t)(a[6]*2) * a[7];
+    d += (Uint64_t)(a[4]*2) * a[9]
+       + (Uint64_t)(a[5]*2) * a[8]
+       + (Uint64_t)(a[6]*2) * a[7];
     VERIFY_BITS(d, 63);
     /* [d 0 0 0 t9 0 0 0 0 0 c t2 t1 t0] = [p13 p12 p11 p10 p9 0 0 0 0 0 p3 p2 p1 p0] */
     u3 = d & M; d >>= 26; c += u3 * R0;
@@ -882,14 +882,14 @@ SECP256K1_INLINE static void secp256k1_fe_sqr_inner(uint32_t *r, const uint32_t 
     /* [d u3 0 0 0 t9 0 0 0 0 c-u3*R1 t3-u3*R0 t2 t1 t0] = [p13 p12 p11 p10 p9 0 0 0 0 0 p3 p2 p1 p0] */
     /* [d 0 0 0 0 t9 0 0 0 0 c t3 t2 t1 t0] = [p13 p12 p11 p10 p9 0 0 0 0 0 p3 p2 p1 p0] */
 
-    c += (uint64_t)(a[0]*2) * a[4]
-       + (uint64_t)(a[1]*2) * a[3]
-       + (uint64_t)a[2] * a[2];
+    c += (Uint64_t)(a[0]*2) * a[4]
+       + (Uint64_t)(a[1]*2) * a[3]
+       + (Uint64_t)a[2] * a[2];
     VERIFY_BITS(c, 63);
     /* [d 0 0 0 0 t9 0 0 0 0 c t3 t2 t1 t0] = [p13 p12 p11 p10 p9 0 0 0 0 p4 p3 p2 p1 p0] */
-    d += (uint64_t)(a[5]*2) * a[9]
-       + (uint64_t)(a[6]*2) * a[8]
-       + (uint64_t)a[7] * a[7];
+    d += (Uint64_t)(a[5]*2) * a[9]
+       + (Uint64_t)(a[6]*2) * a[8]
+       + (Uint64_t)a[7] * a[7];
     VERIFY_BITS(d, 62);
     /* [d 0 0 0 0 t9 0 0 0 0 c t3 t2 t1 t0] = [p14 p13 p12 p11 p10 p9 0 0 0 0 p4 p3 p2 p1 p0] */
     u4 = d & M; d >>= 26; c += u4 * R0;
@@ -903,13 +903,13 @@ SECP256K1_INLINE static void secp256k1_fe_sqr_inner(uint32_t *r, const uint32_t 
     /* [d u4 0 0 0 0 t9 0 0 0 c-u4*R1 t4-u4*R0 t3 t2 t1 t0] = [p14 p13 p12 p11 p10 p9 0 0 0 0 p4 p3 p2 p1 p0] */
     /* [d 0 0 0 0 0 t9 0 0 0 c t4 t3 t2 t1 t0] = [p14 p13 p12 p11 p10 p9 0 0 0 0 p4 p3 p2 p1 p0] */
 
-    c += (uint64_t)(a[0]*2) * a[5]
-       + (uint64_t)(a[1]*2) * a[4]
-       + (uint64_t)(a[2]*2) * a[3];
+    c += (Uint64_t)(a[0]*2) * a[5]
+       + (Uint64_t)(a[1]*2) * a[4]
+       + (Uint64_t)(a[2]*2) * a[3];
     VERIFY_BITS(c, 63);
     /* [d 0 0 0 0 0 t9 0 0 0 c t4 t3 t2 t1 t0] = [p14 p13 p12 p11 p10 p9 0 0 0 p5 p4 p3 p2 p1 p0] */
-    d += (uint64_t)(a[6]*2) * a[9]
-       + (uint64_t)(a[7]*2) * a[8];
+    d += (Uint64_t)(a[6]*2) * a[9]
+       + (Uint64_t)(a[7]*2) * a[8];
     VERIFY_BITS(d, 62);
     /* [d 0 0 0 0 0 t9 0 0 0 c t4 t3 t2 t1 t0] = [p15 p14 p13 p12 p11 p10 p9 0 0 0 p5 p4 p3 p2 p1 p0] */
     u5 = d & M; d >>= 26; c += u5 * R0;
@@ -923,14 +923,14 @@ SECP256K1_INLINE static void secp256k1_fe_sqr_inner(uint32_t *r, const uint32_t 
     /* [d u5 0 0 0 0 0 t9 0 0 c-u5*R1 t5-u5*R0 t4 t3 t2 t1 t0] = [p15 p14 p13 p12 p11 p10 p9 0 0 0 p5 p4 p3 p2 p1 p0] */
     /* [d 0 0 0 0 0 0 t9 0 0 c t5 t4 t3 t2 t1 t0] = [p15 p14 p13 p12 p11 p10 p9 0 0 0 p5 p4 p3 p2 p1 p0] */
 
-    c += (uint64_t)(a[0]*2) * a[6]
-       + (uint64_t)(a[1]*2) * a[5]
-       + (uint64_t)(a[2]*2) * a[4]
-       + (uint64_t)a[3] * a[3];
+    c += (Uint64_t)(a[0]*2) * a[6]
+       + (Uint64_t)(a[1]*2) * a[5]
+       + (Uint64_t)(a[2]*2) * a[4]
+       + (Uint64_t)a[3] * a[3];
     VERIFY_BITS(c, 63);
     /* [d 0 0 0 0 0 0 t9 0 0 c t5 t4 t3 t2 t1 t0] = [p15 p14 p13 p12 p11 p10 p9 0 0 p6 p5 p4 p3 p2 p1 p0] */
-    d += (uint64_t)(a[7]*2) * a[9]
-       + (uint64_t)a[8] * a[8];
+    d += (Uint64_t)(a[7]*2) * a[9]
+       + (Uint64_t)a[8] * a[8];
     VERIFY_BITS(d, 61);
     /* [d 0 0 0 0 0 0 t9 0 0 c t5 t4 t3 t2 t1 t0] = [p16 p15 p14 p13 p12 p11 p10 p9 0 0 p6 p5 p4 p3 p2 p1 p0] */
     u6 = d & M; d >>= 26; c += u6 * R0;
@@ -944,14 +944,14 @@ SECP256K1_INLINE static void secp256k1_fe_sqr_inner(uint32_t *r, const uint32_t 
     /* [d u6 0 0 0 0 0 0 t9 0 c-u6*R1 t6-u6*R0 t5 t4 t3 t2 t1 t0] = [p16 p15 p14 p13 p12 p11 p10 p9 0 0 p6 p5 p4 p3 p2 p1 p0] */
     /* [d 0 0 0 0 0 0 0 t9 0 c t6 t5 t4 t3 t2 t1 t0] = [p16 p15 p14 p13 p12 p11 p10 p9 0 0 p6 p5 p4 p3 p2 p1 p0] */
 
-    c += (uint64_t)(a[0]*2) * a[7]
-       + (uint64_t)(a[1]*2) * a[6]
-       + (uint64_t)(a[2]*2) * a[5]
-       + (uint64_t)(a[3]*2) * a[4];
+    c += (Uint64_t)(a[0]*2) * a[7]
+       + (Uint64_t)(a[1]*2) * a[6]
+       + (Uint64_t)(a[2]*2) * a[5]
+       + (Uint64_t)(a[3]*2) * a[4];
     /* VERIFY_BITS(c, 64); */
     VERIFY_CHECK(c <= 0x8000007C00000007ULL);
     /* [d 0 0 0 0 0 0 0 t9 0 c t6 t5 t4 t3 t2 t1 t0] = [p16 p15 p14 p13 p12 p11 p10 p9 0 p7 p6 p5 p4 p3 p2 p1 p0] */
-    d += (uint64_t)(a[8]*2) * a[9];
+    d += (Uint64_t)(a[8]*2) * a[9];
     VERIFY_BITS(d, 58);
     /* [d 0 0 0 0 0 0 0 t9 0 c t6 t5 t4 t3 t2 t1 t0] = [p17 p16 p15 p14 p13 p12 p11 p10 p9 0 p7 p6 p5 p4 p3 p2 p1 p0] */
     u7 = d & M; d >>= 26; c += u7 * R0;
@@ -966,15 +966,15 @@ SECP256K1_INLINE static void secp256k1_fe_sqr_inner(uint32_t *r, const uint32_t 
     /* [d u7 0 0 0 0 0 0 0 t9 c-u7*R1 t7-u7*R0 t6 t5 t4 t3 t2 t1 t0] = [p17 p16 p15 p14 p13 p12 p11 p10 p9 0 p7 p6 p5 p4 p3 p2 p1 p0] */
     /* [d 0 0 0 0 0 0 0 0 t9 c t7 t6 t5 t4 t3 t2 t1 t0] = [p17 p16 p15 p14 p13 p12 p11 p10 p9 0 p7 p6 p5 p4 p3 p2 p1 p0] */
 
-    c += (uint64_t)(a[0]*2) * a[8]
-       + (uint64_t)(a[1]*2) * a[7]
-       + (uint64_t)(a[2]*2) * a[6]
-       + (uint64_t)(a[3]*2) * a[5]
-       + (uint64_t)a[4] * a[4];
+    c += (Uint64_t)(a[0]*2) * a[8]
+       + (Uint64_t)(a[1]*2) * a[7]
+       + (Uint64_t)(a[2]*2) * a[6]
+       + (Uint64_t)(a[3]*2) * a[5]
+       + (Uint64_t)a[4] * a[4];
     /* VERIFY_BITS(c, 64); */
     VERIFY_CHECK(c <= 0x9000007B80000008ULL);
     /* [d 0 0 0 0 0 0 0 0 t9 c t7 t6 t5 t4 t3 t2 t1 t0] = [p17 p16 p15 p14 p13 p12 p11 p10 p9 p8 p7 p6 p5 p4 p3 p2 p1 p0] */
-    d += (uint64_t)a[9] * a[9];
+    d += (Uint64_t)a[9] * a[9];
     VERIFY_BITS(d, 57);
     /* [d 0 0 0 0 0 0 0 0 t9 c t7 t6 t5 t4 t3 t2 t1 t0] = [p18 p17 p16 p15 p14 p13 p12 p11 p10 p9 p8 p7 p6 p5 p4 p3 p2 p1 p0] */
     u8 = d & M; d >>= 26; c += u8 * R0;

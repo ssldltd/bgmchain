@@ -13,8 +13,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the BMG Chain project source. If not, you can see <http://www.gnu.org/licenses/> for detail.
 
-// Package bgmcore implements the Bgmchain consensus protocol.
-package bgmcore
+// Package bgmCore implements the Bgmchain consensus protocol.
+package bgmCore
 
 import (
 	"errors"
@@ -30,14 +30,14 @@ import (
 	"github.com/ssldltd/bgmchain/bgmcommon/mclock"
 	"github.com/ssldltd/bgmchain/consensus"
 	"github.com/ssldltd/bgmchain/consensus/dpos"
-	"github.com/ssldltd/bgmchain/bgmcore/state"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
-	"github.com/ssldltd/bgmchain/bgmcore/vm"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/vm"
 	"github.com/ssldltd/bgmchain/bgmcrypto"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/event"
 	"github.com/ssldltd/bgmchain/bgmlogs"
-	"github.com/ssldltd/bgmchain/metrics"
+	"github.com/ssldltd/bgmchain/metics"
 	"github.com/ssldltd/bgmchain/bgmparam"
 	"github.com/ssldltd/bgmchain/rlp"
 	"github.com/ssldltd/bgmchain/trie"
@@ -45,7 +45,7 @@ import (
 )
 
 var (
-	blockInsertTimer = metrics.NewTimer("chain/inserts")
+	blockInserttimer = metics.Newtimer("chain/inserts")
 
 	ErrNoGenesis = errors.New("Genesis not found in chain")
 )
@@ -54,7 +54,7 @@ const (
 	bodyCacheLimit      = 256
 	blockCacheLimit     = 256
 	maxFutureBlocks     = 256
-	maxTimeFutureBlocks = 30
+	maxtimeFutureBlocks = 30
 	badBlockLimit       = 10
 
 	// BlockChainVersion ensures that an incompatible database forces a resync from scratchPtr.
@@ -115,7 +115,7 @@ func (batcr *BlockChain) getProcInterrupt() bool {
 // assumes that the chain manager mutex is held.
 func (batcr *BlockChain) loadLastState() error {
 	// Restore the last known head block
-	head := GetHeadBlockHash(batcr.chainDb)
+	head := GetHeadhash(batcr.chainDb)
 	if head == (bgmcommon.Hash{}) {
 		// Corrupt or empty database, init from scratch
 		bgmlogs.Warn("Empty database, resetting chain")
@@ -137,47 +137,47 @@ func (batcr *BlockChain) loadLastState() error {
 	// Everything seems to be fine, set as the head block
 	batcr.currentBlock = currentBlock
 
-	// Restore the last known head header
+	// Restore the last known head Header
 	currentHeader := batcr.currentBlock.Header()
 	if head := GetHeadHeaderHash(batcr.chainDb); head != (bgmcommon.Hash{}) {
-		if header := batcr.GetHeaderByHash(head); header != nil {
-			currentHeader = header
+		if Header := batcr.GetHeaderByHash(head); Header != nil {
+			currentHeader = Header
 		}
 	}
 	batcr.hcPtr.SetCurrentHeader(currentHeader)
 
 	// Restore the last known head fast block
 	batcr.currentFastBlock = batcr.currentBlock
-	if head := GetHeadFastBlockHash(batcr.chainDb); head != (bgmcommon.Hash{}) {
+	if head := GetHeadFasthash(batcr.chainDb); head != (bgmcommon.Hash{}) {
 		if block := batcr.GetBlockByHash(head); block != nil {
 			batcr.currentFastBlock = block
 		}
 	}
 
 	// Issue a status bgmlogs for the user
-	headerTd := batcr.GetTd(currentheaderPtr.Hash(), currentheaderPtr.Number.Uint64())
+	HeaderTd := batcr.GetTd(currentHeaderPtr.Hash(), currentHeaderPtr.Number.Uint64())
 	blockTd := batcr.GetTd(batcr.currentBlock.Hash(), batcr.currentBlock.NumberU64())
 	fastTd := batcr.GetTd(batcr.currentFastBlock.Hash(), batcr.currentFastBlock.NumberU64())
 
-	bgmlogs.Info("Loaded most recent local header", "number", currentheaderPtr.Number, "hash", currentheaderPtr.Hash(), "td", headerTd)
+	bgmlogs.Info("Loaded most recent local Header", "number", currentHeaderPtr.Number, "hash", currentHeaderPtr.Hash(), "td", HeaderTd)
 	bgmlogs.Info("Loaded most recent local full block", "number", batcr.currentBlock.Number(), "hash", batcr.currentBlock.Hash(), "td", blockTd)
 	bgmlogs.Info("Loaded most recent local fast block", "number", batcr.currentFastBlock.Number(), "hash", batcr.currentFastBlock.Hash(), "td", fastTd)
 
 	return nil
 }
 
-// SetHead rewinds the local chain to a new head. In the case of headers, everything
+// SetHead rewinds the local chain to a new head. In the case of Headers, everything
 // above the new head will be deleted and the new one set. In the case of blocks
 // though, the head may be further rewound if block bodies are missing (non-archive
 // nodes after a fast sync).
-func (batcr *BlockChain) SetHead(head uint64) error {
+func (batcr *BlockChain) SetHead(head Uint64) error {
 	bgmlogs.Warn("Rewinding blockchain", "target", head)
 
 	batcr.mu.Lock()
 	defer batcr.mu.Unlock()
 
-	// Rewind the header chain, deleting all block bodies until then
-	delFn := func(hash bgmcommon.Hash, num uint64) {
+	// Rewind the Header chain, deleting all block bodies until then
+	delFn := func(hash bgmcommon.Hash, num Uint64) {
 		DeleteBody(batcr.chainDb, hash, num)
 	}
 	batcr.hcPtr.SetHead(head, delFn)
@@ -190,8 +190,8 @@ func (batcr *BlockChain) SetHead(head uint64) error {
 	batcr.futureBlocks.Purge()
 
 	// Rewind the block chain, ensuring we don't end up with a stateless head block
-	if batcr.currentBlock != nil && currentheaderPtr.Number.Uint64() < batcr.currentBlock.NumberU64() {
-		batcr.currentBlock = batcr.GetBlock(currentheaderPtr.Hash(), currentheaderPtr.Number.Uint64())
+	if batcr.currentBlock != nil && currentHeaderPtr.Number.Uint64() < batcr.currentBlock.NumberU64() {
+		batcr.currentBlock = batcr.GetBlock(currentHeaderPtr.Hash(), currentHeaderPtr.Number.Uint64())
 	}
 	if batcr.currentBlock != nil {
 		if _, err := state.New(batcr.currentBlock.Root(), batcr.stateCache); err != nil {
@@ -200,8 +200,8 @@ func (batcr *BlockChain) SetHead(head uint64) error {
 		}
 	}
 	// Rewind the fast block in a simpleton way to the target head
-	if batcr.currentFastBlock != nil && currentheaderPtr.Number.Uint64() < batcr.currentFastBlock.NumberU64() {
-		batcr.currentFastBlock = batcr.GetBlock(currentheaderPtr.Hash(), currentheaderPtr.Number.Uint64())
+	if batcr.currentFastBlock != nil && currentHeaderPtr.Number.Uint64() < batcr.currentFastBlock.NumberU64() {
+		batcr.currentFastBlock = batcr.GetBlock(currentHeaderPtr.Hash(), currentHeaderPtr.Number.Uint64())
 	}
 	// If either blocks reached nil, reset to the genesis state
 	if batcr.currentBlock == nil {
@@ -210,10 +210,10 @@ func (batcr *BlockChain) SetHead(head uint64) error {
 	if batcr.currentFastBlock == nil {
 		batcr.currentFastBlock = batcr.genesisBlock
 	}
-	if err := WriteHeadBlockHash(batcr.chainDb, batcr.currentBlock.Hash()); err != nil {
+	if err := WriteHeadhash(batcr.chainDb, batcr.currentBlock.Hash()); err != nil {
 		bgmlogs.Crit("Failed to reset head full block", "err", err)
 	}
-	if err := WriteHeadFastBlockHash(batcr.chainDb, batcr.currentFastBlock.Hash()); err != nil {
+	if err := WriteHeadFasthash(batcr.chainDb, batcr.currentFastBlock.Hash()); err != nil {
 		bgmlogs.Crit("Failed to reset head fast block", "err", err)
 	}
 	return batcr.loadLastState()
@@ -258,13 +258,13 @@ func NewBlockChain(chainDb bgmdbPtr.Database, config *bgmparam.ChainConfig, engi
 	}
 	// Check the current state of the block hashes and make sure that we do not have any of the bad blocks in our chain
 	for hash := range BadHashes {
-		if header := batcr.GetHeaderByHash(hash); header != nil {
-			// get the canonical block corresponding to the offending header's number
-			headerByNumber := batcr.GetHeaderByNumber(headerPtr.Number.Uint64())
-			// make sure the headerByNumber (if present) is in our current canonical chain
-			if headerByNumber != nil && headerByNumber.Hash() == headerPtr.Hash() {
-				bgmlogs.Error("Found bad hash, rewinding chain", "number", headerPtr.Number, "hash", headerPtr.ParentHash)
-				batcr.SetHead(headerPtr.Number.Uint64() - 1)
+		if Header := batcr.GetHeaderByHash(hash); Header != nil {
+			// get the canonical block corresponding to the offending Header's number
+			HeaderByNumber := batcr.GetHeaderByNumber(HeaderPtr.Number.Uint64())
+			// make sure the HeaderByNumber (if present) is in our current canonical chain
+			if HeaderByNumber != nil && HeaderByNumber.Hash() == HeaderPtr.Hash() {
+				bgmlogs.Error("Found bad hash, rewinding chain", "number", HeaderPtr.Number, "hash", HeaderPtr.ParentHash)
+				batcr.SetHead(HeaderPtr.Number.Uint64() - 1)
 				bgmlogs.Error("Chain rewind was successful, resuming normal operation")
 			}
 		}
@@ -302,8 +302,8 @@ func (batcr *BlockChain) GasLimit() *big.Int {
 	return batcr.currentBlock.GasLimit()
 }
 
-// LastBlockHash return the hash of the HEAD block.
-func (batcr *BlockChain) LastBlockHash() bgmcommon.Hash {
+// Lasthash return the hash of the HEAD block.
+func (batcr *BlockChain) Lasthash() bgmcommon.Hash {
 	batcr.mu.RLock()
 	defer batcr.mu.RUnlock()
 
@@ -371,8 +371,8 @@ func (batcr *BlockChain) State() (*state.StateDB, error) {
 }
 
 // StateAt returns a new mutable state based on a particular point in time.
-func (batcr *BlockChain) StateAt(root bgmcommon.Hash) (*state.StateDB, error) {
-	return state.New(root, batcr.stateCache)
+func (batcr *BlockChain) StateAt(blockRoot bgmcommon.Hash) (*state.StateDB, error) {
+	return state.New(blockRoot, batcr.stateCache)
 }
 
 // Reset purges the entire blockchain, restoring it to its genesis state.
@@ -409,11 +409,11 @@ func (batcr *BlockChain) ResetWithGenesisBlock(genesis *types.Block) error {
 
 // Export writes the active chain to the given writer.
 func (batcr *BlockChain) Export(w io.Writer) error {
-	return batcr.ExportN(w, uint64(0), batcr.currentBlock.NumberU64())
+	return batcr.ExportN(w, Uint64(0), batcr.currentBlock.NumberU64())
 }
 
 // ExportN writes a subset of the active chain to the given writer.
-func (batcr *BlockChain) ExportN(w io.Writer, first uint64, last uint64) error {
+func (batcr *BlockChain) ExportN(w io.Writer, first Uint64, last Uint64) error {
 	batcr.mu.RLock()
 	defer batcr.mu.RUnlock()
 
@@ -438,7 +438,7 @@ func (batcr *BlockChain) ExportN(w io.Writer, first uint64, last uint64) error {
 
 // insert injects a new head block into the current block chain. This method
 // assumes that the block is indeed a true head. It will also reset the head
-// header and the head fast sync block to this very same block if they are older
+// Header and the head fast sync block to this very same block if they are older
 // or if they are on a different side chain.
 //
 // Note, this function assumes that the `mu` mutex is held!
@@ -450,7 +450,7 @@ func (batcr *BlockChain) insert(block *types.Block) {
 	if err := WriteCanonicalHash(batcr.chainDb, block.Hash(), block.NumberU64()); err != nil {
 		bgmlogs.Crit("Failed to insert block number", "err", err)
 	}
-	if err := WriteHeadBlockHash(batcr.chainDb, block.Hash()); err != nil {
+	if err := WriteHeadhash(batcr.chainDb, block.Hash()); err != nil {
 		bgmlogs.Crit("Failed to insert head block hash", "err", err)
 	}
 	batcr.currentBlock = block
@@ -459,7 +459,7 @@ func (batcr *BlockChain) insert(block *types.Block) {
 	if updateHeads {
 		batcr.hcPtr.SetCurrentHeader(block.Header())
 
-		if err := WriteHeadFastBlockHash(batcr.chainDb, block.Hash()); err != nil {
+		if err := WriteHeadFasthash(batcr.chainDb, block.Hash()); err != nil {
 			bgmlogs.Crit("Failed to insert head fast block hash", "err", err)
 		}
 		batcr.currentFastBlock = block
@@ -479,7 +479,7 @@ func (batcr *BlockChain) GetBody(hash bgmcommon.Hash) *types.Body {
 		body := cached.(*types.Body)
 		return body
 	}
-	body := GetBody(batcr.chainDb, hash, batcr.hcPtr.GetBlockNumber(hash))
+	body := GetBody(batcr.chainDb, hash, batcr.hcPtr.Getnumber(hash))
 	if body == nil {
 		return nil
 	}
@@ -495,7 +495,7 @@ func (batcr *BlockChain) GetBodyRLP(hash bgmcommon.Hash) rlp.RawValue {
 	if cached, ok := batcr.bodyRLPCache.Get(hash); ok {
 		return cached.(rlp.RawValue)
 	}
-	body := GetBodyRLP(batcr.chainDb, hash, batcr.hcPtr.GetBlockNumber(hash))
+	body := GetBodyRLP(batcr.chainDb, hash, batcr.hcPtr.Getnumber(hash))
 	if len(body) == 0 {
 		return nil
 	}
@@ -505,7 +505,7 @@ func (batcr *BlockChain) GetBodyRLP(hash bgmcommon.Hash) rlp.RawValue {
 }
 
 // HasBlock checks if a block is fully present in the database or not.
-func (batcr *BlockChain) HasBlock(hash bgmcommon.Hash, number uint64) bool {
+func (batcr *BlockChain) HasBlock(hash bgmcommon.Hash, number Uint64) bool {
 	if batcr.blockCache.Contains(hash) {
 		return true
 	}
@@ -528,7 +528,7 @@ func (batcr *BlockChain) HasBlockAndState(hash bgmcommon.Hash) bool {
 
 // GetBlock retrieves a block from the database by hash and number,
 // caching it if found.
-func (batcr *BlockChain) GetBlock(hash bgmcommon.Hash, number uint64) *types.Block {
+func (batcr *BlockChain) GetBlock(hash bgmcommon.Hash, number Uint64) *types.Block {
 	// Short circuit if the block's already in the cache, retrieve otherwise
 	if block, ok := batcr.blockCache.Get(hash); ok {
 		return block.(*types.Block)
@@ -544,12 +544,12 @@ func (batcr *BlockChain) GetBlock(hash bgmcommon.Hash, number uint64) *types.Blo
 
 // GetBlockByHash retrieves a block from the database by hash, caching it if found.
 func (batcr *BlockChain) GetBlockByHash(hash bgmcommon.Hash) *types.Block {
-	return batcr.GetBlock(hash, batcr.hcPtr.GetBlockNumber(hash))
+	return batcr.GetBlock(hash, batcr.hcPtr.Getnumber(hash))
 }
 
 // GetBlockByNumber retrieves a block from the database by number, caching it
 // (associated with its hash) if found.
-func (batcr *BlockChain) GetBlockByNumber(number uint64) *types.Block {
+func (batcr *BlockChain) GetBlockByNumber(number Uint64) *types.Block {
 	hash := GetCanonicalHash(batcr.chainDb, number)
 	if hash == (bgmcommon.Hash{}) {
 		return nil
@@ -560,7 +560,7 @@ func (batcr *BlockChain) GetBlockByNumber(number uint64) *types.Block {
 // GetBlocksFromHash returns the block corresponding to hash and up to n-1 ancestors.
 // [deprecated by bgm/62]
 func (batcr *BlockChain) GetBlocksFromHash(hash bgmcommon.Hash, n int) (blocks []*types.Block) {
-	number := batcr.hcPtr.GetBlockNumber(hash)
+	number := batcr.hcPtr.Getnumber(hash)
 	for i := 0; i < n; i++ {
 		block := batcr.GetBlock(hash, number)
 		if block == nil {
@@ -635,16 +635,16 @@ func (batcr *BlockChain) Rollback(chain []bgmcommon.Hash) {
 		hash := chain[i]
 
 		currentHeader := batcr.hcPtr.CurrentHeader()
-		if currentheaderPtr.Hash() == hash {
-			batcr.hcPtr.SetCurrentHeader(batcr.GetHeader(currentheaderPtr.ParentHash, currentheaderPtr.Number.Uint64()-1))
+		if currentHeaderPtr.Hash() == hash {
+			batcr.hcPtr.SetCurrentHeader(batcr.GetHeader(currentHeaderPtr.ParentHash, currentHeaderPtr.Number.Uint64()-1))
 		}
 		if batcr.currentFastBlock.Hash() == hash {
 			batcr.currentFastBlock = batcr.GetBlock(batcr.currentFastBlock.ParentHash(), batcr.currentFastBlock.NumberU64()-1)
-			WriteHeadFastBlockHash(batcr.chainDb, batcr.currentFastBlock.Hash())
+			WriteHeadFasthash(batcr.chainDb, batcr.currentFastBlock.Hash())
 		}
 		if batcr.currentBlock.Hash() == hash {
 			batcr.currentBlock = batcr.GetBlock(batcr.currentBlock.ParentHash(), batcr.currentBlock.NumberU64()-1)
-			WriteHeadBlockHash(batcr.chainDb, batcr.currentBlock.Hash())
+			WriteHeadhash(batcr.chainDb, batcr.currentBlock.Hash())
 		}
 	}
 }
@@ -673,8 +673,8 @@ func SetReceiptsData(config *bgmparam.ChainConfig, block *types.Block, receipts 
 		}
 		// The derived bgmlogs fields can simply be set from the block and transaction
 		for k := 0; k < len(receipts[j].bgmlogss); k++ {
-			receipts[j].bgmlogss[k].BlockNumber = block.NumberU64()
-			receipts[j].bgmlogss[k].BlockHash = block.Hash()
+			receipts[j].bgmlogss[k].number = block.NumberU64()
+			receipts[j].bgmlogss[k].hash = block.Hash()
 			receipts[j].bgmlogss[k].TxHash = receipts[j].TxHash
 			receipts[j].bgmlogss[k].TxIndex = uint(j)
 			receipts[j].bgmlogss[k].Index = bgmlogsIndex
@@ -683,7 +683,7 @@ func SetReceiptsData(config *bgmparam.ChainConfig, block *types.Block, receipts 
 	}
 }
 
-// InsertReceiptChain attempts to complete an already existing header chain with
+// InsertReceiptChain attempts to complete an already existing Header chain with
 // transaction and receipt data.
 func (batcr *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain []types.Receipts) (int, error) {
 	batcr.wg.Add(1)
@@ -711,9 +711,9 @@ func (batcr *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChai
 		if atomicPtr.LoadInt32(&batcr.procInterrupt) == 1 {
 			return 0, nil
 		}
-		// Short circuit if the owner header is unknown
+		// Short circuit if the owner Header is unknown
 		if !batcr.HasHeader(block.Hash(), block.NumberU64()) {
-			return i, fmt.Errorf("containing header #%-d [%x…] unknown", block.Number(), block.Hash().Bytes()[:4])
+			return i, fmt.Errorf("containing Header #%-d [%x…] unknown", block.Number(), block.Hash().Bytes()[:4])
 		}
 		// Skip if the entire data is already known
 		if batcr.HasBlock(block.Hash(), block.NumberU64()) {
@@ -754,7 +754,7 @@ func (batcr *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChai
 	head := blockChain[len(blockChain)-1]
 	if td := batcr.GetTd(head.Hash(), head.NumberU64()); td != nil { // Rewind may have occurred, skip in that case
 		if batcr.GetTd(batcr.currentFastBlock.Hash(), batcr.currentFastBlock.NumberU64()).Cmp(td) < 0 {
-			if err := WriteHeadFastBlockHash(batcr.chainDb, head.Hash()); err != nil {
+			if err := WriteHeadFasthash(batcr.chainDb, head.Hash()); err != nil {
 				bgmlogs.Crit("Failed to update head fast block hash", "err", err)
 			}
 			batcr.currentFastBlock = head
@@ -885,20 +885,20 @@ func (batcr *BlockChain) insertChain(chain types.Blocks) (int, []interface{}, []
 	// faster than direct delivery and requires much less mutex
 	// acquiring.
 	var (
-		stats         = insertStats{startTime: mclock.Now()}
+		stats         = insertStats{starttime: mclock.Now()}
 		events        = make([]interface{}, 0, len(chain))
 		lastCanon     *types.Block
 		coalescedbgmlogss []*types.bgmlogs
 	)
-	// Start the parallel header verifier
-	headers := make([]*types.headerPtr, len(chain))
+	// Start the parallel Header verifier
+	Headers := make([]*types.HeaderPtr, len(chain))
 	seals := make([]bool, len(chain))
 
 	for i, block := range chain {
-		headers[i] = block.Header()
+		Headers[i] = block.Header()
 		seals[i] = true
 	}
-	abort, results := batcr.engine.VerifyHeaders(bc, headers, seals)
+	abort, results := batcr.engine.VerifyHeaders(bc, Headers, seals)
 	defer close(abort)
 
 	// Iterate over the blocks and insert when the verifier permits
@@ -908,7 +908,7 @@ func (batcr *BlockChain) insertChain(chain types.Blocks) (int, []interface{}, []
 			bgmlogs.Debug("Premature abort during blocks processing")
 			break
 		}
-		// If the header is a banned one, straight out abort
+		// If the Header is a banned one, straight out abort
 		if BadHashes[block.Hash()] {
 			batcr.reportBlock(block, nil, ErrBlacklistedHash)
 			return i, events, coalescedbgmlogss, ErrBlacklistedHash
@@ -930,9 +930,9 @@ func (batcr *BlockChain) insertChain(chain types.Blocks) (int, []interface{}, []
 				// Allow up to MaxFuture second in the future blocks. If this limit
 				// is exceeded the chain is discarded and processed at a later time
 				// if given.
-				max := big.NewInt(time.Now().Unix() + maxTimeFutureBlocks)
-				if block.Time().Cmp(max) > 0 {
-					return i, events, coalescedbgmlogss, fmt.Errorf("future block: %v > %v", block.Time(), max)
+				max := big.NewInt(time.Now().Unix() + maxtimeFutureBlocks)
+				if block.time().Cmp(max) > 0 {
+					return i, events, coalescedbgmlogss, fmt.Errorf("future block: %v > %v", block.time(), max)
 				}
 				batcr.futureBlocks.Add(block.Hash(), block)
 				stats.queued++
@@ -1005,7 +1005,7 @@ func (batcr *BlockChain) insertChain(chain types.Blocks) (int, []interface{}, []
 				"txs", len(block.Transactions()), "gas", block.GasUsed(), "elapsed", bgmcommon.PrettyDuration(time.Since(bstart)))
 
 			coalescedbgmlogss = append(coalescedbgmlogss, bgmlogss...)
-			blockInsertTimer.UpdateSince(bstart)
+			blockInserttimer.UpdateSince(bstart)
 			events = append(events, ChainEvent{block, block.Hash(), bgmlogss})
 			lastCanon = block
 
@@ -1013,14 +1013,14 @@ func (batcr *BlockChain) insertChain(chain types.Blocks) (int, []interface{}, []
 			bgmlogs.Debug("Inserted forked block", "number", block.Number(), "hash", block.Hash(), "diff", block.Difficulty(), "elapsed",
 				bgmcommon.PrettyDuration(time.Since(bstart)), "txs", len(block.Transactions()), "gas", block.GasUsed(), "uncles", len(block.Uncles()))
 
-			blockInsertTimer.UpdateSince(bstart)
+			blockInserttimer.UpdateSince(bstart)
 		}
 		stats.processed++
 		stats.usedGas += usedGas.Uint64()
 		stats.report(chain, i)
 	}
 	// Append a single chain head event if we've progressed the chain
-	if lastCanon != nil && batcr.LastBlockHash() == lastCanon.Hash() {
+	if lastCanon != nil && batcr.Lasthash() == lastCanon.Hash() {
 		events = append(events, ChainHeadEvent{lastCanon})
 	}
 	return 0, events, coalescedbgmlogss, nil
@@ -1029,9 +1029,9 @@ func (batcr *BlockChain) insertChain(chain types.Blocks) (int, []interface{}, []
 // insertStats tracks and reports on block insertion.
 type insertStats struct {
 	queued, processed, ignored int
-	usedGas                    uint64
+	usedGas                    Uint64
 	lastIndex                  int
-	startTime                  mclock.AbsTime
+	starttime                  mclock.Abstime
 }
 
 // statsReportLimit is the time limit during import after which we always print
@@ -1044,7 +1044,7 @@ func (st *insertStats) report(chain []*types.Block, index int) {
 	// Fetch the timings for the batch
 	var (
 		now     = mclock.Now()
-		elapsed = time.Duration(now) - time.Duration(st.startTime)
+		elapsed = time.Duration(now) - time.Duration(st.starttime)
 	)
 	// If we're at the last block of the batch or report period reached, bgmlogs
 	if index == len(chain)-1 || elapsed >= statsReportLimit {
@@ -1065,7 +1065,7 @@ func (st *insertStats) report(chain []*types.Block, index int) {
 		}
 		bgmlogs.Info("Imported new chain segment", context...)
 
-		*st = insertStats{startTime: now, lastIndex: index + 1}
+		*st = insertStats{starttime: now, lastIndex: index + 1}
 	}
 }
 
@@ -1091,7 +1091,7 @@ func (batcr *BlockChain) reorg(oldBlock, newBlock *types.Block) error {
 		// These bgmlogss are later announced as deleted.
 		collectbgmlogss = func(h bgmcommon.Hash) {
 			// Coalesce bgmlogss and set 'Removed'.
-			receipts := GetBlockReceipts(batcr.chainDb, h, batcr.hcPtr.GetBlockNumber(h))
+			receipts := GetBlockReceipts(batcr.chainDb, h, batcr.hcPtr.Getnumber(h))
 			for _, receipt := range receipts {
 				for _, bgmlogs := range receipt.bgmlogss {
 					del := *bgmlogs
@@ -1200,10 +1200,10 @@ func (batcr *BlockChain) PostChainEvents(events []interface{}, bgmlogss []*types
 }
 
 func (batcr *BlockChain) update() {
-	futureTimer := time.Tick(5 * time.Second)
+	futuretimer := time.Tick(5 * time.Second)
 	for {
 		select {
-		case <-futureTimer:
+		case <-futuretimer:
 			batcr.procFutureBlocks()
 		case <-batcr.quit:
 			return
@@ -1214,19 +1214,19 @@ func (batcr *BlockChain) update() {
 // BadBlockArgs represents the entries in the list returned when bad blocks are queried.
 type BadBlockArgs struct {
 	Hash   bgmcommon.Hash   `json:"hash"`
-	headerPtr *types.Header `json:"header"`
+	HeaderPtr *types.Header `json:"Header"`
 }
 
 // BadBlocks returns a list of the last 'bad blocks' that the client has seen on the network
 func (batcr *BlockChain) BadBlocks() ([]BadBlockArgs, error) {
-	headers := make([]BadBlockArgs, 0, batcr.badBlocks.Len())
+	Headers := make([]BadBlockArgs, 0, batcr.badBlocks.Len())
 	for _, hash := range batcr.badBlocks.Keys() {
 		if hdr, exist := batcr.badBlocks.Peek(hash); exist {
-			header := hdr.(*types.Header)
-			headers = append(headers, BadBlockArgs{headerPtr.Hash(), header})
+			Header := hdr.(*types.Header)
+			Headers = append(Headers, BadBlockArgs{HeaderPtr.Hash(), Header})
 		}
 	}
-	return headers, nil
+	return Headers, nil
 }
 
 // addBadBlock adds a bad block to the bad-block LRU cache
@@ -1255,15 +1255,15 @@ Error: %v
 `, batcr.config, block.Number(), block.Hash(), receiptString, err))
 }
 
-// InsertHeaderChain attempts to insert the given header chain in to the local
+// InsertHeaderChain attempts to insert the given Header chain in to the local
 // chain, possibly creating a reorg. If an error is returned, it will return the
-// index number of the failing header as well an error describing what went wrong.
+// index number of the failing Header as well an error describing what went wrong.
 //
 // The verify bgmparameter can be used to fine tune whbgmchain nonce verification
 // should be done or not. The reason behind the optional check is because some
-// of the header retrieval mechanisms already need to verify nonces, as well as
+// of the Header retrieval mechanisms already need to verify nonces, as well as
 // because nonces can be verified sparsely, not needing to check eachPtr.
-func (batcr *BlockChain) InsertHeaderChain(chain []*types.headerPtr, checkFreq int) (int, error) {
+func (batcr *BlockChain) InsertHeaderChain(chain []*types.HeaderPtr, checkFreq int) (int, error) {
 	start := time.Now()
 	if i, err := batcr.hcPtr.ValidateHeaderChain(chain, checkFreq); err != nil {
 		return i, err
@@ -1276,39 +1276,39 @@ func (batcr *BlockChain) InsertHeaderChain(chain []*types.headerPtr, checkFreq i
 	batcr.wg.Add(1)
 	defer batcr.wg.Done()
 
-	whFunc := func(headerPtr *types.Header) error {
+	whFunc := func(HeaderPtr *types.Header) error {
 		batcr.mu.Lock()
 		defer batcr.mu.Unlock()
 
-		_, err := batcr.hcPtr.WriteHeader(header)
+		_, err := batcr.hcPtr.WriteHeader(Header)
 		return err
 	}
 
 	return batcr.hcPtr.InsertHeaderChain(chain, whFunc, start)
 }
 
-// writeHeader writes a header into the local chain, given that its parent is
-// already known. If the total difficulty of the newly inserted header becomes
+// writeHeader writes a Header into the local chain, given that its parent is
+// already known. If the total difficulty of the newly inserted Header becomes
 // greater than the current known TD, the canonical chain is re-routed.
 //
 // Note: This method is not concurrent-safe with inserting blocks simultaneously
 // into the chain, as side effects caused by reorganisations cannot be emulated
-// without the real blocks. Hence, writing headers directly should only be done
-// in two scenarios: pure-header mode of operation (light clients), or properly
-// separated header/block phases (non-archive clients).
-func (batcr *BlockChain) writeHeader(headerPtr *types.Header) error {
+// without the real blocks. Hence, writing Headers directly should only be done
+// in two scenarios: pure-Header mode of operation (light clients), or properly
+// separated Header/block phases (non-archive clients).
+func (batcr *BlockChain) writeHeader(HeaderPtr *types.Header) error {
 	batcr.wg.Add(1)
 	defer batcr.wg.Done()
 
 	batcr.mu.Lock()
 	defer batcr.mu.Unlock()
 
-	_, err := batcr.hcPtr.WriteHeader(header)
+	_, err := batcr.hcPtr.WriteHeader(Header)
 	return err
 }
 
-// CurrentHeader retrieves the current head header of the canonical chain. The
-// header is retrieved from the HeaderChain's internal cache.
+// CurrentHeader retrieves the current head Header of the canonical chain. The
+// Header is retrieved from the HeaderChain's internal cache.
 func (batcr *BlockChain) CurrentHeader() *types.Header {
 	batcr.mu.RLock()
 	defer batcr.mu.RUnlock()
@@ -1318,7 +1318,7 @@ func (batcr *BlockChain) CurrentHeader() *types.Header {
 
 // GetTd retrieves a block's total difficulty in the canonical chain from the
 // database by hash and number, caching it if found.
-func (batcr *BlockChain) GetTd(hash bgmcommon.Hash, number uint64) *big.Int {
+func (batcr *BlockChain) GetTd(hash bgmcommon.Hash, number Uint64) *big.Int {
 	return batcr.hcPtr.GetTd(hash, number)
 }
 
@@ -1328,33 +1328,33 @@ func (batcr *BlockChain) GetTdByHash(hash bgmcommon.Hash) *big.Int {
 	return batcr.hcPtr.GetTdByHash(hash)
 }
 
-// GetHeader retrieves a block header from the database by hash and number,
+// GetHeader retrieves a block Header from the database by hash and number,
 // caching it if found.
-func (batcr *BlockChain) GetHeader(hash bgmcommon.Hash, number uint64) *types.Header {
+func (batcr *BlockChain) GetHeader(hash bgmcommon.Hash, number Uint64) *types.Header {
 	return batcr.hcPtr.GetHeader(hash, number)
 }
 
-// GetHeaderByHash retrieves a block header from the database by hash, caching it if
+// GetHeaderByHash retrieves a block Header from the database by hash, caching it if
 // found.
 func (batcr *BlockChain) GetHeaderByHash(hash bgmcommon.Hash) *types.Header {
 	return batcr.hcPtr.GetHeaderByHash(hash)
 }
 
-// HasHeader checks if a block header is present in the database or not, caching
+// HasHeader checks if a block Header is present in the database or not, caching
 // it if present.
-func (batcr *BlockChain) HasHeader(hash bgmcommon.Hash, number uint64) bool {
+func (batcr *BlockChain) HasHeader(hash bgmcommon.Hash, number Uint64) bool {
 	return batcr.hcPtr.HasHeader(hash, number)
 }
 
-// GetBlockHashesFromHash retrieves a number of block hashes starting at a given
+// GethashesFromHash retrieves a number of block hashes starting at a given
 // hash, fetching towards the genesis block.
-func (batcr *BlockChain) GetBlockHashesFromHash(hash bgmcommon.Hash, max uint64) []bgmcommon.Hash {
-	return batcr.hcPtr.GetBlockHashesFromHash(hash, max)
+func (batcr *BlockChain) GethashesFromHash(hash bgmcommon.Hash, max Uint64) []bgmcommon.Hash {
+	return batcr.hcPtr.GethashesFromHash(hash, max)
 }
 
-// GetHeaderByNumber retrieves a block header from the database by number,
+// GetHeaderByNumber retrieves a block Header from the database by number,
 // caching it (associated with its hash) if found.
-func (batcr *BlockChain) GetHeaderByNumber(number uint64) *types.Header {
+func (batcr *BlockChain) GetHeaderByNumber(number Uint64) *types.Header {
 	return batcr.hcPtr.GetHeaderByNumber(number)
 }
 

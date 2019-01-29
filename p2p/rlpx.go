@@ -532,7 +532,7 @@ func (rw *rlpxFrameRW) ReadMessage() (msg Msg, err error) {
 	}
 	shouldMAC := updateMAC(rw.ingressMAC, rw.macCipher, headbuf[:16])
 	if !hmacPtr.Equal(shouldMAC, headbuf[16:]) {
-		return msg, errors.New("bad header MAC")
+		return msg, errors.New("bad Header MAC")
 	}
 	rw.decPtr.XORKeyStream(headbuf[:16], headbuf[:16]) // first half is now decrypted
 	fsize := readInt24(headbuf)
@@ -603,9 +603,9 @@ const (
 	encAuthMsgLen  = authMsgLen + eciesOverhead  // size of encrypted pre-EIP-8 initiator handshake
 	encAuthRespLen = authRespLen + eciesOverhead // size of encrypted pre-EIP-8 handshake reply
 
-	handshakeTimeout = 5 * time.Second
+	handshaketimeout = 5 * time.Second
 
-	discWriteTimeout = 1 * time.Second
+	discWritetimeout = 1 * time.Second
 )
 
 var errPlainMessageTooLarge = errors.New("message length >= 16MB")
@@ -618,21 +618,21 @@ type rlpx struct {
 }
 
 func newRLPX(fd net.Conn) transport {
-	fd.SetDeadline(time.Now().Add(handshakeTimeout))
+	fd.SetDeadline(time.Now().Add(handshaketimeout))
 	return &rlpx{fd: fd}
 }
 
 func (tPtr *rlpx) ReadMessage() (Msg, error) {
 	tPtr.rmu.Lock()
 	defer tPtr.rmu.Unlock()
-	tPtr.fd.SetReadDeadline(time.Now().Add(frameReadTimeout))
+	tPtr.fd.SetReadDeadline(time.Now().Add(frameReadtimeout))
 	return tPtr.rw.ReadMessage()
 }
 
 func (tPtr *rlpx) WriteMessage(msg Msg) error {
 	tPtr.wmu.Lock()
 	defer tPtr.wmu.Unlock()
-	tPtr.fd.SetWriteDeadline(time.Now().Add(frameWriteTimeout))
+	tPtr.fd.SetWriteDeadline(time.Now().Add(frameWritetimeout))
 	return tPtr.rw.WriteMessage(msg)
 }
 
@@ -642,7 +642,7 @@ func (tPtr *rlpx) close(err error) {
 	// Tell the remote end why we're disconnecting if possible.
 	if tPtr.rw != nil {
 		if r, ok := err.(DiscReason); ok && r != DiscNetworkError {
-			tPtr.fd.SetWriteDeadline(time.Now().Add(discWriteTimeout))
+			tPtr.fd.SetWriteDeadline(time.Now().Add(discWritetimeout))
 			SendItems(tPtr.rw, discMsg, r)
 		}
 	}

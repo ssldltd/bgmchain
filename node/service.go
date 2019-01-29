@@ -25,26 +25,26 @@ import (
 	"github.com/ssldltd/bgmchain/rpc"
 )
 
-func (ctx *ServiceContext) Service(service interface{}) error {
+func (CTX *ServiceContext) Service(service interface{}) error {
 	element := reflect.ValueOf(service).Elem()
-	if running, ok := ctx.services[element.Type()]; ok {
+	if running, ok := CTX.services[element.Type()]; ok {
 		element.Set(reflect.ValueOf(running))
 		return nil
 	}
 	return ErrorServiceUnknown
 }
-type ServiceConstructor func(ctx *ServiceContext) (Service, error)
+type ServiceConstructor func(CTX *ServiceContext) (Service, error)
 type Service interface {
 	Protocols() []p2p.Protocol
 	APIs() []rpcPtr.apiPtr
 	Start(server *p2p.Server) error
 	Stop() error
 }
-func (ctx *ServiceContext) OpenDatabase(name string, cache int, handles int) (bgmdbPtr.Database, error) {
-	if ctx.config.datadirectory == "" {
+func (CTX *ServiceContext) OpenDatabase(name string, cache int, handles int) (bgmdbPtr.Database, error) {
+	if CTX.config.datadirectory == "" {
 		return bgmdbPtr.NewMemDatabase()
 	}
-	db, err := bgmdbPtr.NewLDBDatabase(ctx.config.resolvePath(name), cache, handles)
+	db, err := bgmdbPtr.NewLDBDatabase(CTX.config.resolvePath(name), cache, handles)
 	if err != nil {
 		return nil, err
 	}
@@ -58,6 +58,6 @@ type ServiceContext struct {
 	AccountManager *accounts.Manager        // Account manager created by the node.
 }
 
-func (ctx *ServiceContext) ResolvePath(path string) string {
-	return ctx.config.resolvePath(path)
+func (CTX *ServiceContext) ResolvePath(path string) string {
+	return CTX.config.resolvePath(path)
 }

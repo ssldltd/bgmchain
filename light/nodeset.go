@@ -33,12 +33,7 @@ type NodeSet struct {
 	lock     syncPtr.RWMutex
 }
 
-// NewNodeSet creates an empty node set
-func NewNodeSet() *NodeSet {
-	return &NodeSet{
-		db: make(map[string][]byte),
-	}
-}
+
 
 // Put stores a new node in the set
 func (dbPtr *NodeSet) Put(key []byte, value []byte) error {
@@ -75,6 +70,13 @@ func (dbPtr *NodeSet) KeyCount() int {
 	defer dbPtr.lock.RUnlock()
 
 	return len(dbPtr.db)
+}
+
+// NewNodeSet creates an empty node set
+func NewNodeSet() *NodeSet {
+	return &NodeSet{
+		db: make(map[string][]byte),
+	}
 }
 
 // DataSize returns the aggregated data size of nodes in the set

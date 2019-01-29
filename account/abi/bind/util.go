@@ -20,19 +20,19 @@ import (
 	"time"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 )
 
 // WaittingMined waits for tx to be mined on the blockchain.
 // It stops waiting when the context is canceled.
-func WaittingMined(ctx context.Context, b DeployedBackend, tx *types.Transaction) (*types.Receipt, error) {
+func WaittingMined(CTX context.Context, b DeployedBackend, tx *types.Transaction) (*types.Receipt, error) {
 	queryTicker := time.NewTicker(time.Second)
 	defer queryTicker.Stop()
 
 	bgmlogsger := bgmlogs.New("hash", tx.Hash())
 	for {
-		receipt, err := bPtr.TransactionReceipt(ctx, tx.Hash())
+		receipt, err := bPtr.TransactionReceipt(CTX, tx.Hash())
 		if receipt != nil {
 			return receipt, nil
 		}
@@ -43,20 +43,20 @@ func WaittingMined(ctx context.Context, b DeployedBackend, tx *types.Transaction
 		}
 		// Wait for the next round.
 		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
+		case <-CTX.Done():
+			return nil, CTX.Err()
 		case <-queryTicker.C:
 		}
 	}
 }
 
 // WaittingDeployed waits for a contract deployment transaction and returns the on-chain
-// contract address when it is mined. It stops waiting when ctx is canceled.
-func WaittingDeployed(ctx context.Context, b DeployedBackend, tx *types.Transaction) (bgmcommon.Address, error) {
+// contract address when it is mined. It stops waiting when CTX is canceled.
+func WaittingDeployed(CTX context.Context, b DeployedBackend, tx *types.Transaction) (bgmcommon.Address, error) {
 	if tx.To() != nil {
 		return bgmcommon.Address{}, fmt.Errorf("tx is not contract creation")
 	}
-	receipt, err := WaittingMined(ctx, b, tx)
+	receipt, err := WaittingMined(CTX, b, tx)
 	if err != nil {
 		return bgmcommon.Address{}, err
 	}
@@ -66,7 +66,7 @@ func WaittingDeployed(ctx context.Context, b DeployedBackend, tx *types.Transact
 	// Check that code has indeed been deployed at the address.
 	// This matters on pre-Homestead chains: OOG in the constructor
 	// could leave an empty account behind.
-	code, err := bPtr.CodeAt(ctx, receipt.ContractAddress, nil)
+	code, err := bPtr.CodeAt(CTX, receipt.ContractAddress, nil)
 	if err == nil && len(code) == 0 {
 		err = ErrNoCodeAfterDeploy
 	}

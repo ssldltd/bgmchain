@@ -29,7 +29,7 @@ import (
 
 	"github.com/ssldltd/bgmchain/account"
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcore/types"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmcrypto"
 	"github.com/ssldltd/bgmchain/event"
 )
@@ -302,7 +302,7 @@ func (ks *KeyStore) SignTx(a accounts.Account, tx *types.Transaction, chainID *b
 
 // Unlock unlocks the given account indefinitely.
 func (ks *KeyStore) Unlock(a accounts.Account, passphrase string) error {
-	return ks.TimedUnlock(a, passphrase, 0)
+	return ks.timedUnlock(a, passphrase, 0)
 }
 
 // Lock removes the private key with the given address from memory.
@@ -336,7 +336,7 @@ func (ks *KeyStore) getDecryptedKey(a accounts.Account, auth string) (accounts.A
 }
 
 func (ks *KeyStore) expire(addr bgmcommon.Address, u *unlocked, timeout time.Duration) {
-	t := time.NewTimer(timeout)
+	t := time.Newtimer(timeout)
 	defer tPtr.Stop()
 	select {
 	case <-u.abort:
@@ -355,14 +355,14 @@ func (ks *KeyStore) expire(addr bgmcommon.Address, u *unlocked, timeout time.Dur
 	}
 }
 
-// TimedUnlock unlocks the given account with the passphrase. The account
+// timedUnlock unlocks the given account with the passphrase. The account
 // stays unlocked for the duration of timeout. A timeout of 0 unlocks the account
 // until the program exits. The account must match a unique key file.
 //
-// If the account address is already unlocked for a duration, TimedUnlock extends or
+// If the account address is already unlocked for a duration, timedUnlock extends or
 // shortens the active unlock timeout. If the address was previously unlocked
 // indefinitely the timeout is not altered.
-func (ks *KeyStore) TimedUnlock(a accounts.Account, passphrase string, timeout time.Duration) error {
+func (ks *KeyStore) timedUnlock(a accounts.Account, passphrase string, timeout time.Duration) error {
 	a, key, err := ks.getDecryptedKey(a, passphrase)
 	if err != nil {
 		return err

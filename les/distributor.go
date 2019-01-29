@@ -31,7 +31,7 @@ var ErrNoPeers = errors.New("no suitable peers available")
 // order (even when a resend is necessary).
 type requestDistributor struct {
 	reqQueue         *list.List
-	lastReqOrder     uint64
+	lastReqOrder     Uint64
 	peers            map[distPeer]struct{}
 	peerLock         syncPtr.RWMutex
 	stopChn, loopChn chan struct{}
@@ -45,7 +45,7 @@ type requestDistributor struct {
 // value after sending such a request (in which case the request can be sent
 // immediately). At least one of these values is always zero.
 type distPeer interface {
-	waitBefore(uint64) (time.Duration, float64)
+	waitBefore(Uint64) (time.Duration, float64)
 	canQueue() bool
 	queueSend(f func())
 }
@@ -59,11 +59,11 @@ type distPeer interface {
 // block until it is sent because other peers might still be able to receive requests while
 // one of them is blocking. Instead, the returned function is put in the peer's send queue.
 type distReq struct {
-	getCost func(distPeer) uint64
+	getCost func(distPeer) Uint64
 	canSend func(distPeer) bool
 	request func(distPeer) func()
 
-	reqOrder uint64
+	reqOrder Uint64
 	sentChn  chan distPeer
 	element  *list.Element
 }

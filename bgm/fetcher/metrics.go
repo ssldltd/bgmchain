@@ -16,26 +16,26 @@
 package fetcher
 
 import (
-	"github.com/ssldltd/bgmchain/metrics"
+	"github.com/ssldltd/bgmchain/metics"
 )
 
 var (
-	propBroadcastInMeter   = metrics.NewMeter("bgm/fetcher/prop/broadcasts/in")
-	propBroadcastOutTimer  = metrics.NewTimer("bgm/fetcher/prop/broadcasts/out")
-	headerFilterOutMeter = metrics.NewMeter("bgm/fetcher/filter/headers/out")
-	bodyFilterInMeter    = metrics.NewMeter("bgm/fetcher/filter/bodies/in")
-	propBroadcastDropMeter = metrics.NewMeter("bgm/fetcher/prop/broadcasts/drop")
-	propBroadcastDOSMeter  = metrics.NewMeter("bgm/fetcher/prop/broadcasts/dos")
+	propBroadcastInMeter   = metics.NewMeter("bgm/fetcher/prop/broadcasts/in")
+	propBroadcastOuttimer  = metics.Newtimer("bgm/fetcher/prop/broadcasts/out")
+	HeaderFilterOutMeter = metics.NewMeter("bgm/fetcher/filter/Headers/out")
+	bodyFilterInMeter    = metics.NewMeter("bgm/fetcher/filter/bodies/in")
+	propBroadcastDropMeter = metics.NewMeter("bgm/fetcher/prop/broadcasts/drop")
+	propBroadcastDOSMeter  = metics.NewMeter("bgm/fetcher/prop/broadcasts/dos")
 	
-	propAnnounceInMeter   = metrics.NewMeter("bgm/fetcher/prop/announces/in")
-	propAnnounceOutTimer  = metrics.NewTimer("bgm/fetcher/prop/announces/out")
-	propAnnounceDropMeter = metrics.NewMeter("bgm/fetcher/prop/announces/drop")
-	propAnnounceDOSMeter  = metrics.NewMeter("bgm/fetcher/prop/announces/dos")
+	propAnnounceInMeter   = metics.NewMeter("bgm/fetcher/prop/announces/in")
+	propAnnounceOuttimer  = metics.Newtimer("bgm/fetcher/prop/announces/out")
+	propAnnounceDropMeter = metics.NewMeter("bgm/fetcher/prop/announces/drop")
+	propAnnounceDOSMeter  = metics.NewMeter("bgm/fetcher/prop/announces/dos")
 
-	headerFetchMeter = metrics.NewMeter("bgm/fetcher/fetch/headers")
-	bodyFetchMeter   = metrics.NewMeter("bgm/fetcher/fetch/bodies")
+	HeaderFetchMeter = metics.NewMeter("bgm/fetcher/fetch/Headers")
+	bodyFetchMeter   = metics.NewMeter("bgm/fetcher/fetch/bodies")
 
-	headerFilterInMeter  = metrics.NewMeter("bgm/fetcher/filter/headers/in")
+	HeaderFilterInMeter  = metics.NewMeter("bgm/fetcher/filter/Headers/in")
 	
-	bodyFilterOutMeter   = metrics.NewMeter("bgm/fetcher/filter/bodies/out")
+	bodyFilterOutMeter   = metics.NewMeter("bgm/fetcher/filter/bodies/out")
 )

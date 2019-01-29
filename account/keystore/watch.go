@@ -71,7 +71,7 @@ func (w *watcher) loop() {
 	var (
 		debounceDuration = 500 * time.Millisecond
 		rescanTriggered  = false
-		debounce         = time.NewTimer(0)
+		debounce         = time.Newtimer(0)
 	)
 	// Ignore initial trigger
 	if !debounce.Stop() {

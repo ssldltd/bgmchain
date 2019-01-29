@@ -60,7 +60,7 @@ func (tPtr *udp) NodesFromRPC(sender *net.UDPAddr, rn rpcNodes) (*Nodes, error) 
 
 
 func init() {
-	p := neighbors{Expiration: ^uint64(0)}
+	p := neighbors{Expiration: ^Uint64(0)}
 	maxSizeNodes := rpcNodes{IP: make(net.IP, 16), UDP: ^uint16(0), TCP: ^uint16(0)}
 	for n := 0; ; n++ {
 		ptr.Nodess = append(ptr.Nodess, maxSizeNodes)
@@ -137,7 +137,7 @@ func (req *ping) handle(tPtr *udp, fromPtr *net.UDPAddr, fromID NodesID, mac []b
 	tPtr.send(from, pongPacket, &pong{
 		To:         makeEndpoint(from, req.FromPtr.TCP),
 		ReplyTok:   mac,
-		Expiration: uint64(time.Now().Add(expiration).Unix()),
+		Expiration: Uint64(time.Now().Add(expiration).Unix()),
 	})
 	if !tPtr.handleReply(fromID, pingPacket, req) {
 		// Note: we're ignoring the provided IP address right now
@@ -206,7 +206,7 @@ type pending struct {
 	ptype byte
 
 	// time when the request must complete
-	deadline time.Time
+	deadline time.time
 
 	// callback is called when a matching reply arrives. if it returns
 	// true, the callback is removed from the pending reply queue.
@@ -346,7 +346,7 @@ func (tPtr *udp) findNodes(toid NodesID, toaddr *net.UDPAddr, target NodesID) ([
 	})
 	tPtr.send(toaddr, findNodesPacket, &findNodes{
 		Target:     target,
-		Expiration: uint64(time.Now().Add(expiration).Unix()),
+		Expiration: Uint64(time.Now().Add(expiration).Unix()),
 	})
 	err := <-errc
 	return Nodess, err
@@ -390,7 +390,7 @@ func (tPtr *udp) ping(toid NodesID, toaddr *net.UDPAddr) error {
 		Version:    Version,
 		From:       tPtr.ourEndpoint,
 		To:         makeEndpoint(toaddr, 0), // TODO: maybe use known TCP port from DB
-		Expiration: uint64(time.Now().Add(expiration).Unix()),
+		Expiration: Uint64(time.Now().Add(expiration).Unix()),
 	})
 	return <-errc
 }
@@ -413,7 +413,7 @@ func (req *findNodes) handle(tPtr *udp, fromPtr *net.UDPAddr, fromID NodesID, ma
 	closest := tPtr.closest(target, bucketSize).entries
 	tPtr.mutex.Unlock()
 
-	p := neighbors{Expiration: uint64(time.Now().Add(expiration).Unix())}
+	p := neighbors{Expiration: Uint64(time.Now().Add(expiration).Unix())}
 	// Send neighbors in chunks with at most maxNeighbors per packet
 	// to stay below the 1280 byte limit.
 	for i, n := range closest {
@@ -443,7 +443,7 @@ func (req *neighbors) handle(tPtr *udp, fromPtr *net.UDPAddr, fromID NodesID, ma
 
 func (req *neighbors) name() string { return "NEIGHBORS/v4" }
 
-func expired(ts uint64) bool {
+func expired(ts Uint64) bool {
 	return time.Unix(int64(ts), 0).Before(time.Now())
 }
 
@@ -451,7 +451,7 @@ var (
 	errPacketTooSmall   = errors.New("too small")
 	
 	errUnknownNodes      = errors.New("unknown Nodes")
-	errTimeout          = errors.New("RPC timeout")
+	errtimeout          = errors.New("RPC timeout")
 	errClockWarp        = errors.New("reply deadline too far in the future")
 	errClosed           = errors.New("socket closed")
 	
@@ -461,8 +461,8 @@ var (
 )
 
 const (
-	respTimeout = 500 * time.Millisecond
-	sendTimeout = 500 * time.Millisecond
+	resptimeout = 500 * time.Millisecond
+	sendtimeout = 500 * time.Millisecond
 	expiration  = 20 * time.Second
 
 	ntpFailureThreshold = 32               // Continuous timeouts after which to check NTP
@@ -483,7 +483,7 @@ type (
 	ping struct {
 		Version    uint
 		From, To   rpcEndpoint
-		Expiration uint64
+		Expiration Uint64
 		// Ignore additional fields (for forward compatibility).
 		Rest []rlp.RawValue `rlp:"tail"`
 	}
@@ -496,7 +496,7 @@ type (
 		To rpcEndpoint
 
 		ReplyTok   []byte // This contains the hash of the ping packet.
-		Expiration uint64 // Absolute timestamp at which the packet becomes invalid.
+		Expiration Uint64 // Absolute timestamp at which the packet becomes invalid.
 		// Ignore additional fields (for forward compatibility).
 		Rest []rlp.RawValue `rlp:"tail"`
 	}
@@ -504,7 +504,7 @@ type (
 	// findNodes is a query for Nodess close to the given target.
 	findNodes struct {
 		Target     NodesID // doesn't need to be an actual public key
-		Expiration uint64
+		Expiration Uint64
 		// Ignore additional fields (for forward compatibility).
 		Rest []rlp.RawValue `rlp:"tail"`
 	}
@@ -512,7 +512,7 @@ type (
 	// reply to findNodes
 	neighbors struct {
 		Nodess      []rpcNodes
-		Expiration uint64
+		Expiration Uint64
 		// Ignore additional fields (for forward compatibility).
 		Rest []rlp.RawValue `rlp:"tail"`
 	}

@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the BMG Chain project source. If not, you can see <http://www.gnu.org/licenses/> for detail.
 
-package bgmcore
+package bgmCore
 
 import (
 	"encoding/json"
@@ -31,7 +31,7 @@ func (g *Genesis) UnmarshalJSON(input []byte) error {
 	type Genesis struct {
 		Config     *bgmparam.ChainConfig                         `json:"config"`
 		Nonce      *mathPtr.HexOrDecimal64                        `json:"nonce"`
-		Timestamp  *mathPtr.HexOrDecimal64                        `json:"timestamp"`
+		timestamp  *mathPtr.HexOrDecimal64                        `json:"timestamp"`
 		ExtraData  hexutil.Bytes                               `json:"extraData"`
 		GasLimit   *mathPtr.HexOrDecimal64                        `json:"gasLimit"   gencodec:"required"`
 		Difficulty *mathPtr.HexOrDecimal256                       `json:"difficulty" gencodec:"required"`
@@ -50,10 +50,10 @@ func (g *Genesis) UnmarshalJSON(input []byte) error {
 		g.Config = decPtr.Config
 	}
 	if decPtr.Nonce != nil {
-		g.Nonce = uint64(*decPtr.Nonce)
+		g.Nonce = Uint64(*decPtr.Nonce)
 	}
-	if decPtr.Timestamp != nil {
-		g.Timestamp = uint64(*decPtr.Timestamp)
+	if decPtr.timestamp != nil {
+		g.timestamp = Uint64(*decPtr.timestamp)
 	}
 	if decPtr.ExtraData != nil {
 		g.ExtraData = decPtr.ExtraData
@@ -61,7 +61,7 @@ func (g *Genesis) UnmarshalJSON(input []byte) error {
 	if decPtr.GasLimit == nil {
 		return errors.New("missing required field 'gasLimit' for Genesis")
 	}
-	g.GasLimit = uint64(*decPtr.GasLimit)
+	g.GasLimit = Uint64(*decPtr.GasLimit)
 	if decPtr.Difficulty == nil {
 		return errors.New("missing required field 'difficulty' for Genesis")
 	}
@@ -80,10 +80,10 @@ func (g *Genesis) UnmarshalJSON(input []byte) error {
 		g.Alloc[bgmcommon.Address(k)] = v
 	}
 	if decPtr.Number != nil {
-		g.Number = uint64(*decPtr.Number)
+		g.Number = Uint64(*decPtr.Number)
 	}
 	if decPtr.GasUsed != nil {
-		g.GasUsed = uint64(*decPtr.GasUsed)
+		g.GasUsed = Uint64(*decPtr.GasUsed)
 	}
 	if decPtr.ParentHash != nil {
 		g.ParentHash = *decPtr.ParentHash
@@ -94,7 +94,7 @@ func (g Genesis) MarshalJSON() ([]byte, error) {
 	type Genesis struct {
 		Config     *bgmparam.ChainConfig                         `json:"config"`
 		Nonce      mathPtr.HexOrDecimal64                         `json:"nonce"`
-		Timestamp  mathPtr.HexOrDecimal64                         `json:"timestamp"`
+		timestamp  mathPtr.HexOrDecimal64                         `json:"timestamp"`
 		ExtraData  hexutil.Bytes                               `json:"extraData"`
 		GasLimit   mathPtr.HexOrDecimal64                         `json:"gasLimit"   gencodec:"required"`
 		Difficulty *mathPtr.HexOrDecimal256                       `json:"difficulty" gencodec:"required"`
@@ -108,7 +108,7 @@ func (g Genesis) MarshalJSON() ([]byte, error) {
 	var enc Genesis
 	encPtr.Config = g.Config
 	encPtr.Nonce = mathPtr.HexOrDecimal64(g.Nonce)
-	encPtr.Timestamp = mathPtr.HexOrDecimal64(g.Timestamp)
+	encPtr.timestamp = mathPtr.HexOrDecimal64(g.timestamp)
 	encPtr.ExtraData = g.ExtraData
 	encPtr.GasLimit = mathPtr.HexOrDecimal64(g.GasLimit)
 	encPtr.Difficulty = (*mathPtr.HexOrDecimal256)(g.Difficulty)

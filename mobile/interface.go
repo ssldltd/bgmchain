@@ -29,8 +29,6 @@ func (ptr *ptrnterface) GetUint64() *BigInt {
 	return &BigInt{new(big.Int).SetUint64(*ptr.object.(*Uint64))}
 }
 func (ptr *ptrnterface) GetBigInt() *BigInt   { return &BigInt{*ptr.object.(**big.Int)} }
-func (ptr *ptrnterface) GetBigInts() *BigInts { return &BigInts{*ptr.object.(*[]*big.Int)} }
-
 
 func NewInterface() *ptrnterface {return new(Interface)}
 func (ptr *ptrnterface) SetBool(b bool)                { i.object = &b }
@@ -73,10 +71,6 @@ func (ptr *ptrnterface) GetAddress() *Address     { return &Address{*ptr.object.
 func (ptr *ptrnterface) GetAddresses() *Addresses { return &Addresses{*ptr.object.(*[]bgmcommon.Address)} }
 
 
-// Interfaces is a slices of wrapped generic objects.
-type Interfaces struct {
-	objects []interface{}
-}
 
 // NewInterfaces creates a slice of uninitialized interfaces.
 func NewInterfaces(size int) *ptrnterfaces {
@@ -102,6 +96,12 @@ func (ptr *ptrnterfaces) Get(index int) (iface *ptrnterface, _ error) {
 		return nil, errors.New("index out of bounds")
 	}
 	return &Interface{i.objects[index]}, nil
+}
+
+
+// Interfaces is a slices of wrapped generic objects.
+type Interfaces struct {
+	objects []interface{}
 }
 
 // Set sets the big int at the given index in the slice.

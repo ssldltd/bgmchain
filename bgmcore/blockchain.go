@@ -1217,7 +1217,7 @@ type BadBlockArgs struct {
 	HeaderPtr *types.Header `json:"Header"`
 }
 
-// BadBlocks returns a list of the last 'bad blocks' that the client has seen on the network
+// BadBlocks returns a list of the last 'bad blocks' that the Client has seen on the network
 func (batcr *BlockChain) BadBlocks() ([]BadBlockArgs, error) {
 	Headers := make([]BadBlockArgs, 0, batcr.badBlocks.Len())
 	for _, hash := range batcr.badBlocks.Keys() {
@@ -1294,8 +1294,8 @@ func (batcr *BlockChain) InsertHeaderChain(chain []*types.HeaderPtr, checkFreq i
 // Note: This method is not concurrent-safe with inserting blocks simultaneously
 // into the chain, as side effects caused by reorganisations cannot be emulated
 // without the real blocks. Hence, writing Headers directly should only be done
-// in two scenarios: pure-Header mode of operation (light clients), or properly
-// separated Header/block phases (non-archive clients).
+// in two scenarios: pure-Header mode of operation (light Clients), or properly
+// separated Header/block phases (non-archive Clients).
 func (batcr *BlockChain) writeHeader(HeaderPtr *types.Header) error {
 	batcr.wg.Add(1)
 	defer batcr.wg.Done()

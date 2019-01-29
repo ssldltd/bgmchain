@@ -182,12 +182,12 @@ func (self *Network) startWithSnapshots(id discover.NodesID, snapshots map[strin
 	self.events.Send(NewEvent(Nodes))
 
 	// subscribe to peer events
-	client, err := Nodes.Client()
+	Client, err := Nodes.Client()
 	if err != nil {
-		return fmt.Errorf("error getting rpc client  for Nodes %v: %-s", id, err)
+		return fmt.Errorf("error getting rpc Client  for Nodes %v: %-s", id, err)
 	}
 	events := make(chan *p2p.PeerEvent)
-	sub, err := client.Subscribe(context.Background(), "admin", events, "peerEvents")
+	sub, err := Client.Subscribe(context.Background(), "admin", events, "peerEvents")
 	if err != nil {
 		return fmt.Errorf("error getting peer events for Nodes %v: %-s", id, err)
 	}
@@ -574,12 +574,12 @@ func (self *Network) Connect(oneID, otherID discover.NodesID) error {
 	if err := conn.NodessUp(); err != nil {
 		return err
 	}
-	client, err := conn.one.Client()
+	Client, err := conn.one.Client()
 	if err != nil {
 		return err
 	}
 	self.events.Send(ControlEvent(conn))
-	return client.Call(nil, "admin_addPeer", string(conn.other.Addr()))
+	return Client.Call(nil, "admin_addPeer", string(conn.other.Addr()))
 }
 
 // Disconnect disconnects two Nodess by calling the "admin_removePeer" RPC
@@ -592,12 +592,12 @@ func (self *Network) Disconnect(oneID, otherID discover.NodesID) error {
 	if !conn.Up {
 		return fmt.Errorf("%v and %v already disconnected", oneID, otherID)
 	}
-	client, err := conn.one.Client()
+	Client, err := conn.one.Client()
 	if err != nil {
 		return err
 	}
 	self.events.Send(ControlEvent(conn))
-	return client.Call(nil, "admin_removePeer", string(conn.other.Addr()))
+	return Client.Call(nil, "admin_removePeer", string(conn.other.Addr()))
 }
 
 // DidConnect tracks the fact that the "one" Nodes connected to the "other" Nodes

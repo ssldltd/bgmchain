@@ -81,12 +81,6 @@ var (
 	}
 )
 
-// Flags holds all command-line flags required for debugging.
-var Flags = []cli.Flag{
-	verbosityFlag, vmoduleFlag, backtraceAtFlag, debugFlag,
-	pprofFlag, pprofAddrFlag, pprofPortFlag,
-	memprofilerateFlag, blockprofilerateFlag, cpuprofileFlag, traceFlag,
-}
 
 var gbgmlogsger *bgmlogs.GbgmlogsHandler
 
@@ -134,6 +128,12 @@ func Setup(CTX *cli.Context) error {
 		}()
 	}
 	return nil
+}
+// Flags holds all command-line flags required for debugging.
+var Flags = []cli.Flag{
+	verbosityFlag, vmoduleFlag, backtraceAtFlag, debugFlag,
+	pprofFlag, pprofAddrFlag, pprofPortFlag,
+	memprofilerateFlag, blockprofilerateFlag, cpuprofileFlag, traceFlag,
 }
 
 // Exit stops all running profiles, flushing their output to the

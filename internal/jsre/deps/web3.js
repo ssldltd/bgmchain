@@ -2601,7 +2601,7 @@ var properties = function () {
     return [
         new Property({
             name: 'version.node',
-            getter: 'web3_clientVersion'
+            getter: 'web3_ClientVersion'
         }),
         new Property({
             name: 'version.network',
@@ -4604,21 +4604,21 @@ Iban.prototype.institution = function () {
 };
 
 /**
- * Should be called to get client identifier within institution
+ * Should be called to get Client identifier within institution
  * eg. GAVOFYORK
  *
- * @method client
- * @returns {String} client identifier
+ * @method Client
+ * @returns {String} Client identifier
  */
-Iban.prototype.client = function () {
+Iban.prototype.Client = function () {
     return this.isIndirect() ? this._iban.substr(11) : '';
 };
 
 /**
- * Should be called to get client direct address
+ * Should be called to get Client direct address
  *
  * @method address
- * @returns {String} client direct address
+ * @returns {String} Client direct address
  */
 Iban.prototype.address = function () {
     if (this.isDirect()) {
@@ -6707,11 +6707,11 @@ var transfer = function (bgm, from, to, value, callback) {
     
     if (!callback) {
         var address = bgmPtr.icapNamereg().addr(iban.institution());
-        return deposit(bgm, from, address, value, iban.client());
+        return deposit(bgm, from, address, value, iban.Client());
     }
 
     bgmPtr.icapNamereg().addr(iban.institution(), function (err, address) {
-        return deposit(bgm, from, address, value, iban.client(), callback);
+        return deposit(bgm, from, address, value, iban.Client(), callback);
     });
     
 };
@@ -6740,12 +6740,12 @@ var transferToAddress = function (bgm, from, to, value, callback) {
  * @bgmparam {String} from
  * @bgmparam {String} to
  * @bgmparam {Value} value to be transfered
- * @bgmparam {String} client unique identifier
+ * @bgmparam {String} Client unique identifier
  * @bgmparam {Function} callback, callback
  */
-var deposit = function (bgm, from, to, value, client, callback) {
+var deposit = function (bgm, from, to, value, Client, callback) {
     var abi = exchangeAbi;
-    return bgmPtr.contract(abi).at(to).deposit(client, {
+    return bgmPtr.contract(abi).at(to).deposit(Client, {
         from: from,
         value: value
     }, callback);

@@ -48,7 +48,7 @@ var discReasonToString = [...]string{
 	DiscAlreadyConnected:    "already connected",
 	DiscIncompatibleVersion: "incompatible p2p Protocols version",
 	DiscInvalidIdentity:     "invalid node identity",
-	DiscQuitting:            "client quitting",
+	DiscQuitting:            "Client quitting",
 	DiscUnexpectedIdentity:  "unexpected identity",
 	DiscSelf:                "connected to self",
 	DiscReadtimeout:         "read timeout",

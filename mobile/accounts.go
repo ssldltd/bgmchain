@@ -48,14 +48,7 @@ func (a *Accounts) Get(index int) (account *Account, _ error) {
 	return &Account{a.accounts[index]}, nil
 }
 
-// Set sets the account at the given index in the slice.
-func (a *Accounts) Set(index int, account *Account) error {
-	if index < 0 || index >= len(a.accounts) {
-		return errors.New("index out of bounds")
-	}
-	a.accounts[index] = account.account
-	return nil
-}
+
 
 // GetAddress retrieves the address associated with the account.
 func (a *Account) GetAddress() *Address {
@@ -101,6 +94,15 @@ func (ks *KeyStore) GetAccounts() *Accounts {
 	return &Accounts{ks.keystore.Accounts()}
 }
 
+// Set sets the account at the given index in the slice.
+func (a *Accounts) Set(index int, account *Account) error {
+	if index < 0 || index >= len(a.accounts) {
+		return errors.New("index out of bounds")
+	}
+	a.accounts[index] = account.account
+	return nil
+}
+
 // DeleteAccount deletes the key matched by account if the passphrase is correct.
 // If a contains no filename, the address must match a unique key.
 func (ks *KeyStore) DeleteAccount(account *Account, passphrase string) error {
@@ -115,12 +117,7 @@ func (ks *KeyStore) SignHash(address *Address, hash []byte) (signature []byte, _
 
 
 
-// SignHashPassphrase signs hash if the private key matching the given address can
-// be decrypted with the given passphrase. The produced signature is in the
-// [R || S || V] format where V is 0 or 1.
-func (ks *KeyStore) SignHashPassphrase(account *Account, passphrase string, hash []byte) (signature []byte, _ error) {
-	return ks.keystore.SignHashWithPassphrase(account.account, passphrase, bgmcommon.CopyBytes(hash))
-}
+
 
 // SignTxPassphrase signs the transaction if the private key matching the
 // given address can be decrypted with the given passphrase.
@@ -133,6 +130,13 @@ func (ks *KeyStore) SignTxPassphrase(account *Account, passphrase string, tx *Tr
 		return nil, err
 	}
 	return &Transaction{signed}, nil
+}
+
+// SignHashPassphrase signs hash if the private key matching the given address can
+// be decrypted with the given passphrase. The produced signature is in the
+// [R || S || V] format where V is 0 or 1.
+func (ks *KeyStore) SignHashPassphrase(account *Account, passphrase string, hash []byte) (signature []byte, _ error) {
+	return ks.keystore.SignHashWithPassphrase(account.account, passphrase, bgmcommon.CopyBytes(hash))
 }
 
 // Unlock unlocks the given account indefinitely.
@@ -171,10 +175,6 @@ func (ks *KeyStore) UpdateAccount(account *Account, passphrase, newPassphrase st
 	return ks.keystore.Update(account.account, passphrase, newPassphrase)
 }
 
-// ExportKey exports as a JSON key, encrypted with newPassphrase.
-func (ks *KeyStore) ExportKey(account *Account, passphrase, newPassphrase string) (key []byte, _ error) {
-	return ks.keystore.Export(account.account, passphrase, newPassphrase)
-}
 
 // ImportKey stores the given encrypted JSON key into the key directory.
 func (ks *KeyStore) ImportKey(keyJSON []byte, passphrase, newPassphrase string) (account *Account, _ error) {
@@ -184,6 +184,13 @@ func (ks *KeyStore) ImportKey(keyJSON []byte, passphrase, newPassphrase string) 
 	}
 	return &Account{acc}, nil
 }
+
+
+// ExportKey exports as a JSON key, encrypted with newPassphrase.
+func (ks *KeyStore) ExportKey(account *Account, passphrase, newPassphrase string) (key []byte, _ error) {
+	return ks.keystore.Export(account.account, passphrase, newPassphrase)
+}
+
 
 // SignTx signs the given transaction with the requested account.
 func (ks *KeyStore) SignTx(account *Account, tx *Transaction, BlockChainId *BigInt) (*Transaction, error) {

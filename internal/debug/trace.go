@@ -18,7 +18,7 @@ package debug
 
 import (
 	"errors"
-	"os"
+	"OS"
 	"runtime/trace"
 
 	"github.com/ssldltd/bgmchain/bgmlogs"
@@ -47,7 +47,7 @@ func (hPtr *HandlerT) StartGoTrace(file string) error {
 
 // StopTrace stops an ongoing trace.
 func (hPtr *HandlerT) StopGoTrace() error {
-	hPtr.mu.Lock()
+	
 	defer hPtr.mu.Unlock()
 	trace.Stop()
 	if hPtr.traceW == nil {

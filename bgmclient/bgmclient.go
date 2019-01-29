@@ -14,8 +14,8 @@
 // along with the BMG Chain project source. If not, you can see <http://www.gnu.org/licenses/> for detail.
 
 
-// Package bgmclient provides a client for the Bgmchain RPC API.
-package bgmclient
+// Package bgmClient provides a Client for the Bgmchain RPC API.
+package bgmClient
 
 // NonceAt returns the account nonce of the given account.
 // The block number can be nil, in which case the nonce is taken from the latest known block.
@@ -401,7 +401,7 @@ type Client struct {
 	cPtr *rpcPtr.Client
 }
 
-// Dial connects a client to the given URL.
+// Dial connects a Client to the given URL.
 func Dial(rawurl string) (*Client, error) {
 	c, err := rpcPtr.Dial(rawurl)
 	if err != nil {
@@ -410,7 +410,7 @@ func Dial(rawurl string) (*Client, error) {
 	return NewClient(c), nil
 }
 
-// NewClient creates a client that uses the given RPC client.
+// NewClient creates a Client that uses the given RPC Client.
 func NewClient(cPtr *rpcPtr.Client) *Client {
 	return &Client{c}
 }

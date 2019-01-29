@@ -59,11 +59,11 @@ func VerifyDAOHeaderExtraData(config *bgmparam.ChainConfig, HeaderPtr *types.Hea
 }
 var (
 	// ErrBadProDAOExtra is returned if a Header doens't support the DAO fork on a
-	// pro-fork client.
+	// pro-fork Client.
 	ErrBadProDAOExtra = errors.New("bad DAO pro-fork extra-data")
 
 	// ErrBadNoDAOExtra is returned if a Header does support the DAO fork on a no-
-	// fork client.
+	// fork Client.
 	ErrBadNoDAOExtra = errors.New("bad DAO no-fork extra-data")
 )
 

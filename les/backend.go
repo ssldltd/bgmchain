@@ -213,7 +213,7 @@ func (s *LightBgmchain) Protocols() []p2p.Protocol {
 // Bgmchain protocol implementation.
 func (s *LightBgmchain) Start(srvr *p2p.Server) error {
 	s.startBloomHandlers()
-	bgmlogs.Warn("Light client mode is an experimental feature")
+	bgmlogs.Warn("Light Client mode is an experimental feature")
 	s.netRPCService = bgmapi.NewPublicNetAPI(srvr, s.networkId)
 	// search the topic belonging to the oldest supported protocol because
 	// servers always advertise all supported protocols

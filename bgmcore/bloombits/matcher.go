@@ -57,7 +57,7 @@ type partialMatches struct {
 // bit with the given number of fetch elements, or a response for such a request.
 // It can also have the actual results set to be used as a delivery data struct.
 //
-// The contest and error fields are used by the light client to terminate matching
+// The contest and error fields are used by the light Client to terminate matching
 // early if an error is enountered on some path of the pipeline.
 type Retrieval struct {
 	Bit      uint
@@ -515,7 +515,7 @@ type MatcherSession struct {
 	quit   chan struct{} // Quit channel to request pipeline termination
 	kill   chan struct{} // Term channel to signal non-graceful forced shutdown
 
-	CTX context.Context // Context used by the light client to abort filtering
+	CTX context.Context // Context used by the light Client to abort filtering
 	err atomicPtr.Value    // Global error to track retrieval failures deep in the chain
 
 	pend syncPtr.WaitGroup
@@ -541,7 +541,7 @@ func (s *MatcherSession) Error() error {
 	return nil
 }
 
-// AllocateRetrieval assigns a bloom bit index to a client process that can either
+// AllocateRetrieval assigns a bloom bit index to a Client process that can either
 // immediately reuest and fetch the section contents assigned to this bit or wait
 // a little while for more sections to be requested.
 func (s *MatcherSession) AllocateRetrieval() (uint, bool) {

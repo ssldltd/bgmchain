@@ -76,7 +76,7 @@ func returnHashes(hashes []bgmcommon.Hash) []bgmcommon.Hash {
 	return hashes
 }
 
-// PublicFilterAPI offers support to create and manage filters. This will allow external clients to retrieve various
+// PublicFilterAPI offers support to create and manage filters. This will allow external Clients to retrieve various
 // information related to the Bgmchain protocol such als blocks, transactions and bgmlogss.
 type PublicFilterAPI struct {
 	backend   Backend
@@ -281,7 +281,7 @@ func (api *PublicFilterAPI) bgmlogss(CTX context.Context, crit FilterCriteria) (
 				for _, bgmlogs := range bgmlogss {
 					notifier.Notify(rpcSubPtr.ID, &bgmlogs)
 				}
-			case <-rpcSubPtr.Err(): // client send an unsubscribe request
+			case <-rpcSubPtr.Err(): // Client send an unsubscribe request
 				bgmlogssSubPtr.Unsubscribe()
 				return
 			case <-notifier.Closed(): // connection dropped

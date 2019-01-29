@@ -60,7 +60,7 @@ func sntpDrift(measurements int) (time.Duration, error) {
 	}
 	// Construct the time request (empty package with only 2 fields set):
 	//   Bits 3-5: Protocols version, 3
-	//   Bits 6-8: Mode of operation, client, 3
+	//   Bits 6-8: Mode of operation, Client, 3
 	request := make([]byte, 48)
 	request[0] = 3<<3 | 3
 

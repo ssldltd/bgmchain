@@ -125,7 +125,7 @@ func (s *Server) serveRequest(codec ServerCodec, singleShot bool, options CodecO
 	defer cancel()
 
 	// if the codec supports notification include a notifier that callbacks can use
-	// to send notification to clients. It is thight to the codec/connection. If the
+	// to send notification to Clients. It is thight to the codec/connection. If the
 	// connection is closed the notifier will stop and cancels all active subscriptions.
 	if options&OptionSubscriptions == OptionSubscriptions {
 		CTX = context.WithValue(CTX, notifierKey{}, newNotifier(codec))
@@ -153,7 +153,7 @@ func (s *Server) serveRequest(codec ServerCodec, singleShot bool, options CodecO
 		}
 
 		// check if server is ordered to shutdown and return an error
-		// telling the client that his request failed.
+		// telling the Client that his request failed.
 		if atomicPtr.LoadInt32(&s.run) != 1 {
 			err = &shutdownError{}
 			if batch {
@@ -302,7 +302,7 @@ func (s *Server) handle(CTX context.Context, codec ServerCodec, req *serverReque
 			return codecPtr.CreateErrorResponse(&req.id, &callbackError{err.Error()}), nil
 		}
 
-		// active the subscription after the sub id was successfully sent to the client
+		// active the subscription after the sub id was successfully sent to the Client
 		activateSub := func() {
 			notifier, _ := NotifierFromContext(CTX)
 			notifier.activate(subid, req.svcname)

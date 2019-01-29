@@ -45,7 +45,7 @@ type trustedCheckpoint struct {
 const (
 	ChtFrequency                   = 32768
 	ChtV1Frequency                 = 4096 // as long as we want to retain LES/1 compatibility, servers generate CHTs with the old, higher frequency
-	HelperTrieConfirmations        = 2048 // number of confirmations before a server is expected to have the given HelperTrie available
+	HelperTrieConfirmations        = 4096 // number of confirmations before a server is expected to have the given HelperTrie available
 	HelperTrieProcessConfirmations = 256  // number of confirmations before a HelperTrie is generated
 )
 
@@ -117,11 +117,11 @@ type ChtIndexerBackend struct {
 }
 
 // NewBloomTrieIndexer creates a BloomTrie chain indexer
-func NewChtIndexer(db bgmdbPtr.Database, clientMode bool) *bgmCore.ChainIndexer {
+func NewChtIndexer(db bgmdbPtr.Database, ClientMode bool) *bgmCore.ChainIndexer {
 	cdb := bgmdbPtr.NewTable(db, ChtTablePrefix)
 	idb := bgmdbPtr.NewTable(db, "chtIndex-")
 	var sectionSize, confirmReq Uint64
-	if clientMode {
+	if ClientMode {
 		sectionSize = ChtFrequency
 		confirmReq = HelperTrieConfirmations
 	} else {
@@ -209,12 +209,12 @@ type BloomTrieIndexerBackend struct {
 }
 
 // NewBloomTrieIndexer creates a BloomTrie chain indexer
-func NewBloomTrieIndexer(db bgmdbPtr.Database, clientMode bool) *bgmCore.ChainIndexer {
+func NewBloomTrieIndexer(db bgmdbPtr.Database, ClientMode bool) *bgmCore.ChainIndexer {
 	cdb := bgmdbPtr.NewTable(db, BloomTrieTablePrefix)
 	idb := bgmdbPtr.NewTable(db, "bltIndex-")
 	backend := &BloomTrieIndexerBackend{db: db, cdb: cdb}
 	var confirmReq Uint64
-	if clientMode {
+	if ClientMode {
 		backend.parentSectionSize = BloomTrieFrequency
 		confirmReq = HelperTrieConfirmations
 	} else {

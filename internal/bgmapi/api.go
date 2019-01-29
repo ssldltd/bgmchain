@@ -434,7 +434,7 @@ func (s *PrivateAccountAPI) EcRecover(CTX context.Context, data, sig hexutil.Byt
 }
 
 // SignAndSendTransaction was renamed to SendTransaction. This method is deprecated
-// and will be removed in the future. It primary goal is to give clients time to update.
+// and will be removed in the future. It primary goal is to give Clients time to update.
 func (s *PrivateAccountAPI) SignAndSendTransaction(CTX context.Context, args SendTxArgs, passwd string) (bgmcommon.Hash, error) {
 	return s.SendTransaction(CTX, args, passwd)
 }

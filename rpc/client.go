@@ -85,7 +85,7 @@ func (subPtr *ClientSubscription) unmarshal(result json.RawMessage) (interface{}
 
 func (subPtr *ClientSubscription) requestUnsubscribe() error {
 	var result interface{}
-	return subPtr.client.Call(&result, subPtr.namespace+unsubscribeMethodSuffix, subPtr.subid)
+	return subPtr.Client.Call(&result, subPtr.namespace+unsubscribeMethodSuffix, subPtr.subid)
 }
 // BatchElem is an element in a batch request.
 type BatchElem struct {
@@ -141,7 +141,7 @@ type Client struct {
 
 	// for dispatch
 	close       chan struct{}
-	didQuit     chan struct{}                  // closed when client quits
+	didQuit     chan struct{}                  // closed when Client quits
 	reconnected chan net.Conn                  // where write/reconnect sends the new connection
 	readErr     chan error                     // errors from read
 	readResp    chan []*jsonrpcMsg         // valid messages from read
@@ -286,7 +286,7 @@ func (cPtr *Client) SupportedModules() (map[string]string, error) {
 	return result, err
 }
 
-// Close closes the client, aborting any in-flight requests.
+// Close closes the Client, aborting any in-flight requests.
 func (cPtr *Client) Close() {
 	if cPtr.isHTTP {
 		return
@@ -405,7 +405,7 @@ func (cPtr *Client) send(CTX context.Context, op *requestOp, msg interface{}) er
 		cPtr.sendDone <- err
 		return err
 	case <-CTX.Done():
-		// This can happen if the client is overloaded or unable to keep up with
+		// This can happen if the Client is overloaded or unable to keep up with
 		// subscription notifications.
 		return CTX.Err()
 	case <-cPtr.didQuit:
@@ -413,7 +413,7 @@ func (cPtr *Client) send(CTX context.Context, op *requestOp, msg interface{}) er
 	}
 }
 
-// dispatch is the main loop of the client.
+// dispatch is the main loop of the Client.
 // It sends read messages to waiting calls to Call and BatchCall
 // and subscription notifications to registered subscriptions.
 func (cPtr *Client) dispatch(conn net.Conn) {
@@ -642,7 +642,7 @@ func (cPtr *Client) read(conn net.Conn) error {
 
 // A ClientSubscription represents a subscription established through BgmSubscribe.
 type ClientSubscription struct {
-	client    *Client
+	Client    *Client
 	etype     reflect.Type
 	channel   reflect.Value
 	namespace string
@@ -657,7 +657,7 @@ type ClientSubscription struct {
 
 func newClientSubscription(cPtr *Client, namespace string, channel reflect.Value) *ClientSubscription {
 	sub := &ClientSubscription{
-		client:    c,
+		Client:    c,
 		namespace: namespace,
 		etype:     channel.Type().Elem(),
 		channel:   channel,
@@ -669,11 +669,11 @@ func newClientSubscription(cPtr *Client, namespace string, channel reflect.Value
 }
 
 // Err returns the subscription error channel. The intended use of Err is to schedule
-// resubscription when the client connection is closed unexpectedly.
+// resubscription when the Client connection is closed unexpectedly.
 //
 // The error channel receives a value when the subscription has ended due
 // to an error. The received error is nil if Close has been called
-// on the underlying client and no other error has occurred.
+// on the underlying Client and no other error has occurred.
 //
 // The error channel is closed when Unsubscribe is called on the subscription.
 func (subPtr *ClientSubscription) Err() <-chan error {
@@ -716,7 +716,7 @@ func (subPtr *ClientSubscription) deliver(result json.RawMessage) (ok bool) {
 
 
 var (
-	ErrClientQuit                = errors.New("client is closed")
+	ErrClientQuit                = errors.New("Client is closed")
 	ErrNoResult                  = errors.New("no result in JSON-RPC response")
 	ErrSubscriptionQueueOverflow = errors.New("subscription queue overflow")
 )

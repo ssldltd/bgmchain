@@ -34,7 +34,7 @@ const (
 	BloomBitLength = 8 * BloomByteLength
 )
 
-// Bloom represents a 2048 bit bloom filter.
+// Bloom represents a 4096 bit bloom filter.
 type Bloom [BloomByteLength]byte
 
 // BytesToBloom converts a byte slice to a bloom filter.

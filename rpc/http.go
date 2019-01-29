@@ -58,7 +58,7 @@ func (hcPtr *httpConnection) Close() error {
 }
 
 type httpConnection struct {
-	client    *http.Client
+	Client    *http.Client
 	req       *http.Request
 	closeOnce syncPtr.Once
 	closed    chan struct{}
@@ -82,7 +82,7 @@ func (cPtr *Client) sendBatchHTTP(CTX context.Context, op *requestOp, msgs []*js
 	return nil
 }
 
-// DialHTTP creates a new RPC clients that connection to an RPC server over HTTP.
+// DialHTTP creates a new RPC Clients that connection to an RPC server over HTTP.
 func DialHTTP(endpoint string) (*Client, error) {
 	req, err := http.NewRequest("POST", endpoint, nil)
 	if err != nil {
@@ -93,7 +93,7 @@ func DialHTTP(endpoint string) (*Client, error) {
 
 	initCTX := context.Background()
 	return newClient(initCTX, func(context.Context) (net.Conn, error) {
-		return &httpConnection{client: new(http.Client), req: req, closed: make(chan struct{})}, nil
+		return &httpConnection{Client: new(http.Client), req: req, closed: make(chan struct{})}, nil
 	})
 }
 
@@ -152,7 +152,7 @@ func (hcPtr *httpConnection) doRequest(CTX context.Context, msg interface{}) (io
 	req.Body = ioutil.NopCloser(bytes.NewReader(body))
 	req.ContentLength = int64(len(body))
 
-	resp, err := hcPtr.client.Do(req)
+	resp, err := hcPtr.Client.Do(req)
 	if err != nil {
 		return nil, err
 	}

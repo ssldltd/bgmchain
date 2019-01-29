@@ -90,8 +90,8 @@ type Config struct {
 	HTTPPort int `toml:",omitempty"`
 
 	// HTTPCors is the Cross-Origin Resource Sharing Header to send to requesting
-	// clients. Please be aware that CORS is a browser enforced security, it's fully
-	// useless for custom HTTP clients.
+	// Clients. Please be aware that CORS is a browser enforced security, it's fully
+	// useless for custom HTTP Clients.
 	HTTPCors []string `toml:",omitempty"`
 
 	// HTTPModules is a list of apiPtr modules to expose via the HTTP RPC interface.
@@ -109,7 +109,7 @@ type Config struct {
 	WSPort int `toml:",omitempty"`
 
 	// WSOrigins is the list of domain to accept websocket requests fromPtr. Please be
-	// aware that the server can only act upon the HTTP request the client sends and
+	// aware that the server can only act upon the HTTP request the Client sends and
 	// cannot verify the validity of the request HeaderPtr.
 	WSOrigins []string `toml:",omitempty"`
 

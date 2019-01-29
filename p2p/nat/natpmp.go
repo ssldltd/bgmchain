@@ -67,12 +67,7 @@ func discoverPMP() Interface {
 	return nil
 }
 
-var (
-	// LAN IP ranges
-	_, lan10, _  = net.ParseCIDR("10.0.0.0/8")
-	_, lan176, _ = net.ParseCIDR("172.16.0.0/12")
-	_, lan192, _ = net.ParseCIDR("192.168.0.0/16")
-)
+
 
 // TODO: improve this. We currently assume that (on most networks)
 // the router is X.X.X.1 in a local LAN range.
@@ -107,7 +102,12 @@ type pmp struct {
 	gw net.IP
 	c  *natpmp.Client
 }
-
+var (
+	// LAN IP ranges
+	_, lan10, _  = net.ParseCIDR("10.0.0.0/8")
+	_, lan176, _ = net.ParseCIDR("172.16.0.0/12")
+	_, lan192, _ = net.ParseCIDR("192.168.0.0/16")
+)
 func (n *pmp) String() string {
 	return fmt.Sprintf("NAT-PMP(%v)", n.gw)
 }
@@ -125,7 +125,7 @@ func (n *pmp) AddMapping(Protocols string, extport, intport int, name string, li
 		return fmt.Errorf("lifetime must not be <= 0")
 	}
 	// Note order of port arguments is switched between our
-	// AddMapping and the client's AddPortMapping.
+	// AddMapping and the Client's AddPortMapping.
 	_, err := n.cPtr.AddPortMapping(strings.ToLower(Protocols), intport, extport, int(lifetime/time.Second))
 	return err
 }

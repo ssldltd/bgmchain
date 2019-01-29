@@ -182,7 +182,7 @@ func (hPtr *encHandshake) staticSharedSecret(prv *ecdsa.PrivateKey) ([]byte, err
 // initiatorEncHandshake negotiates a session token on conn.
 // it should be called on the dialing side of the connection.
 //
-// prv is the local client's private key.
+// prv is the local Client's private key.
 func initiatorEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey, remoteID discover.NodeID, token []byte) (s secrets, err error) {
 	h := &encHandshake{initiator: true, remoteID: remoteID}
 	authMsg, err := hPtr.makeAuthMessage(prv, token)

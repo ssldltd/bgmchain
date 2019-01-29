@@ -28,11 +28,13 @@ type PendingbgmlogssEvent struct {
 	bgmlogss []*types.bgmlogs
 }
 
-// PendingStateEvent is posted pre mining and notifies of pending state changes.
-type PendingStateEvent struct{}
 
 // NewMinedBlockEvent is posted when a block has been imported.
 type NewMinedBlockEvent struct{ Block *types.Block }
+
+
+// PendingStateEvent is posted pre mining and notifies of pending state changes.
+type PendingStateEvent struct{}
 
 // RemovedTransactionEvent is posted when a reorg happens
 type RemovedTransactionEvent struct{ Txs types.Transactions }

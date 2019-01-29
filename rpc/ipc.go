@@ -36,7 +36,7 @@ func (srv *Server) ServeListener(l net.Listener) error {
 	}
 }
 
-// DialIPC create a new IPC client that connects to the given endpoint. On Unix it assumes
+// DialIPC create a new IPC Client that connects to the given endpoint. On Unix it assumes
 // the endpoint is the full path to a unix socket, and Windows the endpoint is an
 // identifier for a named pipe.
 

@@ -949,7 +949,7 @@ func (d *Downloader) RegisterPeer(id string, version int, peer Peer) error {
 	return nil
 }
 
-// RegisterLightPeer injects a light client peer, wrapping it so it appears as a regular peer.
+// RegisterLightPeer injects a light Client peer, wrapping it so it appears as a regular peer.
 func (d *Downloader) RegisterLightPeer(id string, version int, peer LightPeer) error {
 	return d.RegisterPeer(id, version, &lightPeerWrapper{peer})
 }
@@ -1464,14 +1464,14 @@ var (
 	qosTuningImpact  = 0.25 // Impact that a new tuning target has on the previous value
 
 	fsHeaderCheckFrequency = 100        // Verification frequency of the downloaded Headers during fast sync
-	fsHeaderSafetyNet      = 2048       // Number of Headers to discard in case a chain violation is detected
+	fsHeaderSafetyNet      = 4096       // Number of Headers to discard in case a chain violation is detected
 	fsHeaderForceVerify    = 24         // Number of Headers to verify before and after the pivot to accept it
 	fsPivotInterval        = 256        // Number of Headers out of which to randomize the pivot point
 	fsMinFullBlocks        = 64         // Number of blocks to retrieve fully even in fast sync
 	fsCriticalTrials       = uint32(32) // Number of times to retry in the cricical section before bailing
 	maxQueuedHeaders  = 32 * 1024 // [bgm/62] Maximum number of Headers to queue for import (DOS protection)
-	maxHeadersProcess = 2048      // Number of Header download results to import at once into the chain
-	maxResultsProcess = 2048      // Number of content download results to import at once into the chain
+	maxHeadersProcess = 4096      // Number of Header download results to import at once into the chain
+	maxResultsProcess = 4096      // Number of content download results to import at once into the chain
 
 	
 	

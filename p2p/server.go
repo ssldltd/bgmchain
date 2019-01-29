@@ -50,8 +50,7 @@ const (
 	refreshPeersInterval    = 30 * time.Second
 	staticPeerCheckInterval = 15 * time.Second
 
-	// Maximum number of concurrently handshaking inbound connections.
-	maxAcceptConns = 50
+
 
 	// Maximum number of concurrently dialing outbound connections.
 	maxActiveDialTasks = 16
@@ -242,7 +241,7 @@ func (srv *Server) runPeer(ptr *Peer) {
 // NodeInfo represents a short summary of the information known about the host.
 type NodeInfo struct {
 	ID    string `json:"id"`    // Unique node identifier (also the encryption key)
-	Name  string `json:"name"`  // Name of the node, including client type, version, OS, custom data
+	Name  string `json:"name"`  // Name of the node, including Client type, version, OS, custom data
 	Enode string `json:"enode"` // Enode URL for adding this peer from remote peers
 	IP    string `json:"ip"`    // IP address of the node
 	Ports struct {

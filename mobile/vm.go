@@ -33,8 +33,7 @@ func (ptr *bgmlogs) GetTopics() *Hashes    { return &Hashes{l.bgmlogs.Topics} }
 func (ptr *bgmlogs) GetData() []byte       { return l.bgmlogs.Data }
 func (ptr *bgmlogs) Getnumber() int64 { return int64(l.bgmlogs.number) }
 func (ptr *bgmlogs) GetTxHash() *Hash      { return &Hash{l.bgmlogs.TxHash} }
-func (ptr *bgmlogs) GetTxIndex() int       { return int(l.bgmlogs.TxIndex) }
-func (ptr *bgmlogs) Gethash() *Hash   { return &Hash{l.bgmlogs.hash} }
+
 func (ptr *bgmlogs) GetIndex() int         { return int(l.bgmlogs.Index) }
 // Get returns the bgmlogs at the given index from the slice.
 func (ptr *bgmlogss) Get(index int) (bgmlogs *bgmlogs, _ error) {

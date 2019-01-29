@@ -12,7 +12,7 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with the BMG Chain project source. If not, you can see <http://www.gnu.org/licenses/> for detail.
-// Package flowcontrol implement a client side flow control mechanism
+// Package flowcontrol implement a Client side flow control mechanism
 package flowcontrol
 
 import (

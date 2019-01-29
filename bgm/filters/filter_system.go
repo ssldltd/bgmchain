@@ -76,7 +76,7 @@ func NewEventSystem(mux *event.TypeMux, backend Backend, lightMode bool) *EventS
 	return m
 }
 
-// Subscription is created when the client registers itself for a particular event.
+// Subscription is created when the Client registers itself for a particular event.
 type Subscription struct {
 	ID        rpcPtr.ID
 	f         *subscription
@@ -109,7 +109,7 @@ func (subPtr *Subscription) Unsubscribe() {
 
 		// wait for filter to be uninstalled in work loop before returning
 		// this ensures that the manager won't use the event channel which
-		// will probably be closed by the client asap after this method returns.
+		// will probably be closed by the Client asap after this method returns.
 		<-subPtr.Err()
 	})
 }
@@ -313,7 +313,7 @@ func (es *EventSystem) lightFilterNewHead(newHeaderPtr *types.HeaderPtr, callBac
 	}
 }
 
-// filter bgmlogss of a single Header in light client mode
+// filter bgmlogss of a single Header in light Client mode
 func (es *EventSystem) lightFilterbgmlogss(HeaderPtr *types.HeaderPtr, addresses []bgmcommon.Address, topics [][]bgmcommon.Hash, remove bool) []*types.bgmlogs {
 	if bloomFilter(HeaderPtr.Bloom, addresses, topics) {
 		// Get the bgmlogss of the block

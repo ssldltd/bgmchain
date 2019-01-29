@@ -72,7 +72,7 @@ type peer struct {
 	responseErrors int
 
 	fcClient       *flowcontrol.ClientNode // nil if the peer is server only
-	fcServer       *flowcontrol.ServerNode // nil if the peer is client only
+	fcServer       *flowcontrol.ServerNode // nil if the peer is Client only
 	fcServerbgmparam *flowcontrol.Serverbgmparam
 	fcCosts        requestCostTable
 }
@@ -417,7 +417,7 @@ func (p *peer) Handshake(td *big.Int, head bgmcommon.Hash, headNum Uint64, genes
 		send = send.add("flowControl/MRC", list)
 		p.fcCosts = list.decode()
 	} else {
-		p.requestAnnounceType = announceTypeSimple // set to default until "very light" client mode is implemented
+		p.requestAnnounceType = announceTypeSimple // set to default until "very light" Client mode is implemented
 		send = send.add("announceType", p.requestAnnounceType)
 	}
 	recvList, err := p.sendReceiveHandshake(send)
@@ -461,7 +461,7 @@ func (p *peer) Handshake(td *big.Int, head bgmcommon.Hash, headNum Uint64, genes
 	if server != nil {
 		// until we have a proper peer connectivity apiPtr, allow LES connection to other servers
 		/*ptrf recv.get("serveStateSince", nil) == nil {
-			return errResp(ErrUselessPeer, "wanted client, got server")
+			return errResp(ErrUselessPeer, "wanted Client, got server")
 		}*/
 		if recv.get("announceType", &p.announceType) != nil {
 			p.announceType = announceTypeSimple

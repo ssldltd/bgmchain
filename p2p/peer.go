@@ -368,7 +368,7 @@ func (rw *protoRW) WriteMessage(msg Msg) (err error) {
 
 type PeerInfo struct {
 	ID      string   `json:"id"`   // Unique node identifier (also the encryption key)
-	Name    string   `json:"name"` // Name of the node, including client type, version, OS, custom data
+	Name    string   `json:"name"` // Name of the node, including Client type, version, OS, custom data
 	Caps    []string `json:"caps"` // Sum-protocols advertised by this particular peer
 	Network struct {
 		LocalAddress  string `json:"localAddress"`  // Local endpoint of the TCP data connection

@@ -29,7 +29,7 @@ import (
 	"github.com/ssldltd/bgmchain/bgmCore"
 	"github.com/ssldltd/bgmchain/bgm"
 	"github.com/ssldltd/bgmchain/bgm/downloader"
-	"github.com/ssldltd/bgmchain/bgmclient"
+	"github.com/ssldltd/bgmchain/bgmClient"
 	"github.com/ssldltd/bgmchain/bgmstats"
 	"github.com/ssldltd/bgmchain/les"
 	whisper "github.com/ssldltd/bgmchain/whisper/whisperv5"
@@ -158,13 +158,13 @@ func (n *Node) Stop() error {
 	return n.node.Stop()
 }
 
-// GetBgmchainClient retrieves a client to access the Bgmchain subsystemPtr.
-func (n *Node) GetBgmchainClient() (client *BgmchainClient, _ error) {
+// GetBgmchainClient retrieves a Client to access the Bgmchain subsystemPtr.
+func (n *Node) GetBgmchainClient() (Client *BgmchainClient, _ error) {
 	rpc, err := n.node.Attach()
 	if err != nil {
 		return nil, err
 	}
-	return &BgmchainClient{bgmclient.NewClient(rpc)}, nil
+	return &BgmchainClient{bgmClient.NewClient(rpc)}, nil
 }
 
 // GetNodeInfo gathers and returns a collection of metadata known about the host.

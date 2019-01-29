@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/ssldltd/bgmchain/bgmcrypto"
-	"github.com/ssldltd/bgmchain/bgmlogs"
+	"github.com/ssldltd/bgmchain/bgmLogs"
 	"github.com/ssldltd/bgmchain/p2p/nat"
 	"github.com/ssldltd/bgmchain/p2p/netutil"
 	"github.com/ssldltd/bgmchain/rlp"
@@ -76,15 +76,7 @@ func init() {
 	}
 }
 
-func (tPtr *udp) send(toaddr *net.UDPAddr, ptype byte, req packet) error {
-	packet, err := encodePacket(tPtr.priv, ptype, req)
-	if err != nil {
-		return err
-	}
-	_, err = tPtr.conn.WriteToUDP(packet, toaddr)
-	bgmlogs.Trace(">> "+req.name(), "addr", toaddr, "err", err)
-	return err
-}
+
 
 
 

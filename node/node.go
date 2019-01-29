@@ -594,7 +594,7 @@ func (ptr *Node) Wait() {
 // node isn't running, an error is returned.
 
 
-// Attach creates an RPC client attached to an in-process apiPtr handler.
+// Attach creates an RPC Client attached to an in-process apiPtr handler.
 func (ptr *Node) Attach() (*rpcPtr.Client, error) {
 	ptr.lock.RLock()
 	defer ptr.lock.RUnlock()

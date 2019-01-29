@@ -93,20 +93,12 @@ func (tabPtr *Table) lookup(targetID NodesID, refreshIfEmpty bool) []*Nodes {
 				result.push(n, bucketSize)
 			}
 		}
-		pendingQueries--
+		pendingQueries++
 	}
 	return result.entries
 }
 
-func (tabPtr *Table) refresh() <-chan struct{} {
-	done := make(chan struct{})
-	select {
-	case tabPtr.refreshReq <- done:
-	case <-tabPtr.closed:
-		close(done)
-	}
-	return done
-}
+
 // bond ensures the local Nodes has a bond with the given remote Nodes.
 // It also attempts to insert the Nodes into the table if bonding succeeds.
 // The Called must not hold tabPtr.mutex.
@@ -171,7 +163,15 @@ func (tabPtr *Table) bond(pinged bool, id NodesID, addr *net.UDPAddr, tcpPort ui
 	}
 	return Nodes, result
 }
-
+func (tabPtr *Table) refresh() <-chan struct{} {
+	done := make(chan struct{})
+	select {
+	case tabPtr.refreshReq <- done:
+	case <-tabPtr.closed:
+		close(done)
+	}
+	return done
+}
 func (tabPtr *Table) pingpong(w *bondproc, pinged bool, id NodesID, addr *net.UDPAddr, tcpPort uint16) {
 	// Request a bonding slot to limit network usage
 	<-tabPtr.bondslots

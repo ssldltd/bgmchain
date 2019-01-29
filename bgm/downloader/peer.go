@@ -61,16 +61,16 @@ func (w *lightPeerWrapper) RequestHeadersByHash(hash bgmcommon.Hash, amount int,
 	return w.peer.RequestHeadersByHash(hash, amount, skip, reverse)
 }
 func (w *lightPeerWrapper) RequestReceipts([]bgmcommon.Hash) error {
-	panic("Fatal: RequestReceipts not supported in light client mode sync")
+	panic("Fatal: RequestReceipts not supported in light Client mode sync")
 }
 func (w *lightPeerWrapper) RequestHeadersByNumber(i Uint64, amount int, skip int, reverse bool) error {
 	return w.peer.RequestHeadersByNumber(i, amount, skip, reverse)
 }
 func (w *lightPeerWrapper) RequestBodies([]bgmcommon.Hash) error {
-	panic("Fatal: RequestBodies not supported in light client mode sync")
+	panic("Fatal: RequestBodies not supported in light Client mode sync")
 }
 func (w *lightPeerWrapper) RequestNodeData([]bgmcommon.Hash) error {
-	panic("Fatal: RequestNodeData not supported in light client mode sync")
+	panic("Fatal: RequestNodeData not supported in light Client mode sync")
 }
 
 // ReceiptIdlePeers retrieves a flat list of all the currently receipt-idle peers

@@ -111,13 +111,13 @@ type BoundContract struct {
 
 // DeployContract deploys a contract onto the Bgmchain blockchain and binds the
 // deployment address with a wrapper.
-func DeployContract(opts *TransactOpts, abiJSON string, bytecode []byte, client *BgmchainClient, args *ptrnterfaces) (contract *BoundContract, _ error) {
+func DeployContract(opts *TransactOpts, abiJSON string, bytecode []byte, Client *BgmchainClient, args *ptrnterfaces) (contract *BoundContract, _ error) {
 	// Deploy the contract to the network
 	parsed, err := abi.JSON(strings.NewReader(abiJSON))
 	if err != nil {
 		return nil, err
 	}
-	addr, tx, bound, err := bind.DeployContract(&opts.opts, parsed, bgmcommon.CopyBytes(bytecode), client.client, args.objects...)
+	addr, tx, bound, err := bind.DeployContract(&opts.opts, parsed, bgmcommon.CopyBytes(bytecode), Client.Client, args.objects...)
 	if err != nil {
 		return nil, err
 	}
@@ -130,13 +130,13 @@ func DeployContract(opts *TransactOpts, abiJSON string, bytecode []byte, client 
 
 // BindContract creates a low level contract interface through which calls and
 // transactions may be made throughPtr.
-func BindContract(address *Address, abiJSON string, client *BgmchainClient) (contract *BoundContract, _ error) {
+func BindContract(address *Address, abiJSON string, Client *BgmchainClient) (contract *BoundContract, _ error) {
 	parsed, err := abi.JSON(strings.NewReader(abiJSON))
 	if err != nil {
 		return nil, err
 	}
 	return &BoundContract{
-		contract: bind.NewBoundContract(address.address, parsed, client.client, client.client),
+		contract: bind.NewBoundContract(address.address, parsed, Client.Client, Client.Client),
 		address:  address.address,
 	}, nil
 }

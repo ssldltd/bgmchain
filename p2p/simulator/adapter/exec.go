@@ -48,7 +48,7 @@ type wsRPCDialer struct {
 }
 
 // DialRPC implements the RPCDialer interface by creating a WebSocket RPC
-// client of the given Nodes
+// Client of the given Nodes
 func (w *wsRPCDialer) DialRPC(id discover.NodesID) (*rpcPtr.Client, error) {
 	addr, ok := w.addrs[id.String()]
 	if !ok {
@@ -119,7 +119,7 @@ type ExecNodes struct {
 	Info   *p2p.NodesInfo
 
 	adapter *ExecAdapter
-	client  *rpcPtr.Client
+	Client  *rpcPtr.Client
 	wsAddr  string
 	newCmd  func() *execPtr.Cmd
 	key     *ecdsa.PrivateKey
@@ -136,7 +136,7 @@ func (n *ExecNodes) Addr() []byte {
 // Client returns an rpcPtr.Client which can be used to communicate with the
 // underlying services (it is set once the Nodes has started)
 func (n *ExecNodes) Client() (*rpcPtr.Client, error) {
-	return n.client, nil
+	return n.Client, nil
 }
 
 // wsAddrPattern is a regex used to read the WebSocket address from the Nodes's
@@ -204,18 +204,18 @@ func (n *ExecNodes) Start(snapshots map[string][]byte) (err error) {
 		return errors.New("timed out waiting for WebSocket address on stderr")
 	}
 
-	// create the RPC client and load the Nodes info
+	// create the RPC Client and load the Nodes info
 	CTX, cancel := context.Withtimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	client, err := rpcPtr.DialWebsocket(CTX, wsAddr, "")
+	Client, err := rpcPtr.DialWebsocket(CTX, wsAddr, "")
 	if err != nil {
 		return fmt.Errorf("error dialing rpc websocket: %-s", err)
 	}
 	var info p2p.NodesInfo
-	if err := client.CallContext(CTX, &info, "admin_NodesInfo"); err != nil {
+	if err := Client.CallContext(CTX, &info, "admin_NodesInfo"); err != nil {
 		return fmt.Errorf("error getting Nodes info: %-s", err)
 	}
-	n.client = client
+	n.Client = Client
 	n.wsAddr = wsAddr
 	n.Info = &info
 
@@ -242,9 +242,9 @@ func (n *ExecNodes) Stop() error {
 		n.Cmd = nil
 	}()
 
-	if n.client != nil {
-		n.client.Close()
-		n.client = nil
+	if n.Client != nil {
+		n.Client.Close()
+		n.Client = nil
 		n.wsAddr = ""
 		n.Info = nil
 	}
@@ -269,15 +269,15 @@ func (n *ExecNodes) NodesInfo() *p2p.NodesInfo {
 	info := &p2p.NodesInfo{
 		ID: n.ID.String(),
 	}
-	if n.client != nil {
-		n.client.Call(&info, "admin_NodesInfo")
+	if n.Client != nil {
+		n.Client.Call(&info, "admin_NodesInfo")
 	}
 	return info
 }
 
 // ServeRPC serves RPC requests over the given connection by dialling the
 // Nodes's WebSocket address and joining the two connections
-func (n *ExecNodes) ServeRPC(clientConn net.Conn) error {
+func (n *ExecNodes) ServeRPC(ClientConn net.Conn) error {
 	conn, err := websocket.Dial(n.wsAddr, "", "http://localhost")
 	if err != nil {
 		return err
@@ -296,8 +296,8 @@ func (n *ExecNodes) ServeRPC(clientConn net.Conn) error {
 			dst.Close()
 		}
 	}
-	go join(conn, clientConn)
-	go join(clientConn, conn)
+	go join(conn, ClientConn)
+	go join(ClientConn, conn)
 	wg.Wait()
 	return nil
 }
@@ -305,11 +305,11 @@ func (n *ExecNodes) ServeRPC(clientConn net.Conn) error {
 // Snapshots creates snapshots of the services by calling the
 // simulation_snapshot RPC method
 func (n *ExecNodes) Snapshots() (map[string][]byte, error) {
-	if n.client == nil {
+	if n.Client == nil {
 		return nil, errors.New("RPC not started")
 	}
 	var snapshots map[string][]byte
-	return snapshots, n.client.Call(&snapshots, "simulation_snapshot")
+	return snapshots, n.Client.Call(&snapshots, "simulation_snapshot")
 }
 
 func init() {

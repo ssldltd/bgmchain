@@ -45,7 +45,7 @@ type HandlerT struct {
 	cpuW      io.WriteCloser
 	cpuFile   string
 	traceW    io.WriteCloser
-	traceFile string
+	
 }
 
 // Verbosity sets the bgmlogs verbosity ceiling. The verbosity of individual packages
@@ -60,17 +60,19 @@ func (*HandlerT) Vmodule(pattern string) error {
 	return gbgmlogsger.Vmodule(pattern)
 }
 
-// BacktraceAt sets the bgmlogs backtrace location. See package bgmlogs for details on
-// the pattern syntax.
-func (*HandlerT) BacktraceAt(location string) error {
-	return gbgmlogsger.BacktraceAt(location)
-}
+
 
 // MemStats returns detailed runtime memory statistics.
 func (*HandlerT) MemStats() *runtime.MemStats {
 	s := new(runtime.MemStats)
 	runtime.ReadMemStats(s)
 	return s
+}
+
+// BacktraceAt sets the bgmlogs backtrace location. See package bgmlogs for details on
+// the pattern syntax.
+func (*HandlerT) BacktraceAt(location string) error {
+	return gbgmlogsger.BacktraceAt(location)
 }
 
 // GcStats returns GC statistics.

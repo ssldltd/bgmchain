@@ -97,7 +97,7 @@ func (cPtr *Client) Send(method, path string, in, out interface{}) error {
 	}
 	req.HeaderPtr.Set("Content-Type", "application/json")
 	req.HeaderPtr.Set("Accept", "application/json")
-	res, err := cPtr.client.Do(req)
+	res, err := cPtr.Client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -177,10 +177,10 @@ func (s *Server) StreamNetworkEvents(w http.ResponseWriter, req *http.Request) {
 	sub := s.network.events.Subscribe(events)
 	defer subPtr.Unsubscribe()
 
-	// stop the stream if the client goes away
-	var clientGone <-chan bool
+	// stop the stream if the Client goes away
+	var ClientGone <-chan bool
 	if cn, ok := w.(http.CloseNotifier); ok {
-		clientGone = cn.CloseNotify()
+		ClientGone = cn.CloseNotify()
 	}
 
 	// write writes the given event and data to the stream like:
@@ -259,7 +259,7 @@ func (s *Server) StreamNetworkEvents(w http.ResponseWriter, req *http.Request) {
 				writeErr(err)
 				return
 			}
-		case <-clientGone:
+		case <-ClientGone:
 			return
 		}
 	}
@@ -534,23 +534,23 @@ func (s *Server) wrapHandler(handler http.HandlerFunc) httprouter.Handle {
 		handler(w, req.WithContext(CTX))
 	}
 }
-// DefaultClient is the default simulation API client which expects the API
+// DefaultClient is the default simulation API Client which expects the API
 // to be running at http://localhost:8888
 var DefaultClient = NewClient("http://localhost:8888")
 
-// Client is a client for the simulation HTTP API which supports creating
+// Client is a Client for the simulation HTTP API which supports creating
 // and managing simulation networks
 type Client struct {
 	URL string
 
-	client *http.Client
+	Client *http.Client
 }
 
-// NewClient returns a new simulation API client
+// NewClient returns a new simulation API Client
 func NewClient(url string) *Client {
 	return &Client{
 		URL:    url,
-		client: http.DefaultClient,
+		Client: http.DefaultClient,
 	}
 }
 
@@ -595,7 +595,7 @@ func (cPtr *Client) SubscribebgmNetwork(events chan *Event, opts SubscribeOpts) 
 		return nil, err
 	}
 	req.HeaderPtr.Set("Accept", "text/event-stream")
-	res, err := cPtr.client.Do(req)
+	res, err := cPtr.Client.Do(req)
 	if err != nil {
 		return nil, err
 	}

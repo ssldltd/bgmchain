@@ -33,7 +33,7 @@ import (
 )
 
 // Backend interface provides the bgmcommon apiPtr services (that are provided by
-// both full and light clients) with access to necessary functions.
+// both full and light Clients) with access to necessary functions.
 type Backend interface {
 	// general Bgmchain apiPtr
 	Downloader() *downloader.Downloader

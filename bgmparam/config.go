@@ -59,7 +59,7 @@ type ChainConfig struct {
 
 	// Chain150 implement the Gas price changes (https://github.com/bgmchain/Chains/issues/150)
 	Chain150Block *big.Int    `json:"Chain150Block,omitempty"` // Chain150 HF block (nil = no fork)
-	Chain150Hash  bgmcommon.Hash `json:"Chain150Hash,omitempty"`  // Chain150 HF hash (needed for Header only clients as only gas pricing changed)
+	Chain150Hash  bgmcommon.Hash `json:"Chain150Hash,omitempty"`  // Chain150 HF hash (needed for Header only Clients as only gas pricing changed)
 
 	Chain90Block *big.Int `json:"Chain90Block,omitempty"` // Chain155 HF block
 	Chain91Block *big.Int `json:"Chain91Block,omitempty"` // Chain158 HF block

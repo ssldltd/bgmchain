@@ -14,7 +14,7 @@
 // along with the BMG Chain project source. If not, you can see <http://www.gnu.org/licenses/> for detail.
 
 
-package bgmclient
+package bgmClient
 
 import (
 	"errors"

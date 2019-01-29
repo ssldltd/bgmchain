@@ -34,10 +34,10 @@ type extIP net.IP
 
 func (n extIP) ExternalIP() (net.IP, error) { return net.IP(n), nil }
 func (n extIP) String() string              { return fmt.Sprintf("ExtIP(%v)", net.IP(n)) }
+func (extIP) DeleteMapping(string, int, int) error                     { return nil }
 
 // These do nothing.
 func (extIP) AddMapping(string, int, int, string, time.Duration) error { return nil }
-func (extIP) DeleteMapping(string, int, int) error                     { return nil }
 
 // Any returns a port mapper that tries to discover any supported
 // mechanism on the local network.

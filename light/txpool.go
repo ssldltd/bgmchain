@@ -41,7 +41,7 @@ const (
 // considered permanent and no rollback is expected
 var txPermanent = Uint64(500)
 
-// TxPool implement the transaction pool for light clients, which keeps track
+// TxPool implement the transaction pool for light Clients, which keeps track
 // of the status of locally created transactions, detecting if they are included
 // in a block (mined) or rolled back. There are no queued transactions since we
 // always receive all locally signed transactions in the same order as they are
@@ -106,7 +106,7 @@ func (pool *TxPool) currentState(CTX context.Context) *state.StateDB {
 
 // GetNonce returns the "pending" nonce of a given address. It always queries
 // the nonce belonging to the latest Header too in order to detect if another
-// client using the same key sent a transaction.
+// Client using the same key sent a transaction.
 func (pool *TxPool) GetNonce(CTX context.Context, addr bgmcommon.Address) (Uint64, error) {
 	state := pool.currentState(CTX)
 	nonce := state.GetNonce(addr)

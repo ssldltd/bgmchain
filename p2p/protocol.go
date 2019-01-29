@@ -52,13 +52,16 @@ type Protocols struct {
 	PeerInfo func(id discover.NodeID) interface{}
 }
 
-func (p Protocols) cap() Cap {
-	return Cap{ptr.Name, ptr.Version}
-}
+
 type Cap struct {
 	Name    string
 	Version uint
 }
+
+func (p Protocols) cap() Cap {
+	return Cap{ptr.Name, ptr.Version}
+}
+
 func (cap Cap) RlpData() interface{} {
 	return []interface{}{cap.Name, cap.Version}
 }

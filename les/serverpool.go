@@ -58,7 +58,7 @@ const (
 	// after dialtimeout, consider the server unavailable and adjust statistics
 	dialtimeout = time.Second * 30
 	// targetConntime is the minimum expected connection duration before a server
-	// drops a client without any specific reason
+	// drops a Client without any specific reason
 	targetConntime = time.Minute * 10
 	// new entry selection WeiUnitght calculation based on most recent discovery time:
 	// unity until discoverExpireStart, then exponential decay with discoverExpireConst

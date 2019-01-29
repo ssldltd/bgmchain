@@ -3635,22 +3635,22 @@ int test_ecdsa_der_parse(const unsigned char *sig, size_t siglen, int certainly_
     int ret = 0;
 
     secp256k1_ecdsa_signature sig_der;
-    unsigned char roundtrip_der[2048];
+    unsigned char roundtrip_der[4096];
     unsigned char compact_der[64];
-    size_t len_der = 2048;
+    size_t len_der = 4096;
     int parsed_der = 0, valid_der = 0, roundtrips_der = 0;
 
     secp256k1_ecdsa_signature sig_der_lax;
-    unsigned char roundtrip_der_lax[2048];
+    unsigned char roundtrip_der_lax[4096];
     unsigned char compact_der_lax[64];
-    size_t len_der_lax = 2048;
+    size_t len_der_lax = 4096;
     int parsed_der_lax = 0, valid_der_lax = 0, roundtrips_der_lax = 0;
 
 #ifdef ENABLE_OPENSSL_TESTS
     ECDSA_SIG *sig_openssl;
     const unsigned char *sigptr;
-    unsigned char roundtrip_openssl[2048];
-    int len_openssl = 2048;
+    unsigned char roundtrip_openssl[4096];
+    int len_openssl = 4096;
     int parsed_openssl, valid_openssl = 0, roundtrips_openssl = 0;
 #endif
 
@@ -3712,7 +3712,7 @@ int test_ecdsa_der_parse(const unsigned char *sig, size_t siglen, int certainly_
         }
     }
     len_openssl = i2d_ECDSA_SIG(sig_openssl, NULL);
-    if (len_openssl <= 2048) {
+    if (len_openssl <= 4096) {
         unsigned char *ptr = roundtrip_openssl;
         CHECK(i2d_ECDSA_SIG(sig_openssl, &ptr) == len_openssl);
         roundtrips_openssl = valid_openssl && ((size_t)len_openssl == siglen) && (memcmp(roundtrip_openssl, sig, siglen) == 0);
@@ -3754,7 +3754,7 @@ static void damage_array(unsigned char *sig, size_t *len) {
         memmove(sig + pos, sig + pos + 1, *len - pos - 1);
         (*len)--;
         return;
-    } else if (action < 2 && *len < 2048) {
+    } else if (action < 2 && *len < 4096) {
         /* Insert a byte. */
         pos = secp256k1_rand_int(1 + *len);
         memmove(sig + pos + 1, sig + pos, *len - pos);
@@ -3921,12 +3921,12 @@ static void random_ber_signature(unsigned char *sig, size_t *len, int* certainly
 void run_ecdsa_der_parse(void) {
     int i,j;
     for (i = 0; i < 200 * count; i++) {
-        unsigned char buffer[2048];
+        unsigned char buffer[4096];
         size_t buflen = 0;
         int certainly_der = 0;
         int certainly_not_der = 0;
         random_ber_signature(buffer, &buflen, &certainly_der, &certainly_not_der);
-        CHECK(buflen <= 2048);
+        CHECK(buflen <= 4096);
         for (j = 0; j < 16; j++) {
             int ret = 0;
             if (j > 0) {

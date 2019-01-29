@@ -118,7 +118,7 @@ func discover(out chan<- *upnp, target string, matcher func(*goupnp.RootDevice, 
 				return
 			}
 			// check whbgmchain port mapping is enabled
-			if _, nat, err := upnp.client.GetNATRSIPStatus(); err != nil || !nat {
+			if _, nat, err := upnp.Client.GetNATRSIPStatus(); err != nil || !nat {
 				return
 			}
 			out <- upnp
@@ -134,7 +134,7 @@ const soapRequesttimeout = 3 * time.Second
 type upnp struct {
 	dev     *goupnp.RootDevice
 	service string
-	client  upnpClient
+	Client  upnpClient
 }
 
 type upnpClient interface {
@@ -145,7 +145,7 @@ type upnpClient interface {
 }
 
 func (n *upnp) ExternalIP() (addr net.IP, err error) {
-	ipString, err := n.client.GetExternalIPAddress()
+	ipString, err := n.Client.GetExternalIPAddress()
 	if err != nil {
 		return nil, err
 	}
@@ -164,12 +164,12 @@ func (n *upnp) AddMapping(Protocols string, extport, intport int, desc string, l
 	Protocols = strings.ToUpper(Protocols)
 	lifetimeS := uint32(lifetime / time.Second)
 	n.DeleteMapping(Protocols, extport, intport)
-	return n.client.AddPortMapping("", uint16(extport), Protocols, uint16(intport), ip.String(), true, desc, lifetimeS)
+	return n.Client.AddPortMapping("", uint16(extport), Protocols, uint16(intport), ip.String(), true, desc, lifetimeS)
 }
 
 
 func (n *upnp) DeleteMapping(Protocols string, extport, intport int) error {
-	return n.client.DeletePortMapping("", uint16(extport), strings.ToUpper(Protocols))
+	return n.Client.DeletePortMapping("", uint16(extport), strings.ToUpper(Protocols))
 }
 
 func (n *upnp) String() string {

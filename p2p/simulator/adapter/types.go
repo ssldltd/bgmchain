@@ -177,7 +177,7 @@ type Nodes interface {
 	// Addr returns the Nodes's address (e.g. an ENodes URL)
 	Addr() []byte
 
-	// Client returns the RPC client which is created once the Nodes is
+	// Client returns the RPC Client which is created once the Nodes is
 	// up and running
 	Client() (*rpcPtr.Client, error)
 

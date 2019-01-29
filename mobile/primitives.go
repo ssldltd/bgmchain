@@ -19,8 +19,6 @@ import (
 	"fmt"
 )
 
-// Strings represents s slice of strs.
-type Strings struct{ strs []string }
 
 // Size returns the number of strs in the slice.
 func (s *Strings) Size() int {

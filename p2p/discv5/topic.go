@@ -50,7 +50,7 @@ func (tPtr *topicTable) useTicket(Nodes *Nodes, serialNo uint32, topics []Topic,
 	currtime := Uint64(tm / mclock.Abstime(time.Second))
 	regtime := issuetime + Uint64(waitPeriods[idx])
 	reltime := int64(currtime - regtime)
-	if reltime >= -1 && reltime <= regtimeWindow+1 { // give clients a little security margin on both ends
+	if reltime >= -1 && reltime <= regtimeWindow+1 { // give Clients a little security margin on both ends
 		if e := n.entries[topics[idx]]; e == nil {
 			tPtr.addEntry(Nodes, topics[idx])
 		} else {

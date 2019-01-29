@@ -174,7 +174,7 @@ func calcDifficultyByzantium(time Uint64, parent *types.Header) *big.Int {
 	// https://github.com/bgmchain/Chains/issues/100.
 	// algorithm:
 	// diff = (parent_diff +
-	//         (parent_diff / 2048 * max((2 if len(parent.uncles) else 1) - ((timestamp - parent.timestamp) // 9), -99))
+	//         (parent_diff / 4096 * max((2 if len(parent.uncles) else 1) - ((timestamp - parent.timestamp) // 9), -99))
 	//        ) + 2^(periodCount - 2)
 
 	bigtime := new(big.Int).SetUint64(time)
@@ -196,7 +196,7 @@ func calcDifficultyByzantium(time Uint64, parent *types.Header) *big.Int {
 	if x.Cmp(bigMinus99) < 0 {
 		x.Set(bigMinus99)
 	}
-	// (parent_diff + parent_diff // 2048 * max(1 - (block_timestamp - parent_timestamp) // 10, -99))
+	// (parent_diff + parent_diff // 4096 * max(1 - (block_timestamp - parent_timestamp) // 10, -99))
 	y.Div(parent.Difficulty, bgmparam.DifficultyBoundDivisor)
 	x.Mul(y, x)
 	x.Add(parent.Difficulty, x)
@@ -233,7 +233,7 @@ func calcDifficultyHomestead(time Uint64, parent *types.Header) *big.Int {
 	// https://github.com/bgmchain/Chains/blob/master/ChainS/Chain-2.mediawiki
 	// algorithm:
 	// diff = (parent_diff +
-	//         (parent_diff / 2048 * max(1 - (block_timestamp - parent_timestamp) // 10, -99))
+	//         (parent_diff / 4096 * max(1 - (block_timestamp - parent_timestamp) // 10, -99))
 	//        ) + 2^(periodCount - 2)
 
 	bigtime := new(big.Int).SetUint64(time)
@@ -252,7 +252,7 @@ func calcDifficultyHomestead(time Uint64, parent *types.Header) *big.Int {
 	if x.Cmp(bigMinus99) < 0 {
 		x.Set(bigMinus99)
 	}
-	// (parent_diff + parent_diff // 2048 * max(1 - (block_timestamp - parent_timestamp) // 10, -99))
+	// (parent_diff + parent_diff // 4096 * max(1 - (block_timestamp - parent_timestamp) // 10, -99))
 	y.Div(parent.Difficulty, bgmparam.DifficultyBoundDivisor)
 	x.Mul(y, x)
 	x.Add(parent.Difficulty, x)

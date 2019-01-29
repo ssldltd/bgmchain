@@ -41,7 +41,7 @@ import (
 type Config struct {
 	DataDir  string       // Data directory to store the bgmconsole history at
 	DocRoot  string       // Filesystem path from where to load JavaScript files from
-	Client   *rpcPtr.Client  // RPC client to execute Bgmchain requests through
+	Client   *rpcPtr.Client  // RPC Client to execute Bgmchain requests through
 	Prompt   string       // Input prompt prefix string (defaults to DefaultPrompt)
 	Prompter UserPrompter // Input prompter to allow interactive user feedback (defaults to TerminalPrompter)
 	Printer  io.Writer    // Output writer to serialize any display strings to (defaults to os.Stdout)
@@ -50,9 +50,9 @@ type Config struct {
 
 // bgmconsole is a JavaScript interpreted runtime environment. It is a fully fleged
 // JavaScript bgmconsole attached to a running node via an external or in-process RPC
-// client.
+// Client.
 type bgmconsole struct {
-	client   *rpcPtr.Client  // RPC client to execute Bgmchain requests through
+	Client   *rpcPtr.Client  // RPC Client to execute Bgmchain requests through
 	jsre     *jsre.JSRE   // JavaScript runtime environment running the interpreter
 	prompt   string       // Input prompt prefix string
 	prompter UserPrompter // Input prompter to allow interactive user feedback
@@ -72,7 +72,7 @@ func New(config Config) (*bgmconsole, error) {
 	
 	// Initialize the bgmconsole and return
 	bgmconsole := &bgmconsole{
-		client:   config.Client,
+		Client:   config.Client,
 		jsre:     jsre.New(config.DocRoot, config.Printer),
 		prompt:   config.Prompt,
 		prompter: config.Prompter,
@@ -89,7 +89,7 @@ func New(config Config) (*bgmconsole, error) {
 // the bgmconsole's JavaScript namespaces based on the exposed modules.
 func (cPtr *bgmconsole) init(preload []string) error {
 	// Initialize the JavaScript <-> Go RPC bridge
-	bridge := newBridge(cPtr.client, cPtr.prompter, cPtr.printer)
+	bridge := newBridge(cPtr.Client, cPtr.prompter, cPtr.printer)
 	cPtr.jsre.Set("jbgm", struct{}{})
 
 	jbgmObj, _ := cPtr.jsre.Get("jbgm")
@@ -114,7 +114,7 @@ func (cPtr *bgmconsole) init(preload []string) error {
 		return fmt.Errorf("web3 provider: %v", err)
 	}
 	// Load the supported APIs into the JavaScript runtime environment
-	apis, err := cPtr.client.SupportedModules()
+	apis, err := cPtr.Client.SupportedModules()
 	if err != nil {
 		return fmt.Errorf("api modules: %v", err)
 	}
@@ -248,7 +248,7 @@ func (cPtr *bgmconsole) AutoCompleteInput(line string, pos int) (string, []strin
 }
 
 // DefaultPrompt is the default prompt line prefix to use for user input querying.
-const DefaultPrompt = "> "
+
 // Welcome show summary of current Gbgm instance and some metadata about the
 // bgmconsole's available modules.
 func (cPtr *bgmconsole) Welcome() {
@@ -262,7 +262,7 @@ func (cPtr *bgmconsole) Welcome() {
 		bgmconsole.bgmlogs("  datadir: " + admin.datadir);
 	`)
 	// List all the supported modules for the user to call
-	if apis, err := cPtr.client.SupportedModules(); err == nil {
+	if apis, err := cPtr.Client.SupportedModules(); err == nil {
 		modules := make([]string, 0, len(apis))
 		for api, version := range apis {
 			modules = append(modules, fmt.Sprintf("%-s:%-s", api, version))
@@ -272,17 +272,8 @@ func (cPtr *bgmconsole) Welcome() {
 	}
 	fmt.Fprintln(cPtr.printer)
 }
+const DefaultPrompt = "> "
 
-// Evaluate executes code and pretty prints the result to the specified output
-// streamPtr.
-func (cPtr *bgmconsole) Evaluate(statement string) error {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Fprintf(cPtr.printer, "[native] error: %v\n", r)
-		}
-	}()
-	return cPtr.jsre.Evaluate(statement, cPtr.printer)
-}
 
 
 
@@ -333,7 +324,16 @@ func countIndents(input string) int {
 func (cPtr *bgmconsole) Execute(path string) error {
 	return cPtr.jsre.Exec(path)
 }
-
+// Evaluate executes code and pretty prints the result to the specified output
+// streamPtr.
+func (cPtr *bgmconsole) Evaluate(statement string) error {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Fprintf(cPtr.printer, "[native] error: %v\n", r)
+		}
+	}()
+	return cPtr.jsre.Evaluate(statement, cPtr.printer)
+}
 // Stop cleans up the bgmconsole and terminates the runtime envorinment.
 func (cPtr *bgmconsole) Stop(graceful bool) error {
 	if err := ioutil.WriteFile(cPtr.histPath, []byte(strings.Join(cPtr.history, "\n")), 0600); err != nil {

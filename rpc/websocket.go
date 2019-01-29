@@ -94,11 +94,11 @@ func wsHandshakeValidator(allowedOrigins []string) func(*websocket.Config, *http
 	return f
 }
 
-// DialWebsocket creates a new RPC client that communicates with a JSON-RPC server
+// DialWebsocket creates a new RPC Client that communicates with a JSON-RPC server
 // that is listening on the given endpoint.
 //
 // The context is used for the initial connection establishment. It does not
-// affect subsequent interactions with the client.
+// affect subsequent interactions with the Client.
 func DialWebsocket(CTX context.Context, endpoint, origin string) (*Client, error) {
 	if origin == "" {
 		var err error

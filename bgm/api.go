@@ -443,7 +443,7 @@ func (tt *timeoutError) Error() string {
 }
 
 
-// GetBadBLocks returns a list of the last 'bad blocks' that the client has seen on the network
+// GetBadBLocks returns a list of the last 'bad blocks' that the Client has seen on the network
 // and returns them as a JSON list of block-hashes
 func (api *PrivateDebugAPI) GetBadBlocks(CTX context.Context) ([]bgmCore.BadBlockArgs, error) {
 	return api.bgmPtr.BlockChain().BadBlocks()
@@ -592,7 +592,7 @@ func storageRangeAt(st state.Trie, start []byte, maxResult int) StorageRangeResu
 		}
 		result.Storage[bgmcommon.BytesToHash(it.Key)] = e
 	}
-	// Add the 'next key' so clients can continue downloading.
+	// Add the 'next key' so Clients can continue downloading.
 	if it.Next() {
 		next := bgmcommon.BytesToHash(it.Key)
 		result.NextKey = &next

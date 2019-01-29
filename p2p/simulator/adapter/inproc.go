@@ -122,7 +122,7 @@ type SimNodes struct {
 	adapter      *SimAdapter
 	Nodes         *Nodes.Nodes
 	running      map[string]Nodes.Service
-	client       *rpcPtr.Client
+	Client       *rpcPtr.Client
 	registerOnce syncPtr.Once
 }
 
@@ -153,14 +153,14 @@ func NewSimAdapter(services map[string]ServiceFunc) *SimAdapter {
 func (self *SimNodes) Client() (*rpcPtr.Client, error) {
 	self.lock.RLock()
 	defer self.lock.RUnlock()
-	if self.client == nil {
+	if self.Client == nil {
 		return nil, errors.New("Nodes not started")
 	}
-	return self.client, nil
+	return self.Client, nil
 }
 
 // ServeRPC serves RPC requests over the given connection by creating an
-// in-memory client to the Nodes's RPC server
+// in-memory Client to the Nodes's RPC server
 func (self *SimNodes) ServeRPC(conn net.Conn) error {
 	handler, err := self.Nodes.RPCHandler()
 	if err != nil {
@@ -238,14 +238,14 @@ func (self *SimNodes) Start(snapshots map[string][]byte) error {
 		return err
 	}
 
-	// create an in-process RPC client
+	// create an in-process RPC Client
 	handler, err := self.Nodes.RPCHandler()
 	if err != nil {
 		return err
 	}
 
 	self.lock.Lock()
-	self.client = rpcPtr.DialInProc(handler)
+	self.Client = rpcPtr.DialInProc(handler)
 	self.lock.Unlock()
 
 	return nil
@@ -262,12 +262,12 @@ func (self *SimNodes) NodesInfo() *p2p.NodesInfo {
 	}
 	return server.NodesInfo()
 }
-// Stop closes the RPC client and stops the underlying devp2p Nodes
+// Stop closes the RPC Client and stops the underlying devp2p Nodes
 func (self *SimNodes) Stop() error {
 	self.lock.Lock()
-	if self.client != nil {
-		self.client.Close()
-		self.client = nil
+	if self.Client != nil {
+		self.Client.Close()
+		self.Client = nil
 	}
 	self.lock.Unlock()
 	return self.Nodes.Stop()

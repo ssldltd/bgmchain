@@ -503,10 +503,6 @@ web3._extend({
 			bgmparam: 1,
 			inputFormatter: [web3._extend.utils.fromDecimal]
 		}),
-		new web3._extend.Method({
-			name: 'getHashrate',
-			call: 'miner_getHashrate'
-		}),
 	],
 	properties: []
 });
@@ -532,18 +528,18 @@ web3._extend({
 		new web3._extend.Method({
 			name: 'importRawKey',
 			call: 'personal_importRawKey',
-			bgmparam: 2
+			bgmparam: 1
 		}),
 		new web3._extend.Method({
 			name: 'sign',
 			call: 'personal_sign',
-			bgmparam: 3,
+			bgmparam: 2,
 			inputFormatter: [null, web3._extend.formatters.inputAddressFormatter, null]
 		}),
 		new web3._extend.Method({
 			name: 'ecRecover',
 			call: 'personal_ecRecover',
-			bgmparam: 2
+			bgmparam: 3
 		}),
 		new web3._extend.Method({
 			name: 'openWallet',

@@ -37,7 +37,7 @@ import (
 
 type LesServer struct {
 	protocolManager *ProtocolManager
-	fcManager       *flowcontrol.ClientManager // nil if our node is client only
+	fcManager       *flowcontrol.ClientManager // nil if our node is Client only
 	fcCostStats     *requestCostStats
 	defbgmparam       *flowcontrol.Serverbgmparam
 	lesTopics       []discv5.Topic

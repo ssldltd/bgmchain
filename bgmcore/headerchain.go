@@ -33,11 +33,7 @@ import (
 	"github.com/hashicorp/golang-lru"
 )
 
-const (
-	HeaderCacheLimit = 512
-	tdCacheLimit     = 1024
-	numberCacheLimit = 2048
-)
+
 
 // HeaderChain implements the basic block Header chain bgmlogsic that is shared by
 // bgmCore.BlockChain and light.LightChain. It is not usable in itself, only as
@@ -59,6 +55,12 @@ type HeaderChain struct {
 	rand   *mrand.Rand
 	engine consensus.Engine
 }
+
+const (
+	HeaderCacheLimit = 512
+	tdCacheLimit     = 1024
+	numberCacheLimit = 4096
+)
 
 // NewHeaderChain creates a new HeaderChain structure.
 //  getValidator should return the parent's validator

@@ -49,9 +49,9 @@ type Config struct {
 	NetworkId Uint64 // Network ID to use for selecting peers to connect to
 	SyncMode  downloader.SyncMode
 
-	// Light client options
+	// Light Client options
 	LightServ  int `toml:",omitempty"` // Maximum percentage of time allowed for serving LES requests
-	LightPeers int `toml:",omitempty"` // Maximum number of LES client peers
+	LightPeers int `toml:",omitempty"` // Maximum number of LES Client peers
 
 	// Database options
 	SkipBcVersionCheck bool `toml:"-"`

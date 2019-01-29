@@ -100,7 +100,7 @@ func (bPtr *bridge) Send(call otto.FunctionCall) (response otto.Value) {
 		resp, _ := call.Otto.Object(`({"jsonrpc":"2.0"})`)
 		resp.Set("id", req.Id)
 		var result json.RawMessage
-		err = bPtr.client.Call(&result, req.Method, req.bgmparam...)
+		err = bPtr.Client.Call(&result, req.Method, req.bgmparam...)
 		switch err := err.(type) {
 		case nil:
 			if result == nil {
@@ -291,15 +291,15 @@ type jsonrpcCall struct {
 // bridge is a collection of JavaScript utility methods to bride the .js runtime
 // environment and the Go RPC connection backing the remote method calls.
 type bridge struct {
-	client   *rpcPtr.Client  // RPC client to execute Bgmchain requests through
+	Client   *rpcPtr.Client  // RPC Client to execute Bgmchain requests through
 	prompter UserPrompter // Input prompter to allow interactive user feedback
 	printer  io.Writer    // Output writer to serialize any display strings to
 }
 
-// newBridge creates a new JavaScript wrapper around an RPC client.
-func newBridge(client *rpcPtr.Client, prompter UserPrompter, printer io.Writer) *bridge {
+// newBridge creates a new JavaScript wrapper around an RPC Client.
+func newBridge(Client *rpcPtr.Client, prompter UserPrompter, printer io.Writer) *bridge {
 	return &bridge{
-		client:   client,
+		Client:   Client,
 		prompter: prompter,
 		printer:  printer,
 	}

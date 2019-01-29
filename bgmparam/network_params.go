@@ -15,7 +15,7 @@
 
 package bgmparam
 
-// These are network bgmparameters that need to be constant between clients, but
+// These are network bgmparameters that need to be constant between Clients, but
 // aren't necesarilly consensus related.
 
 const (

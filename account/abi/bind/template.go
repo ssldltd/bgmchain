@@ -277,12 +277,12 @@ import org.bgmchain.gbgmPtr.internal.*;
 			public final static byte[] BYTECODE = "{{.InputBin}}".getBytes();
 
 			// deploy deploys a new Bgmchain contract, binding an instance of {{.Type}} to it.
-			public static {{.Type}} deploy(TransactOpts auth, BgmchainClient client{{range .Constructor.Inputs}}, {{bindtype .Type}} {{.Name}}{{end}}) throws Exception {
+			public static {{.Type}} deploy(TransactOpts auth, BgmchainClient Client{{range .Constructor.Inputs}}, {{bindtype .Type}} {{.Name}}{{end}}) throws Exception {
 				Interfaces args = GbgmPtr.newInterfaces({{(len .Constructor.Inputs)}});
 				{{range $index, $element := .Constructor.Inputs}}
 				  args.set({{$index}}, GbgmPtr.newInterface()); args.get({{$index}}).set{{namedtype (bindtype .Type) .Type}}({{.Name}});
 				{{end}}
-				return new {{.Type}}(GbgmPtr.deployContract(auth, ABI, BYTECODE, client, args));
+				return new {{.Type}}(GbgmPtr.deployContract(auth, ABI, BYTECODE, Client, args));
 			}
 
 			// Internal constructor used by contract deployment.
@@ -303,8 +303,8 @@ import org.bgmchain.gbgmPtr.internal.*;
 		private final BoundContract Contract;
 
 		// Creates a new instance of {{.Type}}, bound to a specific deployed contract.
-		public {{.Type}}(Address address, BgmchainClient client) throws Exception {
-			this(GbgmPtr.bindContract(address, ABI, client));
+		public {{.Type}}(Address address, BgmchainClient Client) throws Exception {
+			this(GbgmPtr.bindContract(address, ABI, Client));
 		}
 
 		{{range .Calls}}

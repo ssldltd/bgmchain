@@ -224,7 +224,7 @@ func (s *Service) loop() {
 			time.Sleep(10 * time.Second)
 			continue
 		}
-		// Authenticate the client with the server
+		// Authenticate the Client with the server
 		if err = s.bgmlogsin(conn); err != nil {
 			bgmlogs.Warn("Stats bgmlogsin failed", "err", err)
 			conn.Close()
@@ -357,7 +357,7 @@ type nodeInfo struct {
 	apiPtr      string `json:"apiPtr"`
 	Os       string `json:"os"`
 	OsVer    string `json:"os_v"`
-	Client   string `json:"client"`
+	Client   string `json:"Client"`
 	History  bool   `json:"canUpdateHistory"`
 }
 
@@ -368,7 +368,7 @@ type authMsg struct {
 	Secret string   `json:"secret"`
 }
 
-// bgmlogsin tries to authorize the client at the remote server.
+// bgmlogsin tries to authorize the Client at the remote server.
 func (s *Service) bgmlogsin(conn *websocket.Conn) error {
 	// Construct and send the bgmlogsin authentication
 	infos := s.server.NodeInfo()
@@ -439,7 +439,7 @@ func (s *Service) reportLatency(conn *websocket.Conn) error {
 	ping := map[string][]interface{}{
 		"emit": {"node-ping", map[string]string{
 			"id":         s.node,
-			"clienttime": start.String(),
+			"Clienttime": start.String(),
 		}},
 	}
 	if err := websocket.JSON.Send(conn, ping); err != nil {

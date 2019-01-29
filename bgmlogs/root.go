@@ -41,7 +41,7 @@ func Root() bgmlogsger {
 
 // The following functions bypass the exported bgmlogsger methods (bgmlogsger.Debug,
 // etcPtr.) to keep the call depth the same for all paths to bgmlogsger.write so
-// runtime.Called(2) always refers to the call site in client code.
+// runtime.Called(2) always refers to the call site in Client code.
 
 // Trace is a convenient alias for Root().Trace
 func Trace(msg string, CTX ...interface{}) {

@@ -82,8 +82,8 @@ type Encoder interface {
 //
 // Boolean values are not supported, nor are signed integers, floating
 // point numbers, maps, channels and functions.
-func Encode(w io.Writer, val interface{}) error {
-	if outer, ok := w.(*encbuf); ok {
+func Encode(W io.Writer, val interface{}) error {
+	if outer, ok := W.(*encbuf); ok {
 		// Encode was called by some type's EncodeRLP.
 		// Avoid copying by writing to the outer encbuf directly.
 		return outer.encode(val)
@@ -94,7 +94,7 @@ func Encode(w io.Writer, val interface{}) error {
 	if err := ebPtr.encode(val); err != nil {
 		return err
 	}
-	return ebPtr.toWriter(w)
+	return ebPtr.toWriter(W)
 }
 
 // EncodeBytes returns the RLP encoding of val.

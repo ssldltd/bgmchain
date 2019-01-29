@@ -16,27 +16,29 @@ package clique
 
 import (
 	"bytes"
-	"errors"
 	"math/big"
 	"math/rand"
 	"sync"
 	"time"
+	"errors"
+	
 
 	"github.com/ssldltd/bgmchain/account"
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcommon/hexutil"
-	"github.com/ssldltd/bgmchain/consensus"
-	"github.com/ssldltd/bgmchain/consensus/misc"
-	"github.com/ssldltd/bgmchain/bgmCore/state"
-	"github.com/ssldltd/bgmchain/bgmCore/types"
-	"github.com/ssldltd/bgmchain/bgmcrypto"
-	"github.com/ssldltd/bgmchain/bgmcrypto/sha3"
 	"github.com/ssldltd/bgmchain/bgmdb"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 	"github.com/ssldltd/bgmchain/bgmparam"
 	"github.com/ssldltd/bgmchain/rlp"
 	"github.com/ssldltd/bgmchain/rpc"
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/ssldltd/bgmchain/bgmcommon/hexutil"
+	"github.com/ssldltd/bgmchain/consensus"
+	"github.com/ssldltd/bgmchain/bgmcrypto"
+	"github.com/ssldltd/bgmchain/bgmcrypto/sha3"
+	"github.com/ssldltd/bgmchain/consensus/misc"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
+	
 )
 
 const (
@@ -49,11 +51,7 @@ const (
 
 // Clique proof-of-authority protocol constants.
 var (
-	epochLength = Uint64(30000) // Default number of blocks after which to checkpoint and reset the pending votes
-	blockPeriod = Uint64(15)    // Default minimum difference between two consecutive block's timestamps
-
-	extraVanity = 32 // Fixed number of extra-data prefix bytes reserved for signer vanity
-	extraSeal   = 65 // Fixed number of extra-data suffix bytes reserved for signer seal
+	
 
 	nonceAuthVote = hexutil.MustDecode("0xffffffffffffffff") // Magic nonce number to vote on adding a new signer
 	nonceDropVote = hexutil.MustDecode("0x0000000000000000") // Magic nonce number to vote on removing a signer.
@@ -62,6 +60,12 @@ var (
 
 	diffInTurn = big.NewInt(2) // Block difficulty for in-turn signatures
 	diffNoTurn = big.NewInt(1) // Block difficulty for out-of-turn signatures
+	
+	epochLength = Uint64(30000) // Default number of blocks after which to checkpoint and reset the pending votes
+	blockPeriod = Uint64(15)    // Default minimum difference between two consecutive block's timestamps
+
+	extraVanity = 32 // Fixed number of extra-data prefix bytes reserved for signer vanity
+	extraSeal   = 65 // Fixed number of extra-data suffix bytes reserved for signer seal
 )
 
 // Various error messages to mark blocks invalid. These should be private to
@@ -69,18 +73,7 @@ var (
 // codebase, inherently breaking if the engine is swapped out. Please put bgmcommon
 // error types into the consensus package.
 var (
-	// errUnknownBlock is returned when the list of signers is requested for a block
-	// that is not part of the local blockchain.
-	errUnknownBlock = errors.New("unknown block")
-
-	// errorInvalidCheckpointBeneficiary is returned if a checkpoint/epoch transition
-	// block has a beneficiary set to non-zeroes.
-	errorInvalidCheckpointBeneficiary = errors.New("beneficiary in checkpoint block non-zero")
-
-	// errorInvalidVote is returned if a nonce value is sombgming else that the two
-	// allowed constants of 0x00..0 or 0xff..f.
-	errorInvalidVote = errors.New("vote nonce not 0x00..0 or 0xff..f")
-
+	
 	// errorInvalidCheckpointVote is returned if a checkpoint/epoch transition block
 	// has a vote nonce set to non-zeroes.
 	errorInvalidCheckpointVote = errors.New("vote nonce in checkpoint block non-zero")
@@ -122,6 +115,18 @@ var (
 
 	// errUnauthorized is returned if a Header is signed by a non-authorized entity.
 	errUnauthorized = errors.New("unauthorized")
+	
+	// errUnknownBlock is returned when the list of signers is requested for a block
+	// that is not part of the local blockchain.
+	errUnknownBlock = errors.New("unknown block")
+
+	// errorInvalidCheckpointBeneficiary is returned if a checkpoint/epoch transition
+	// block has a beneficiary set to non-zeroes.
+	errorInvalidCheckpointBeneficiary = errors.New("beneficiary in checkpoint block non-zero")
+
+	// errorInvalidVote is returned if a nonce value is sombgming else that the two
+	// allowed constants of 0x00..0 or 0xff..f.
+	errorInvalidVote = errors.New("vote nonce not 0x00..0 or 0xff..f")
 
 	// errWaitTransactions is returned if an empty block is attempted to be sealed
 	// on an instant chain (0 second period). It's important to refuse these as the
@@ -132,11 +137,6 @@ var (
 // SignerFn is a signer callback function to request a hash to be signed by a
 // backing account.
 type SignerFn func(accounts.Account, []byte) ([]byte, error)
-
-// sigHash returns the hash which is used as input for the proof-of-authority
-// signing. It is the hash of the entire Header apart from the 65 byte signature
-// contained at the end of the extra data.
-//
 // Note, the method requires the extra data to be at least 65 bytes, otherwise it
 // panics. This is done to avoid accidentally using both forms (signature present
 // or not), which could be abused to produce different hashes for the same HeaderPtr.
@@ -151,14 +151,7 @@ func sigHash(HeaderPtr *types.Header) (hash bgmcommon.Hash) {
 		HeaderPtr.TxHash,
 		HeaderPtr.RecChaintHash,
 		HeaderPtr.Bloom,
-		HeaderPtr.Difficulty,
-		HeaderPtr.Number,
-		HeaderPtr.GasLimit,
-		HeaderPtr.GasUsed,
-		HeaderPtr.time,
-		HeaderPtr.Extra[:len(HeaderPtr.Extra)-65], // Yes, this will panic if extra is too short
-		HeaderPtr.MixDigest,
-		HeaderPtr.Nonce,
+		
 	})
 	hashers.Sum(hash[:0])
 	return hash
@@ -177,11 +170,7 @@ func ecrecover(HeaderPtr *types.HeaderPtr, sigcache *lru.ARCCache) (bgmcommon.Ad
 	}
 	signature := HeaderPtr.Extra[len(HeaderPtr.Extra)-extraSeal:]
 
-	// Recover the public key and the Bgmchain address
-	pubkey, err := bgmcrypto.Ecrecover(sigHash(Header).Bytes(), signature)
-	if err != nil {
-		return bgmcommon.Address{}, err
-	}
+	
 	var signer bgmcommon.Address
 	copy(signer[:], bgmcrypto.Keccak256(pubkey[1:])[12:])
 
@@ -189,21 +178,6 @@ func ecrecover(HeaderPtr *types.HeaderPtr, sigcache *lru.ARCCache) (bgmcommon.Ad
 	return signer, nil
 }
 
-// Clique is the proof-of-authority consensus engine proposed to support the
-// Bgmchain testnet following the Ropsten attacks.
-type Clique struct {
-	config *bgmparam.CliqueConfig // Consensus engine configuration bgmparameters
-	db     bgmdbPtr.Database       // Database to store and retrieve snapshot checkpoints
-
-	recents    *lru.ARCCache // Snapshots for recent block to speed up reorgs
-	signatures *lru.ARCCache // Signatures of recent blocks to speed up mining
-
-	proposals map[bgmcommon.Address]bool // Current list of proposals we are pushing
-
-	signer bgmcommon.Address // Bgmchain address of the signing key
-	signFn SignerFn       // Signer function to authorize hashes with
-	lock   syncPtr.RWMutex   // Protects the signer fields
-}
 
 // New creates a Clique proof-of-authority consensus engine with the initial
 // signers set to the ones provided by the user.
@@ -225,6 +199,21 @@ func New(config *bgmparam.CliqueConfig, db bgmdbPtr.Database) *Clique {
 		proposals:  make(map[bgmcommon.Address]bool),
 	}
 }
+// Clique is the proof-of-authority consensus engine proposed to support the
+// Bgmchain testnet following the Ropsten attacks.
+type Clique struct {
+	config *bgmparam.CliqueConfig // Consensus engine configuration bgmparameters
+	db     bgmdbPtr.Database       // Database to store and retrieve snapshot checkpoints
+
+	recents    *lru.ARCCache // Snapshots for recent block to speed up reorgs
+	signatures *lru.ARCCache // Signatures of recent blocks to speed up mining
+
+	proposals map[bgmcommon.Address]bool // Current list of proposals we are pushing
+
+	signer bgmcommon.Address // Bgmchain address of the signing key
+	signFn SignerFn       // Signer function to authorize hashes with
+	lock   syncPtr.RWMutex   // Protects the signer fields
+}
 
 // Author implement consensus.Engine, returning the Bgmchain address recovered
 // from the signature in the Header's extra-data section.
@@ -232,214 +221,7 @@ func (cPtr *Clique) Author(HeaderPtr *types.Header) (bgmcommon.Address, error) {
 	return ecrecover(HeaderPtr, cPtr.signatures)
 }
 
-// VerifyHeader checks whbgmchain a Header conforms to the consensus rules.
-func (cPtr *Clique) VerifyHeader(chain consensus.ChainReader, HeaderPtr *types.HeaderPtr, seal bool) error {
-	return cPtr.verifyHeader(chain, HeaderPtr, nil)
-}
 
-// VerifyHeaders is similar to VerifyHeaderPtr, but verifies a batch of Headers. The
-// method returns a quit channel to abort the operations and a results channel to
-// retrieve the async verifications (the order is that of the input slice).
-func (cPtr *Clique) VerifyHeaders(chain consensus.ChainReader, Headers []*types.HeaderPtr, seals []bool) (chan<- struct{}, <-chan error) {
-	abort := make(chan struct{})
-	results := make(chan error, len(Headers))
-
-	go func() {
-		for i, Header := range Headers {
-			err := cPtr.verifyHeader(chain, HeaderPtr, Headers[:i])
-
-			select {
-			case <-abort:
-				return
-			case results <- err:
-			}
-		}
-	}()
-	return abort, results
-}
-
-// verifyHeader checks whbgmchain a Header conforms to the consensus rules.The
-// Called may optionally pass in a batch of parents (ascending order) to avoid
-// looking those up from the database. This is useful for concurrently verifying
-// a batch of new Headers.
-func (cPtr *Clique) verifyHeader(chain consensus.ChainReader, HeaderPtr *types.HeaderPtr, parents []*types.Header) error {
-	if HeaderPtr.Number == nil {
-		return errUnknownBlock
-	}
-	number := HeaderPtr.Number.Uint64()
-
-	// Don't waste time checking blocks from the future
-	if HeaderPtr.time.Cmp(big.NewInt(time.Now().Unix())) > 0 {
-		return consensus.ErrFutureBlock
-	}
-	// Checkpoint blocks need to enforce zero beneficiary
-	checkpoint := (number % cPtr.config.Epoch) == 0
-	if checkpoint && HeaderPtr.Coinbase != (bgmcommon.Address{}) {
-		return errorInvalidCheckpointBeneficiary
-	}
-	// Nonces must be 0x00..0 or 0xff..f, zeroes enforced on checkpoints
-	if !bytes.Equal(HeaderPtr.Nonce[:], nonceAuthVote) && !bytes.Equal(HeaderPtr.Nonce[:], nonceDropVote) {
-		return errorInvalidVote
-	}
-	if checkpoint && !bytes.Equal(HeaderPtr.Nonce[:], nonceDropVote) {
-		return errorInvalidCheckpointVote
-	}
-	// Check that the extra-data contains both the vanity and signature
-	if len(HeaderPtr.Extra) < extraVanity {
-		return errMissingVanity
-	}
-	if len(HeaderPtr.Extra) < extraVanity+extraSeal {
-		return errMissingSignature
-	}
-	// Ensure that the extra-data contains a signer list on checkpoint, but none otherwise
-	signersBytes := len(HeaderPtr.Extra) - extraVanity - extraSeal
-	if !checkpoint && signersBytes != 0 {
-		return errExtraSigners
-	}
-	if checkpoint && signersBytes%bgmcommon.AddressLength != 0 {
-		return errorInvalidCheckpointSigners
-	}
-	// Ensure that the mix digest is zero as we don't have fork protection currently
-	if HeaderPtr.MixDigest != (bgmcommon.Hash{}) {
-		return errorInvalidMixDigest
-	}
-	// Ensure that the block doesn't contain any uncles which are meaningless in PoA
-	if HeaderPtr.UncleHash != uncleHash {
-		return errorInvalidUncleHash
-	}
-	// Ensure that the block's difficulty is meaningful (may not be correct at this point)
-	if number > 0 {
-		if HeaderPtr.Difficulty == nil || (HeaderPtr.Difficulty.Cmp(diffInTurn) != 0 && HeaderPtr.Difficulty.Cmp(diffNoTurn) != 0) {
-			return errorInvalidDifficulty
-		}
-	}
-	// If all checks passed, validate any special fields for hard forks
-	if err := miscPtr.VerifyForkHashes(chain.Config(), HeaderPtr, false); err != nil {
-		return err
-	}
-	// All basic checks passed, verify cascading fields
-	return cPtr.verifyCascadingFields(chain, HeaderPtr, parents)
-}
-
-// verifyCascadingFields verifies all the Header fields that are not standalone,
-// rather depend on a batch of previous Headers. The Called may optionally pass
-// in a batch of parents (ascending order) to avoid looking those up from the
-// database. This is useful for concurrently verifying a batch of new Headers.
-func (cPtr *Clique) verifyCascadingFields(chain consensus.ChainReader, HeaderPtr *types.HeaderPtr, parents []*types.Header) error {
-	// The genesis block is the always valid dead-end
-	number := HeaderPtr.Number.Uint64()
-	if number == 0 {
-		return nil
-	}
-	// Ensure that the block's timestamp isn't too close to it's parent
-	var parent *types.Header
-	if len(parents) > 0 {
-		parent = parents[len(parents)-1]
-	} else {
-		parent = chain.GetHeader(HeaderPtr.ParentHash, number-1)
-	}
-	if parent == nil || parent.Number.Uint64() != number-1 || parent.Hash() != HeaderPtr.ParentHash {
-		return consensus.ErrUnknownAncestor
-	}
-	if parent.time.Uint64()+cPtr.config.Period > HeaderPtr.time.Uint64() {
-		return errorInvalidtimestamp
-	}
-	// Retrieve the snapshot needed to verify this Header and cache it
-	snap, err := cPtr.snapshot(chain, number-1, HeaderPtr.ParentHash, parents)
-	if err != nil {
-		return err
-	}
-	// If the block is a checkpoint block, verify the signer list
-	if number%cPtr.config.Epoch == 0 {
-		signers := make([]byte, len(snap.Signers)*bgmcommon.AddressLength)
-		for i, signer := range snap.signers() {
-			copy(signers[i*bgmcommon.AddressLength:], signer[:])
-		}
-		extraSuffix := len(HeaderPtr.Extra) - extraSeal
-		if !bytes.Equal(HeaderPtr.Extra[extraVanity:extraSuffix], signers) {
-			return errorInvalidCheckpointSigners
-		}
-	}
-	// All basic checks passed, verify the seal and return
-	return cPtr.verifySeal(chain, HeaderPtr, parents)
-}
-
-// snapshot retrieves the authorization snapshot at a given point in time.
-func (cPtr *Clique) snapshot(chain consensus.ChainReader, number Uint64, hash bgmcommon.Hash, parents []*types.Header) (*Snapshot, error) {
-	// Search for a snapshot in memory or on disk for checkpoints
-	var (
-		Headers []*types.Header
-		snap    *Snapshot
-	)
-	for snap == nil {
-		// If an in-memory snapshot was found, use that
-		if s, ok := cPtr.recents.Get(hash); ok {
-			snap = s.(*Snapshot)
-			break
-		}
-		// If an on-disk checkpoint snapshot can be found, use that
-		if number%checkpointInterval == 0 {
-			if s, err := loadSnapshot(cPtr.config, cPtr.signatures, cPtr.db, hash); err == nil {
-				bgmlogs.Trace("Loaded voting snapshot form disk", "number", number, "hash", hash)
-				snap = s
-				break
-			}
-		}
-		// If we're at block zero, make a snapshot
-		if number == 0 {
-			genesis := chain.GetHeaderByNumber(0)
-			if err := cPtr.VerifyHeader(chain, genesis, false); err != nil {
-				return nil, err
-			}
-			signers := make([]bgmcommon.Address, (len(genesis.Extra)-extraVanity-extraSeal)/bgmcommon.AddressLength)
-			for i := 0; i < len(signers); i++ {
-				copy(signers[i][:], genesis.Extra[extraVanity+i*bgmcommon.AddressLength:])
-			}
-			snap = newSnapshot(cPtr.config, cPtr.signatures, 0, genesis.Hash(), signers)
-			if err := snap.store(cPtr.db); err != nil {
-				return nil, err
-			}
-			bgmlogs.Trace("Stored genesis voting snapshot to disk")
-			break
-		}
-		// No snapshot for this HeaderPtr, gather the Header and move backward
-		var HeaderPtr *types.Header
-		if len(parents) > 0 {
-			// If we have explicit parents, pick from there (enforced)
-			Header = parents[len(parents)-1]
-			if HeaderPtr.Hash() != hash || HeaderPtr.Number.Uint64() != number {
-				return nil, consensus.ErrUnknownAncestor
-			}
-			parents = parents[:len(parents)-1]
-		} else {
-			// No explicit parents (or no more left), reach out to the database
-			Header = chain.GetHeader(hash, number)
-			if Header == nil {
-				return nil, consensus.ErrUnknownAncestor
-			}
-		}
-		Headers = append(Headers, Header)
-		number, hash = number-1, HeaderPtr.ParentHash
-	}
-	// Previous snapshot found, apply any pending Headers on top of it
-	for i := 0; i < len(Headers)/2; i++ {
-		Headers[i], Headers[len(Headers)-1-i] = Headers[len(Headers)-1-i], Headers[i]
-	}
-	snap, err := snap.apply(Headers)
-	if err != nil {
-		return nil, err
-	}
-	cPtr.recents.Add(snap.Hash, snap)
-
-	// If we've generated a new checkpoint snapshot, save to disk
-	if snap.Number%checkpointInterval == 0 && len(Headers) > 0 {
-		if err = snap.store(cPtr.db); err != nil {
-			return nil, err
-		}
-		bgmlogs.Trace("Stored voting snapshot to disk", "number", snap.Number, "hash", snap.Hash)
-	}
-	return snap, err
-}
 
 // VerifyUncles implement consensus.Engine, always returning an error for any
 // uncles as this consensus mechanism doesn't permit uncles.
@@ -661,4 +443,212 @@ func (cPtr *Clique) APIs(chain consensus.ChainReader) []rpcPtr.apiPtr {
 		Service:   &apiPtr{chain: chain, clique: c},
 		Public:    false,
 	}}
+}
+// VerifyHeader checks whbgmchain a Header conforms to the consensus rules.
+func (cPtr *Clique) VerifyHeader(chain consensus.ChainReader, HeaderPtr *types.HeaderPtr, seal bool) error {
+	return cPtr.verifyHeader(chain, HeaderPtr, nil)
+}
+
+// VerifyHeaders is similar to VerifyHeaderPtr, but verifies a batch of Headers. The
+// method returns a quit channel to abort the operations and a results channel to
+// retrieve the async verifications (the order is that of the input slice).
+func (cPtr *Clique) VerifyHeaders(chain consensus.ChainReader, Headers []*types.HeaderPtr, seals []bool) (chan<- struct{}, <-chan error) {
+	abort := make(chan struct{})
+	results := make(chan error, len(Headers))
+
+	go func() {
+		for i, Header := range Headers {
+			err := cPtr.verifyHeader(chain, HeaderPtr, Headers[:i])
+
+			select {
+			case <-abort:
+				return
+			case results <- err:
+			}
+		}
+	}()
+	return abort, results
+}
+
+// verifyHeader checks whbgmchain a Header conforms to the consensus rules.The
+// Called may optionally pass in a batch of parents (ascending order) to avoid
+// looking those up from the database. This is useful for concurrently verifying
+// a batch of new Headers.
+func (cPtr *Clique) verifyHeader(chain consensus.ChainReader, HeaderPtr *types.HeaderPtr, parents []*types.Header) error {
+	if HeaderPtr.Number == nil {
+		return errUnknownBlock
+	}
+	number := HeaderPtr.Number.Uint64()
+
+	// Don't waste time checking blocks from the future
+	if HeaderPtr.time.Cmp(big.NewInt(time.Now().Unix())) > 0 {
+		return consensus.ErrFutureBlock
+	}
+	// Checkpoint blocks need to enforce zero beneficiary
+	checkpoint := (number % cPtr.config.Epoch) == 0
+	if checkpoint && HeaderPtr.Coinbase != (bgmcommon.Address{}) {
+		return errorInvalidCheckpointBeneficiary
+	}
+	// Nonces must be 0x00..0 or 0xff..f, zeroes enforced on checkpoints
+	if !bytes.Equal(HeaderPtr.Nonce[:], nonceAuthVote) && !bytes.Equal(HeaderPtr.Nonce[:], nonceDropVote) {
+		return errorInvalidVote
+	}
+	if checkpoint && !bytes.Equal(HeaderPtr.Nonce[:], nonceDropVote) {
+		return errorInvalidCheckpointVote
+	}
+	// Check that the extra-data contains both the vanity and signature
+	if len(HeaderPtr.Extra) < extraVanity {
+		return errMissingVanity
+	}
+	if len(HeaderPtr.Extra) < extraVanity+extraSeal {
+		return errMissingSignature
+	}
+	// Ensure that the extra-data contains a signer list on checkpoint, but none otherwise
+	signersBytes := len(HeaderPtr.Extra) - extraVanity - extraSeal
+	if !checkpoint && signersBytes != 0 {
+		return errExtraSigners
+	}
+	if checkpoint && signersBytes%bgmcommon.AddressLength != 0 {
+		return errorInvalidCheckpointSigners
+	}
+	// Ensure that the mix digest is zero as we don't have fork protection currently
+	if HeaderPtr.MixDigest != (bgmcommon.Hash{}) {
+		return errorInvalidMixDigest
+	}
+	// Ensure that the block doesn't contain any uncles which are meaningless in PoA
+	if HeaderPtr.UncleHash != uncleHash {
+		return errorInvalidUncleHash
+	}
+	// Ensure that the block's difficulty is meaningful (may not be correct at this point)
+	if number > 0 {
+		if HeaderPtr.Difficulty == nil || (HeaderPtr.Difficulty.Cmp(diffInTurn) != 0 && HeaderPtr.Difficulty.Cmp(diffNoTurn) != 0) {
+			return errorInvalidDifficulty
+		}
+	}
+	// If all checks passed, validate any special fields for hard forks
+	if err := miscPtr.VerifyForkHashes(chain.Config(), HeaderPtr, false); err != nil {
+		return err
+	}
+	// All basic checks passed, verify cascading fields
+	return cPtr.verifyCascadingFields(chain, HeaderPtr, parents)
+}
+
+// verifyCascadingFields verifies all the Header fields that are not standalone,
+// rather depend on a batch of previous Headers. The Called may optionally pass
+// in a batch of parents (ascending order) to avoid looking those up from the
+// database. This is useful for concurrently verifying a batch of new Headers.
+func (cPtr *Clique) verifyCascadingFields(chain consensus.ChainReader, HeaderPtr *types.HeaderPtr, parents []*types.Header) error {
+	// The genesis block is the always valid dead-end
+	number := HeaderPtr.Number.Uint64()
+	if number == 0 {
+		return nil
+	}
+	// Ensure that the block's timestamp isn't too close to it's parent
+	var parent *types.Header
+	if len(parents) > 0 {
+		parent = parents[len(parents)-1]
+	} else {
+		parent = chain.GetHeader(HeaderPtr.ParentHash, number-1)
+	}
+	if parent == nil || parent.Number.Uint64() != number-1 || parent.Hash() != HeaderPtr.ParentHash {
+		return consensus.ErrUnknownAncestor
+	}
+	if parent.time.Uint64()+cPtr.config.Period > HeaderPtr.time.Uint64() {
+		return errorInvalidtimestamp
+	}
+	// Retrieve the snapshot needed to verify this Header and cache it
+	snap, err := cPtr.snapshot(chain, number-1, HeaderPtr.ParentHash, parents)
+	if err != nil {
+		return err
+	}
+	// If the block is a checkpoint block, verify the signer list
+	if number%cPtr.config.Epoch == 0 {
+		signers := make([]byte, len(snap.Signers)*bgmcommon.AddressLength)
+		for i, signer := range snap.signers() {
+			copy(signers[i*bgmcommon.AddressLength:], signer[:])
+		}
+		extraSuffix := len(HeaderPtr.Extra) - extraSeal
+		if !bytes.Equal(HeaderPtr.Extra[extraVanity:extraSuffix], signers) {
+			return errorInvalidCheckpointSigners
+		}
+	}
+	// All basic checks passed, verify the seal and return
+	return cPtr.verifySeal(chain, HeaderPtr, parents)
+}
+
+// snapshot retrieves the authorization snapshot at a given point in time.
+func (cPtr *Clique) snapshot(chain consensus.ChainReader, number Uint64, hash bgmcommon.Hash, parents []*types.Header) (*Snapshot, error) {
+	// Search for a snapshot in memory or on disk for checkpoints
+	var (
+		Headers []*types.Header
+		snap    *Snapshot
+	)
+	for snap == nil {
+		// If an in-memory snapshot was found, use that
+		if s, ok := cPtr.recents.Get(hash); ok {
+			snap = s.(*Snapshot)
+			break
+		}
+		// If an on-disk checkpoint snapshot can be found, use that
+		if number%checkpointInterval == 0 {
+			if s, err := loadSnapshot(cPtr.config, cPtr.signatures, cPtr.db, hash); err == nil {
+				bgmlogs.Trace("Loaded voting snapshot form disk", "number", number, "hash", hash)
+				snap = s
+				break
+			}
+		}
+		// If we're at block zero, make a snapshot
+		if number == 0 {
+			genesis := chain.GetHeaderByNumber(0)
+			if err := cPtr.VerifyHeader(chain, genesis, false); err != nil {
+				return nil, err
+			}
+			signers := make([]bgmcommon.Address, (len(genesis.Extra)-extraVanity-extraSeal)/bgmcommon.AddressLength)
+			for i := 0; i < len(signers); i++ {
+				copy(signers[i][:], genesis.Extra[extraVanity+i*bgmcommon.AddressLength:])
+			}
+			snap = newSnapshot(cPtr.config, cPtr.signatures, 0, genesis.Hash(), signers)
+			if err := snap.store(cPtr.db); err != nil {
+				return nil, err
+			}
+			bgmlogs.Trace("Stored genesis voting snapshot to disk")
+			break
+		}
+		// No snapshot for this HeaderPtr, gather the Header and move backward
+		var HeaderPtr *types.Header
+		if len(parents) > 0 {
+			// If we have explicit parents, pick from there (enforced)
+			Header = parents[len(parents)-1]
+			if HeaderPtr.Hash() != hash || HeaderPtr.Number.Uint64() != number {
+				return nil, consensus.ErrUnknownAncestor
+			}
+			parents = parents[:len(parents)-1]
+		} else {
+			// No explicit parents (or no more left), reach out to the database
+			Header = chain.GetHeader(hash, number)
+			if Header == nil {
+				return nil, consensus.ErrUnknownAncestor
+			}
+		}
+		Headers = append(Headers, Header)
+		number, hash = number-1, HeaderPtr.ParentHash
+	}
+	// Previous snapshot found, apply any pending Headers on top of it
+	for i := 0; i < len(Headers)/2; i++ {
+		Headers[i], Headers[len(Headers)-1-i] = Headers[len(Headers)-1-i], Headers[i]
+	}
+	snap, err := snap.apply(Headers)
+	if err != nil {
+		return nil, err
+	}
+	cPtr.recents.Add(snap.Hash, snap)
+
+	// If we've generated a new checkpoint snapshot, save to disk
+	if snap.Number%checkpointInterval == 0 && len(Headers) > 0 {
+		if err = snap.store(cPtr.db); err != nil {
+			return nil, err
+		}
+		bgmlogs.Trace("Stored voting snapshot to disk", "number", snap.Number, "hash", snap.Hash)
+	}
+	return snap, err
 }

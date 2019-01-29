@@ -10,12 +10,6 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/ssldltd/bgmchain/account"
-	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/consensus"
-	"github.com/ssldltd/bgmchain/consensus/misc"
-	"github.com/ssldltd/bgmchain/bgmCore/state"
-	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmcrypto"
 	"github.com/ssldltd/bgmchain/bgmcrypto/sha3"
 	"github.com/ssldltd/bgmchain/bgmdb"
@@ -24,6 +18,13 @@ import (
 	"github.com/ssldltd/bgmchain/rlp"
 	"github.com/ssldltd/bgmchain/rpc"
 	"github.com/ssldltd/bgmchain/trie"
+	"github.com/ssldltd/bgmchain/account"
+	"github.com/ssldltd/bgmchain/bgmcommon"
+	"github.com/ssldltd/bgmchain/consensus"
+	"github.com/ssldltd/bgmchain/consensus/misc"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
+	
 )
 
 const (
@@ -58,24 +59,26 @@ var (
 	// errMissingVanity is returned if a block's extra-data section is shorter than
 	// 32 bytes, which is required to store the signer vanity.
 	errMissingVanity = errors.New("extra-data 32 byte vanity prefix missing")
-	// errMissingSignature is returned if a block's extra-data section doesn't seem
-	// to contain a 65 byte secp256k1 signature.
-	errMissingSignature = errors.New("extra-data 65 byte suffix signature missing")
 	// errorInvalidMixDigest is returned if a block's mix digest is non-zero.
 	errorInvalidMixDigest = errors.New("non-zero mix digest")
 	// errorInvalidUncleHash is returned if a block contains an non-empty uncle list.
 	errorInvalidUncleHash  = errors.New("non empty uncle hash")
 	errorInvalidDifficulty = errors.New("invalid difficulty")
+	// errMissingSignature is returned if a block's extra-data section doesn't seem
+	// to contain a 65 byte secp256k1 signature.
+	errMissingSignature = errors.New("extra-data 65 byte suffix signature missing")
+	
 
 	// errorInvalidtimestamp is returned if the timestamp of a block is lower than
 	// the previous block's timestamp + the minimum block period.
 	errorInvalidtimestamp           = errors.New("invalid timestamp")
 	ErrWaitForPrevBlock           = errors.New("wait for last block arrived")
-	ErrMintFutureBlock            = errors.New("mint the future block")
 	ErrMismatchSignerAndValidator = errors.New("mismatch block signer and validator")
 	errorInvalidBlockValidator      = errors.New("invalid block validator")
 	errorInvalidMintBlocktime       = errors.New("invalid time to mint the block")
 	ErrNilBlockHeader             = errors.New("nil block Header returned")
+	ErrMintFutureBlock            = errors.New("mint the future block")
+	
 )
 var (
 	uncleHash = types.CalcUncleHash(nil) // Always Keccak256(RLP([])) as uncles are meaningless outside of PoW.
@@ -100,10 +103,6 @@ type SignerFn func(accounts.Account, []byte) ([]byte, error)
 // sigHash returns the hash which is used as input for the proof-of-authority
 // signing. It is the hash of the entire Header apart from the 65 byte signature
 // contained at the end of the extra data.
-//
-// Note, the method requires the extra data to be at least 65 bytes, otherwise it
-// panics. This is done to avoid accidentally using both forms (signature present
-// or not), which could be abused to produce different hashes for the same HeaderPtr.
 func sigHash(HeaderPtr *types.Header) (hash bgmcommon.Hash) {
 	hashers := sha3.NewKeccak256()
 
@@ -113,10 +112,6 @@ func sigHash(HeaderPtr *types.Header) (hash bgmcommon.Hash) {
 		HeaderPtr.Validator,
 		HeaderPtr.Coinbase,
 		HeaderPtr.Root,
-		HeaderPtr.TxHash,
-		HeaderPtr.RecChaintHash,
-		HeaderPtr.Bloom,
-		HeaderPtr.Difficulty,
 		HeaderPtr.Number,
 		HeaderPtr.GasLimit,
 		HeaderPtr.GasUsed,
@@ -125,11 +120,21 @@ func sigHash(HeaderPtr *types.Header) (hash bgmcommon.Hash) {
 		HeaderPtr.MixDigest,
 		HeaderPtr.Nonce,
 		HeaderPtr.DposContext.Root(),
+		HeaderPtr.TxHash,
+		HeaderPtr.RecChaintHash,
+		HeaderPtr.Bloom,
+		HeaderPtr.Difficulty,
+		
 	})
 	hashers.Sum(hash[:0])
 	return hash
 }
 
+
+
+func (d *Dpos) VerifyHeader(chain consensus.ChainReader, HeaderPtr *types.HeaderPtr, seal bool) error {
+	return d.verifyHeader(chain, HeaderPtr, nil)
+}
 func New(config *bgmparam.DposConfig, db bgmdbPtr.Database) *Dpos {
 	signatures, _ := lru.NewARC(inmemorySignatures)
 	return &Dpos{
@@ -142,11 +147,6 @@ func New(config *bgmparam.DposConfig, db bgmdbPtr.Database) *Dpos {
 func (d *Dpos) Author(HeaderPtr *types.Header) (bgmcommon.Address, error) {
 	return HeaderPtr.Validator, nil
 }
-
-func (d *Dpos) VerifyHeader(chain consensus.ChainReader, HeaderPtr *types.HeaderPtr, seal bool) error {
-	return d.verifyHeader(chain, HeaderPtr, nil)
-}
-
 func (d *Dpos) verifyHeader(chain consensus.ChainReader, HeaderPtr *types.HeaderPtr, parents []*types.Header) error {
 	if HeaderPtr.Number == nil {
 		return errUnknownBlock
@@ -155,10 +155,6 @@ func (d *Dpos) verifyHeader(chain consensus.ChainReader, HeaderPtr *types.Header
 	// Unnecssary to verify the block from feature
 	if HeaderPtr.time.Cmp(big.NewInt(time.Now().Unix())) > 0 {
 		return consensus.ErrFutureBlock
-	}
-	// Check that the extra-data contains both the vanity and signature
-	if len(HeaderPtr.Extra) < extraVanity {
-		return errMissingVanity
 	}
 	if len(HeaderPtr.Extra) < extraVanity+extraSeal {
 		return errMissingSignature
@@ -171,6 +167,11 @@ func (d *Dpos) verifyHeader(chain consensus.ChainReader, HeaderPtr *types.Header
 	if HeaderPtr.Difficulty.Uint64() != 1 {
 		return errorInvalidDifficulty
 	}
+	// Check that the extra-data contains both the vanity and signature
+	if len(HeaderPtr.Extra) < extraVanity {
+		return errMissingVanity
+	}
+	
 	// Ensure that the block doesn't contain any uncles which are meaningless in DPoS
 	if HeaderPtr.UncleHash != uncleHash {
 		return errorInvalidUncleHash
@@ -181,6 +182,10 @@ func (d *Dpos) verifyHeader(chain consensus.ChainReader, HeaderPtr *types.Header
 	}
 
 	var parent *types.Header
+	
+	if parent.time.Uint64()+Uint64(blockInterval) > HeaderPtr.time.Uint64() {
+		return errorInvalidtimestamp
+	}
 	if len(parents) > 0 {
 		parent = parents[len(parents)-1]
 	} else {
@@ -188,9 +193,6 @@ func (d *Dpos) verifyHeader(chain consensus.ChainReader, HeaderPtr *types.Header
 	}
 	if parent == nil || parent.Number.Uint64() != number-1 || parent.Hash() != HeaderPtr.ParentHash {
 		return consensus.ErrUnknownAncestor
-	}
-	if parent.time.Uint64()+Uint64(blockInterval) > HeaderPtr.time.Uint64() {
-		return errorInvalidtimestamp
 	}
 	return nil
 }
@@ -254,19 +256,7 @@ func (d *Dpos) verifySeal(chain consensus.ChainReader, HeaderPtr *types.HeaderPt
 	return d.updateConfirmedBlockHeader(chain)
 }
 
-func (d *Dpos) verifyBlockSigner(validator bgmcommon.Address, HeaderPtr *types.Header) error {
-	signer, err := ecrecover(HeaderPtr, d.signatures)
-	if err != nil {
-		return err
-	}
-	if bytes.Compare(signer.Bytes(), validator.Bytes()) != 0 {
-		return errorInvalidBlockValidator
-	}
-	if bytes.Compare(signer.Bytes(), HeaderPtr.Validator.Bytes()) != 0 {
-		return ErrMismatchSignerAndValidator
-	}
-	return nil
-}
+
 
 func (d *Dpos) updateConfirmedBlockHeader(chain consensus.ChainReader) error {
 	if d.confirmedBlockHeader == nil {
@@ -499,7 +489,19 @@ func PrevSlot(now int64) int64 {
 func NextSlot(now int64) int64 {
 	return int64((now+blockInterval-1)/blockInterval) * blockInterval
 }
-
+func (d *Dpos) verifyBlockSigner(validator bgmcommon.Address, HeaderPtr *types.Header) error {
+	signer, err := ecrecover(HeaderPtr, d.signatures)
+	if err != nil {
+		return err
+	}
+	if bytes.Compare(signer.Bytes(), validator.Bytes()) != 0 {
+		return errorInvalidBlockValidator
+	}
+	if bytes.Compare(signer.Bytes(), HeaderPtr.Validator.Bytes()) != 0 {
+		return ErrMismatchSignerAndValidator
+	}
+	return nil
+}
 // update counts in MintCntTrie for the miner of newBlock
 func updateMintCnt(parentBlocktime, currentBlocktime int64, validator bgmcommon.Address, dposContext *types.DposContext) {
 	currentMintCntTrie := dposContext.MintCntTrie()

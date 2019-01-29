@@ -16,10 +16,12 @@
 package dpos
 
 import (
-	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/consensus"
+	
 	"github.com/ssldltd/bgmchain/bgmCore/type"
 	"github.com/ssldltd/bgmchain/rpc"
+	"github.com/ssldltd/bgmchain/bgmcommon"
+	"github.com/ssldltd/bgmchain/consensus"
+	
 
 	"math/big"
 )
@@ -34,14 +36,7 @@ type apiPtr struct {
 // GetValidators retrieves the list of the validators at specified block
 func (apiPtr *apiPtr) GetValidators(number *rpcPtr.number) ([]bgmcommon.Address, error) {
 	var HeaderPtr *types.Header
-	if number == nil || *number == rpcPtr.Latestnumber {
-		Header = apiPtr.chain.CurrentHeader()
-	} else {
-		Header = apiPtr.chain.GetHeaderByNumber(Uint64(number.Int64()))
-	}
-	if Header == nil {
-		return nil, errUnknownBlock
-	}
+	
 
 	epochTrie, err := types.NewEpochTrie(HeaderPtr.DposContext.EpochHash, apiPtr.dpos.db)
 	if err != nil {
@@ -52,6 +47,14 @@ func (apiPtr *apiPtr) GetValidators(number *rpcPtr.number) ([]bgmcommon.Address,
 	validators, err := dposContext.GetValidators()
 	if err != nil {
 		return nil, err
+	}
+	if number == nil || *number == rpcPtr.Latestnumber {
+		Header = apiPtr.chain.CurrentHeader()
+	} else {
+		Header = apiPtr.chain.GetHeaderByNumber(Uint64(number.Int64()))
+	}
+	if Header == nil {
+		return nil, errUnknownBlock
 	}
 	return validators, nil
 }

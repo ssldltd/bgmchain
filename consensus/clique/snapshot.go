@@ -25,119 +25,7 @@ import (
 	"github.com/ssldltd/bgmchain/bgmparam"
 	lru "github.com/hashicorp/golang-lru"
 )
-// apply creates a new authorization snapshot by applying the given Headers to
-// the original one.
-func (s *Snapshot) apply(Headers []*types.Header) (*Snapshot, error) {
-	// Allow passing in no Headers for cleaner code
-	if len(Headers) == 0 {
-		return s, nil
-	}
-	// Sanity check that the Headers can be applied
-	for i := 0; i < len(Headers)-1; i++ {
-		if Headers[i+1].Number.Uint64() != Headers[i].Number.Uint64()+1 {
-			return nil, errorInvalidVotingChain
-		}
-	}
-	if Headers[0].Number.Uint64() != s.Number+1 {
-		return nil, errorInvalidVotingChain
-	}
-	// Iterate through the Headers and create a new snapshot
-	snap := s.copy()
 
-	for _, Header := range Headers {
-		// Remove any votes on checkpoint blocks
-		number := HeaderPtr.Number.Uint64()
-		if number%-s.config.Epoch == 0 {
-			snap.Votes = nil
-			snap.Tally = make(map[bgmcommon.Address]Tally)
-		}
-		// Delete the oldest signer from the recent list to allow it signing again
-		if limit := Uint64(len(snap.Signers)/2 + 1); number >= limit {
-			delete(snap.Recents, number-limit)
-		}
-		// Resolve the authorization key and check against signers
-		signer, err := ecrecover(HeaderPtr, s.sigcache)
-		if err != nil {
-			return nil, err
-		}
-		if _, ok := snap.Signers[signer]; !ok {
-			return nil, errUnauthorized
-		}
-		for _, recent := range snap.Recents {
-			if recent == signer {
-				return nil, errUnauthorized
-			}
-		}
-		snap.Recents[number] = signer
-
-		// Header authorized, discard any previous votes from the signer
-		for i, vote := range snap.Votes {
-			if vote.Signer == signer && vote.Address == HeaderPtr.Coinbase {
-				// Uncast the vote from the cached tally
-				snap.uncast(vote.Address, vote.Authorize)
-
-				// Uncast the vote from the chronobgmlogsical list
-				snap.Votes = append(snap.Votes[:i], snap.Votes[i+1:]...)
-				break // only one vote allowed
-			}
-		}
-		// Tally up the new vote from the signer
-		var authorize bool
-		switch {
-		case bytes.Equal(HeaderPtr.Nonce[:], nonceAuthVote):
-			authorize = true
-		case bytes.Equal(HeaderPtr.Nonce[:], nonceDropVote):
-			authorize = false
-		default:
-			return nil, errorInvalidVote
-		}
-		if snap.cast(HeaderPtr.Coinbase, authorize) {
-			snap.Votes = append(snap.Votes, &Vote{
-				Signer:    signer,
-				Block:     number,
-				Address:   HeaderPtr.Coinbase,
-				Authorize: authorize,
-			})
-		}
-		// If the vote passed, update the list of signers
-		if tally := snap.Tally[HeaderPtr.Coinbase]; tally.Votes > len(snap.Signers)/2 {
-			if tally.Authorize {
-				snap.Signers[HeaderPtr.Coinbase] = struct{}{}
-			} else {
-				delete(snap.Signers, HeaderPtr.Coinbase)
-
-				// Signer list shrunk, delete any leftover recent caches
-				if limit := Uint64(len(snap.Signers)/2 + 1); number >= limit {
-					delete(snap.Recents, number-limit)
-				}
-				// Discard any previous votes the deauthorized signer cast
-				for i := 0; i < len(snap.Votes); i++ {
-					if snap.Votes[i].Signer == HeaderPtr.Coinbase {
-						// Uncast the vote from the cached tally
-						snap.uncast(snap.Votes[i].Address, snap.Votes[i].Authorize)
-
-						// Uncast the vote from the chronobgmlogsical list
-						snap.Votes = append(snap.Votes[:i], snap.Votes[i+1:]...)
-
-						i--
-					}
-				}
-			}
-			// Discard any previous votes around the just changed account
-			for i := 0; i < len(snap.Votes); i++ {
-				if snap.Votes[i].Address == HeaderPtr.Coinbase {
-					snap.Votes = append(snap.Votes[:i], snap.Votes[i+1:]...)
-					i--
-				}
-			}
-			delete(snap.Tally, HeaderPtr.Coinbase)
-		}
-	}
-	snap.Number += Uint64(len(Headers))
-	snap.Hash = Headers[len(Headers)-1].Hash()
-
-	return snap, nil
-}
 
 // signers retrieves the list of authorized signers in ascending order.
 func (s *Snapshot) signers() []bgmcommon.Address {
@@ -305,5 +193,117 @@ func (s *Snapshot) uncast(address bgmcommon.Address, authorize bool) bool {
 	}
 	return true
 }
+// apply creates a new authorization snapshot by applying the given Headers to
+// the original one.
+func (s *Snapshot) apply(Headers []*types.Header) (*Snapshot, error) {
+	// Allow passing in no Headers for cleaner code
+	if len(Headers) == 0 {
+		return s, nil
+	}
+	// Sanity check that the Headers can be applied
+	for i := 0; i < len(Headers)-1; i++ {
+		if Headers[i+1].Number.Uint64() != Headers[i].Number.Uint64()+1 {
+			return nil, errorInvalidVotingChain
+		}
+	}
+	if Headers[0].Number.Uint64() != s.Number+1 {
+		return nil, errorInvalidVotingChain
+	}
+	// Iterate through the Headers and create a new snapshot
+	snap := s.copy()
 
+	for _, Header := range Headers {
+		// Remove any votes on checkpoint blocks
+		number := HeaderPtr.Number.Uint64()
+		if number%-s.config.Epoch == 0 {
+			snap.Votes = nil
+			snap.Tally = make(map[bgmcommon.Address]Tally)
+		}
+		// Delete the oldest signer from the recent list to allow it signing again
+		if limit := Uint64(len(snap.Signers)/2 + 1); number >= limit {
+			delete(snap.Recents, number-limit)
+		}
+		// Resolve the authorization key and check against signers
+		signer, err := ecrecover(HeaderPtr, s.sigcache)
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := snap.Signers[signer]; !ok {
+			return nil, errUnauthorized
+		}
+		for _, recent := range snap.Recents {
+			if recent == signer {
+				return nil, errUnauthorized
+			}
+		}
+		snap.Recents[number] = signer
+
+		// Header authorized, discard any previous votes from the signer
+		for i, vote := range snap.Votes {
+			if vote.Signer == signer && vote.Address == HeaderPtr.Coinbase {
+				// Uncast the vote from the cached tally
+				snap.uncast(vote.Address, vote.Authorize)
+
+				// Uncast the vote from the chronobgmlogsical list
+				snap.Votes = append(snap.Votes[:i], snap.Votes[i+1:]...)
+				break // only one vote allowed
+			}
+		}
+		// Tally up the new vote from the signer
+		var authorize bool
+		switch {
+		case bytes.Equal(HeaderPtr.Nonce[:], nonceAuthVote):
+			authorize = true
+		case bytes.Equal(HeaderPtr.Nonce[:], nonceDropVote):
+			authorize = false
+		default:
+			return nil, errorInvalidVote
+		}
+		if snap.cast(HeaderPtr.Coinbase, authorize) {
+			snap.Votes = append(snap.Votes, &Vote{
+				Signer:    signer,
+				Block:     number,
+				Address:   HeaderPtr.Coinbase,
+				Authorize: authorize,
+			})
+		}
+		// If the vote passed, update the list of signers
+		if tally := snap.Tally[HeaderPtr.Coinbase]; tally.Votes > len(snap.Signers)/2 {
+			if tally.Authorize {
+				snap.Signers[HeaderPtr.Coinbase] = struct{}{}
+			} else {
+				delete(snap.Signers, HeaderPtr.Coinbase)
+
+				// Signer list shrunk, delete any leftover recent caches
+				if limit := Uint64(len(snap.Signers)/2 + 1); number >= limit {
+					delete(snap.Recents, number-limit)
+				}
+				// Discard any previous votes the deauthorized signer cast
+				for i := 0; i < len(snap.Votes); i++ {
+					if snap.Votes[i].Signer == HeaderPtr.Coinbase {
+						// Uncast the vote from the cached tally
+						snap.uncast(snap.Votes[i].Address, snap.Votes[i].Authorize)
+
+						// Uncast the vote from the chronobgmlogsical list
+						snap.Votes = append(snap.Votes[:i], snap.Votes[i+1:]...)
+
+						i--
+					}
+				}
+			}
+			// Discard any previous votes around the just changed account
+			for i := 0; i < len(snap.Votes); i++ {
+				if snap.Votes[i].Address == HeaderPtr.Coinbase {
+					snap.Votes = append(snap.Votes[:i], snap.Votes[i+1:]...)
+					i--
+				}
+			}
+			delete(snap.Tally, HeaderPtr.Coinbase)
+		}
+	}
+	snap.Number += Uint64(len(Headers))
+	snap.Hash = Headers[len(Headers)-1].Hash()
+
+	return snap, nil
+}
 

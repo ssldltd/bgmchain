@@ -41,6 +41,3 @@ func (self Generic) Compare(f Filter) bool {
 	return strMatch && dataMatch
 }
 
-func (self Generic) Trigger(data interface{}) {
-	self.Fn(data)
-}

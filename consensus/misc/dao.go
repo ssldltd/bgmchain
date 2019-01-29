@@ -34,29 +34,7 @@ import (
 //      with the fork specific extra-data set
 //   b) if the node is pro-fork, require blocks in the specific range to have the
 //      unique extra-data set.
-func VerifyDAOHeaderExtraData(config *bgmparam.ChainConfig, HeaderPtr *types.Header) error {
-	// Short circuit validation if the node doesn't care about the DAO fork
-	if config.DAOForkBlock == nil {
-		return nil
-	}
-	// Make sure the block is within the fork's modified extra-data range
-	limit := new(big.Int).Add(config.DAOForkBlock, bgmparam.DAOForkExtraRange)
-	if HeaderPtr.Number.Cmp(config.DAOForkBlock) < 0 || HeaderPtr.Number.Cmp(limit) >= 0 {
-		return nil
-	}
-	// Depending on whbgmchain we support or oppose the fork, validate the extra-data contents
-	if config.DAOForkSupport {
-		if !bytes.Equal(HeaderPtr.Extra, bgmparam.DAOForkBlockExtra) {
-			return ErrBadProDAOExtra
-		}
-	} else {
-		if bytes.Equal(HeaderPtr.Extra, bgmparam.DAOForkBlockExtra) {
-			return ErrBadNoDAOExtra
-		}
-	}
-	// All ok, Header has the same extra-data we expect
-	return nil
-}
+
 var (
 	// ErrBadProDAOExtra is returned if a Header doens't support the DAO fork on a
 	// pro-fork Client.
@@ -81,4 +59,27 @@ func ApplyDAOHardFork(statedbPtr *state.StateDB) {
 		statedbPtr.AddBalance(bgmparam.DAORefundContract, statedbPtr.GetBalance(addr))
 		statedbPtr.SetBalance(addr, new(big.Int))
 	}
+}
+func VerifyDAOHeaderExtraData(config *bgmparam.ChainConfig, HeaderPtr *types.Header) error {
+	// Short circuit validation if the node doesn't care about the DAO fork
+	if config.DAOForkBlock == nil {
+		return nil
+	}
+	// Make sure the block is within the fork's modified extra-data range
+	limit := new(big.Int).Add(config.DAOForkBlock, bgmparam.DAOForkExtraRange)
+	if HeaderPtr.Number.Cmp(config.DAOForkBlock) < 0 || HeaderPtr.Number.Cmp(limit) >= 0 {
+		return nil
+	}
+	// Depending on whbgmchain we support or oppose the fork, validate the extra-data contents
+	if config.DAOForkSupport {
+		if !bytes.Equal(HeaderPtr.Extra, bgmparam.DAOForkBlockExtra) {
+			return ErrBadProDAOExtra
+		}
+	} else {
+		if bytes.Equal(HeaderPtr.Extra, bgmparam.DAOForkBlockExtra) {
+			return ErrBadNoDAOExtra
+		}
+	}
+	// All ok, Header has the same extra-data we expect
+	return nil
 }

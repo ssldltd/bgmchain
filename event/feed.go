@@ -25,10 +25,6 @@ var errBadChannel = errors.New("event: Subscribe argument does not have sendable
 // Feed implement one-to-many subscriptions where the carrier of events is a channel.
 // Values sent to a Feed are delivered to all subscribed channels simultaneously.
 //
-// Feeds can only be used with a single type. The type is determined by the first Send or
-// Subscribe operation. Subsequent calls to these methods panic if the type does not
-// matchPtr.
-//
 // The zero value is ready to use.
 type Feed struct {
 	once      syncPtr.Once        // ensures that init only runs once
@@ -230,18 +226,3 @@ type feedSub struct {
 	err     chan error
 }
 
-// func (cs caseList) String() string {
-//     s := "["
-//     for i, cas := range cs {
-//             if i != 0 {
-//                     s += ", "
-//             }
-//             switch cas.Dir {
-//             case reflect.SelectSend:
-//                     s += fmt.Sprintf("%v<-", cas.Chan.Interface())
-//             case reflect.SelectRecv:
-//                     s += fmt.Sprintf("<-%v", cas.Chan.Interface())
-//             }
-//     }
-//     return s + "]"
-// }

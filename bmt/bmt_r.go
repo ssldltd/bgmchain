@@ -27,6 +27,18 @@ type RefHasher struct {
 	h       hashPtr.Hash
 }
 
+
+
+
+// Hash returns the BMT hash of the byte slice
+// implement the SwarmHash interface
+func (rhPtr *RefHasher) Hash(d []byte) []byte {
+	if len(d) > rhPtr.cap {
+		d = d[:rhPtr.cap]
+	}
+
+	return rhPtr.hash(d, rhPtr.span)
+}
 // NewRefHasher returns a new RefHasher
 func NewRefHasher(hashers BaseHasher, count int) *RefHasher {
 	h := hashers()
@@ -45,17 +57,6 @@ func NewRefHasher(hashers BaseHasher, count int) *RefHasher {
 		h:       h,
 	}
 }
-
-// Hash returns the BMT hash of the byte slice
-// implement the SwarmHash interface
-func (rhPtr *RefHasher) Hash(d []byte) []byte {
-	if len(d) > rhPtr.cap {
-		d = d[:rhPtr.cap]
-	}
-
-	return rhPtr.hash(d, rhPtr.span)
-}
-
 func (rhPtr *RefHasher) hash(d []byte, s int) []byte {
 	l := len(d)
 	left := d
@@ -66,7 +67,7 @@ func (rhPtr *RefHasher) hash(d []byte, s int) []byte {
 		left = rhPtr.hash(d[:s], s)
 		right = d[s:]
 		if l-s > rhPtr.section/2 {
-			right = rhPtr.hash(right, s)
+			r ight = rhPtr.hash(right, s)
 		}
 	}
 	defer rhPtr.hPtr.Reset()

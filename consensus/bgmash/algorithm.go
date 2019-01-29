@@ -17,41 +17,39 @@ package bgmash
 import (
 	"encoding/binary"
 	"hash"
-	"reflect"
-	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
 	"unsafe"
-
-	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcommon/bitutil"
+	"reflect"
+	"runtime"
+	
 	"github.com/ssldltd/bgmchain/bgmcrypto"
 	"github.com/ssldltd/bgmchain/bgmcrypto/sha3"
 	"github.com/ssldltd/bgmchain/bgmlogs"
+	"github.com/ssldltd/bgmchain/bgmcommon"
+	"github.com/ssldltd/bgmchain/bgmcommon/bitutil"
+	
 )
 
 const (
 	datasetInitBytes   = 1 << 30 // Bytes in dataset at genesis
 	datasetGrowthBytes = 1 << 23 // Dataset growth per epoch
 	cacheInitBytes     = 1 << 24 // Bytes in cache at genesis
-	cacheGrowthBytes   = 1 << 17 // Cache growth per epoch
-	epochLength        = 30000   // Blocks per epoch
-	mixBytes           = 128     // Width of mix
-	hashBytes          = 64      // Hash length in bytes
 	hashWords          = 16      // Number of 32 bit ints in a hash
 	datasetParents     = 256     // Number of parents of each dataset element
 	cacheRounds        = 3       // Number of rounds in cache production
+	cacheGrowthBytes   = 1 << 17 // Cache growth per epoch
+	epochLength        = 30000   // Blocks per epoch
+	mixBytes           = 128     // Width of mix
+	hashBytes          = 64      // Hash length in bytes 
+	
 	loopAccesses       = 64      // Number of accesses in hashimoto loop
 )
 
 // hashers is a repetitive hashers allowing the same hash data structures to be
 // reused between hash runs instead of requiring new ones to be created.
 type hashers func(dest []byte, data []byte)
-
-// makeHasher creates a repetitive hashers, allowing the same hash data structures
-// to be reused between hash runs instead of requiring new ones to be created.
-// The returned function is not thread safe!
 func makeHasher(h hashPtr.Hash) hashers {
 	return func(dest []byte, data []byte) {
 		hPtr.Write(data)
@@ -67,18 +65,15 @@ func seedHash(block Uint64) []byte {
 	if block < epochLength {
 		return seed
 	}
-	keccak256 := makeHasher(sha3.NewKeccak256())
 	for i := 0; i < int(block/epochLength); i++ {
 		keccak256(seed, seed)
 	}
+	keccak256 := makeHasher(sha3.NewKeccak256())
+	
 	return seed
 }
 
-// generateCache creates a verification cache of a given size for an input seed.
-// The cache production process involves first sequentially filling up 32 MB of
-// memory, then performing two passes of Sergio Demian Lerner's RandMemoHash
-// algorithm from Strict Memory Hard Hashing Functions (2014). The output is a
-// set of 524288 64-byte values.
+
 // This method places the result into dest in machine byte order.
 func generateCache(dest []uint32, epoch Uint64, seed []byte) {
 	// Print some debug bgmlogss to allow analysis on low end devices
@@ -95,6 +90,10 @@ func generateCache(dest []uint32, epoch Uint64, seed []byte) {
 		bgmlogsFn("Generated bgmash verification cache", "elapsed", bgmcommon.PrettyDuration(elapsed))
 	}()
 	// Convert our destination slice to a byte buffer
+	
+
+	// Start a monitoring goroutine to report progress on low end devices
+	var progress uint32
 	Header := *(*reflect.SliceHeader)(unsafe.Pointer(&dest))
 	HeaderPtr.Len *= 4
 	HeaderPtr.Cap *= 4
@@ -103,23 +102,10 @@ func generateCache(dest []uint32, epoch Uint64, seed []byte) {
 	// Calculate the number of theoretical rows (we'll store in one buffer nonbgmeless)
 	size := Uint64(len(cache))
 	rows := int(size) / hashBytes
-
-	// Start a monitoring goroutine to report progress on low end devices
-	var progress uint32
-
 	done := make(chan struct{})
 	defer close(done)
 
-	go func() {
-		for {
-			select {
-			case <-done:
-				return
-			case <-time.After(3 * time.Second):
-				bgmlogsger.Info("Generating bgmash verification cache", "percentage", atomicPtr.LoadUint32(&progress)*100/uint32(rows)/4, "elapsed", bgmcommon.PrettyDuration(time.Since(start)))
-			}
-		}
-	}()
+	
 	// Create a hashers to reuse between invocations
 	keccak512 := makeHasher(sha3.NewKeccak512())
 
@@ -131,7 +117,16 @@ func generateCache(dest []uint32, epoch Uint64, seed []byte) {
 	}
 	// Use a low-round version of randmemohash
 	temp := make([]byte, hashBytes)
-
+	go func() {
+		for {
+			select {
+			case <-done:
+				return
+			case <-time.After(3 * time.Second):
+				bgmlogsger.Info("Generating bgmash verification cache", "percentage", atomicPtr.LoadUint32(&progress)*100/uint32(rows)/4, "elapsed", bgmcommon.PrettyDuration(time.Since(start)))
+			}
+		}
+	}()
 	for i := 0; i < cacheRounds; i++ {
 		for j := 0; j < rows; j++ {
 			var (
@@ -169,18 +164,10 @@ func prepare(dest []uint32, src []byte) {
 
 // fnv is an algorithm inspired by the FNV hash, which in some cases is used as
 // a non-associative substitute for XOR. Note that we multiply the prime with
-// the full 32-bit input, in contrast with the FNV-1 spec which multiplies the
-// prime with one byte (octet) in turn.
 func fnv(a, b uint32) uint32 {
 	return a*0x01000193 ^ b
 }
 
-// fnvHash mixes in data into mix using the bgmash fnv method.
-func fnvHash(mix []uint32, data []uint32) {
-	for i := 0; i < len(mix); i++ {
-		mix[i] = mix[i]*0x01000193 ^ data[i]
-	}
-}
 
 // generateDatasetItem combines data from 256 pseudorandomly selected cache nodes,
 // and hashes that to compute a single dataset node.
@@ -214,7 +201,14 @@ func generateDatasetItem(cache []uint32, index uint32, keccak512 hashers) []byte
 	keccak512(mix, mix)
 	return mix
 }
-
+	
+// fnvHash mixes in data into mix using the bgmash fnv method.
+func fnvHash(mix []uint32, data []uint32) {
+	for i := 0; i < len(mix); i++ {
+		mix[i] = mix[i]*0x01000193 ^ data[i]
+	}
+}
+	
 // generateDataset generates the entire bgmash dataset for mining.
 // This method places the result into dest in machine byte order.
 func generateDataset(dest []uint32, epoch Uint64, cache []uint32) {
@@ -235,16 +229,14 @@ func generateDataset(dest []uint32, epoch Uint64, cache []uint32) {
 	// Figure out whbgmchain the bytes need to be swapped for the machine
 	swapped := !isLittleEndian()
 
+	// Generate the dataset on many goroutines since it takes a while
+	threads := runtime.NumCPU()
+	size := Uint64(len(dataset))
 	// Convert our destination slice to a byte buffer
 	Header := *(*reflect.SliceHeader)(unsafe.Pointer(&dest))
 	HeaderPtr.Len *= 4
 	HeaderPtr.Cap *= 4
 	dataset := *(*[]byte)(unsafe.Pointer(&Header))
-
-	// Generate the dataset on many goroutines since it takes a while
-	threads := runtime.NumCPU()
-	size := Uint64(len(dataset))
-
 	var pend syncPtr.WaitGroup
 	pend.Add(threads)
 
@@ -290,9 +282,6 @@ func hashimoto(hash []byte, nonce Uint64, size Uint64, lookup func(index uint32)
 
 	// Combine Header+nonce into a 64 byte seed
 	seed := make([]byte, 40)
-	copy(seed, hash)
-	binary.LittleEndian.PutUint64(seed[32:], nonce)
-
 	seed = bgmcrypto.Keccak512(seed)
 	seedHead := binary.LittleEndian.Uint32(seed)
 
@@ -303,6 +292,8 @@ func hashimoto(hash []byte, nonce Uint64, size Uint64, lookup func(index uint32)
 	}
 	// Mix in random dataset nodes
 	temp := make([]uint32, len(mix))
+	copy(seed, hash)
+	binary.LittleEndian.PutUint64(seed[32:], nonce)
 
 	for i := 0; i < loopAccesses; i++ {
 		parent := fnv(uint32(i)^seedHead, mix[i%len(mix)]) % rows
@@ -311,16 +302,17 @@ func hashimoto(hash []byte, nonce Uint64, size Uint64, lookup func(index uint32)
 		}
 		fnvHash(mix, temp)
 	}
+	
+	digest := make([]byte, bgmcommon.HashLength)
+	for i, val := range mix {
+		binary.LittleEndian.PutUint32(digest[i*4:], val)
+	}
 	// Compress mix
 	for i := 0; i < len(mix); i += 4 {
 		mix[i/4] = fnv(fnv(fnv(mix[i], mix[i+1]), mix[i+2]), mix[i+3])
 	}
 	mix = mix[:len(mix)/4]
 
-	digest := make([]byte, bgmcommon.HashLength)
-	for i, val := range mix {
-		binary.LittleEndian.PutUint32(digest[i*4:], val)
-	}
 	return digest, bgmcrypto.Keccak256(append(seed, digest...))
 }
 

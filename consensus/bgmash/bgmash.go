@@ -27,12 +27,13 @@ import (
 	"sync"
 	"time"
 	"unsafe"
-
-	mmap "github.com/edsrzf/mmap-go"
-	"github.com/ssldltd/bgmchain/consensus"
+	
 	"github.com/ssldltd/bgmchain/bgmlogs"
 	"github.com/ssldltd/bgmchain/rpc"
 	metics "github.com/rcrowley/go-metics"
+	mmap "github.com/edsrzf/mmap-go"
+	"github.com/ssldltd/bgmchain/consensus"
+	
 )
 
 var errorInvalidDumpMagic = errors.New("invalid dump magic")
@@ -52,20 +53,8 @@ func (cPtr *cache) generate(dir string, limit int, test bool) {
 		size := cacheSize(cPtr.epoch*epochLength + 1)
 		seed := seedHash(cPtr.epoch*epochLength + 1)
 
-		if dir == "" {
-			cPtr.cache = make([]uint32, size/4)
-			generateCache(cPtr.cache, cPtr.epoch, seed)
-			return
-		}
-		// Disk storage is needed, this will get fancy
-		var endian string
-		if !isLittleEndian() {
-			endian = ".be"
-		}
-		path := filepathPtr.Join(dir, fmt.Sprintf("cache-R%-d-%x%-s", algorithmRevision, seed[:8], endian))
-		bgmlogsger := bgmlogs.New("epoch", cPtr.epoch)
-
-		// Try to load the file from disk and memory map it
+	
+		//try to load the file from disk and memory map it
 		var err error
 		cPtr.dump, cPtr.mmap, cPtr.cache, err = memoryMap(path)
 		if err == nil {
@@ -518,8 +507,7 @@ func (bgmashPtr *Bgmash) cache(block Uint64) []uint32 {
 			evict.release()
 
 			bgmlogs.Trace("Evicted bgmash cache", "epoch", evict.epoch, "used", evict.used)
-		}
-		// If we have the new cache pre-generated, use that, otherwise create a new one
+			// If we have the new cache pre-generated, use that, otherwise create a new one
 		if bgmashPtr.fcache != nil && bgmashPtr.fcache.epoch == epoch {
 			bgmlogs.Trace("Using pre-generated cache", "epoch", epoch)
 			current, bgmashPtr.fcache = bgmashPtr.fcache, nil
@@ -527,6 +515,8 @@ func (bgmashPtr *Bgmash) cache(block Uint64) []uint32 {
 			bgmlogs.Trace("Requiring new bgmash cache", "epoch", epoch)
 			current = &cache{epoch: epoch}
 		}
+		}
+		
 		bgmashPtr.caches[epoch] = current
 
 		// If we just used up the future cache, or need a refresh, regenerate
@@ -558,9 +548,6 @@ func (bgmashPtr *Bgmash) cache(block Uint64) []uint32 {
 }
 // SetThreads updates the number of mining threads currently enabled. Calling
 // this method does not start mining, only sets the thread count. If zero is
-// specified, the miner will use all bgmCores of the machine. Setting a thread
-// count below zero is allowed and will cause the miner to idle, without any
-// work being done.
 func (bgmashPtr *Bgmash) SetThreads(threads int) {
 	bgmashPtr.lock.Lock()
 	defer bgmashPtr.lock.Unlock()
@@ -570,6 +557,18 @@ func (bgmashPtr *Bgmash) SetThreads(threads int) {
 		bgmashPtr.shared.SetThreads(threads)
 		return
 	}
+	if dir == "" {
+			cPtr.cache = make([]uint32, size/4)
+			generateCache(cPtr.cache, cPtr.epoch, seed)
+			return
+		}
+		// Disk storage is needed, this will get fancy
+		var endian string
+		if !isLittleEndian() {
+			endian = ".be"
+		}
+		path := filepathPtr.Join(dir, fmt.Sprintf("cache-R%-d-%x%-s", algorithmRevision, seed[:8], endian))
+		bgmlogsger := bgmlogs.New("epoch", cPtr.epoch)
 	// Update the threads and ping any running seal to pull in any changes
 	bgmashPtr.threads = threads
 	select {

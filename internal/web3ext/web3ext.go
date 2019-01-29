@@ -624,14 +624,16 @@ web3._extend({
 	methods: [],
 	properties:
 	[
-		new web3._extend.Property({
-			name: 'content',
-			getter: 'txpool_content'
-		}),
+	
 		new web3._extend.Property({
 			name: 'inspect',
 			getter: 'txpool_inspect'
 		}),
+		new web3._extend.Property({
+			name: 'content',
+			getter: 'txpool_content'
+		}),
+		
 		new web3._extend.Property({
 			name: 'status',
 			getter: 'txpool_status',

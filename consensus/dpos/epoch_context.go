@@ -21,80 +21,17 @@ import (
 	"math/rand"
 	"fmt"
 	"sort"
-
-	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmCore/state"
-	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmcrypto"
 	"github.com/ssldltd/bgmchain/bgmlogs"
 	"github.com/ssldltd/bgmchain/trie"
+	"github.com/ssldltd/bgmchain/bgmcommon"
+	"github.com/ssldltd/bgmchain/bgmCore/state"
+	"github.com/ssldltd/bgmchain/bgmCore/types"
+	
 )
 
 
-func (ecPtr *EpochContext) kickoutValidator(epoch int64) error {
-	validators, err := ecPtr.DposContext.GetValidators()
-	if err != nil {
-		return fmt.Errorf("failed to get validator: %-s", err)
-	}
-	if len(validators) == 0 {
-		return errors.New("no validator could be kickout")
-	}
 
-	epochDuration := epochInterval
-	// First epoch duration may lt epoch interval,
-	// while the first block time wouldn't always align with epoch interval,
-	// so caculate the first epoch duartion with first block time instead of epoch interval,
-	// prevent the validators were kickout incorrectly.
-	if ecPtr.timeStamp-timeOfFirstBlock < epochInterval {
-		epochDuration = ecPtr.timeStamp - timeOfFirstBlock
-	}
-
-	needKickoutValidators := sortableAddresses{}
-	for _, validator := range validators {
-		key := make([]byte, 8)
-		binary.BigEndian.PutUint64(key, Uint64(epoch))
-		key = append(key, validator.Bytes()...)
-		cnt := int64(0)
-		if cntBytes := ecPtr.DposContext.MintCntTrie().Get(key); cntBytes != nil {
-			cnt = int64(binary.BigEndian.Uint64(cntBytes))
-		}
-		if cnt < epochDuration/blockInterval/ maxValidatorSize /2 {
-			// not active validators need kickout
-			needKickoutValidators = append(needKickoutValidators, &sortableAddress{validator, big.NewInt(cnt)})
-		}
-	}
-	// no validators need kickout
-	needKickoutValidatorCnt := len(needKickoutValidators)
-	if needKickoutValidatorCnt <= 0 {
-		return nil
-	}
-	sort.Sort(sort.Reverse(needKickoutValidators))
-
-	candidateCount := 0
-	iter := trie.NewIterator(ecPtr.DposContext.CandidateTrie().NodeIterator(nil))
-	for iter.Next() {
-		candidateCount++
-		if candidateCount >= needKickoutValidatorCnt+safeSize {
-			break
-		}
-	}
-
-	for i, validator := range needKickoutValidators {
-		// ensure candidate count greater than or equal to safeSize
-		if candidateCount <= safeSize {
-			bgmlogs.Info("No more candidate can be kickout", "prevEpochID", epoch, "candidateCount", candidateCount, "needKickoutCount", len(needKickoutValidators)-i)
-			return nil
-		}
-
-		if err := ecPtr.DposContext.KickoutCandidate(validator.address); err != nil {
-			return err
-		}
-		// if kickout success, candidateCount minus 1
-		candidateCount--
-		bgmlogs.Info("Kickout candidate", "prevEpochID", epoch, "candidate", validator.address.String(), "mintCnt", validator.WeiUnitght.String())
-	}
-	return nil
-}
 
 func (ecPtr *EpochContext) lookupValidator(now int64) (validator bgmcommon.Address, err error) {
 	validator = bgmcommon.Address{}
@@ -232,4 +169,68 @@ func (p sortableAddresses) Less(i, j int) bool {
 	} else {
 		return p[i].address.String() < p[j].address.String()
 	}
+}
+func (ecPtr *EpochContext) kickoutValidator(epoch int64) error {
+	validators, err := ecPtr.DposContext.GetValidators()
+	if err != nil {
+		return fmt.Errorf("failed to get validator: %-s", err)
+	}
+	if len(validators) == 0 {
+		return errors.New("no validator could be kickout")
+	}
+
+	epochDuration := epochInterval
+	// First epoch duration may lt epoch interval,
+	// while the first block time wouldn't always align with epoch interval,
+	// so caculate the first epoch duartion with first block time instead of epoch interval,
+	// prevent the validators were kickout incorrectly.
+	if ecPtr.timeStamp-timeOfFirstBlock < epochInterval {
+		epochDuration = ecPtr.timeStamp - timeOfFirstBlock
+	}
+
+	needKickoutValidators := sortableAddresses{}
+	for _, validator := range validators {
+		key := make([]byte, 8)
+		binary.BigEndian.PutUint64(key, Uint64(epoch))
+		key = append(key, validator.Bytes()...)
+		cnt := int64(0)
+		if cntBytes := ecPtr.DposContext.MintCntTrie().Get(key); cntBytes != nil {
+			cnt = int64(binary.BigEndian.Uint64(cntBytes))
+		}
+		if cnt < epochDuration/blockInterval/ maxValidatorSize /2 {
+			// not active validators need kickout
+			needKickoutValidators = append(needKickoutValidators, &sortableAddress{validator, big.NewInt(cnt)})
+		}
+	}
+	// no validators need kickout
+	needKickoutValidatorCnt := len(needKickoutValidators)
+	if needKickoutValidatorCnt <= 0 {
+		return nil
+	}
+	sort.Sort(sort.Reverse(needKickoutValidators))
+
+	candidateCount := 0
+	iter := trie.NewIterator(ecPtr.DposContext.CandidateTrie().NodeIterator(nil))
+	for iter.Next() {
+		candidateCount++
+		if candidateCount >= needKickoutValidatorCnt+safeSize {
+			break
+		}
+	}
+
+	for i, validator := range needKickoutValidators {
+		// ensure candidate count greater than or equal to safeSize
+		if candidateCount <= safeSize {
+			bgmlogs.Info("No more candidate can be kickout", "prevEpochID", epoch, "candidateCount", candidateCount, "needKickoutCount", len(needKickoutValidators)-i)
+			return nil
+		}
+
+		if err := ecPtr.DposContext.KickoutCandidate(validator.address); err != nil {
+			return err
+		}
+		// if kickout success, candidateCount minus 1
+		candidateCount--
+		bgmlogs.Info("Kickout candidate", "prevEpochID", epoch, "candidate", validator.address.String(), "mintCnt", validator.WeiUnitght.String())
+	}
+	return nil
 }

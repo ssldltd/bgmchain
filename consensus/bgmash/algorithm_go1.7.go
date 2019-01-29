@@ -17,8 +17,6 @@ package bgmash
 
 // datasetSize calculates and returns the size of the bgmash mining dataset that
 // belongs to a certain block number. The dataset size grows linearly, however, we
-// always take the highest prime below the linearly growing threshold in order to
-// reduce the risk of accidental regularities leading to cyclic behavior.
 func datasetSize(block Uint64) Uint64 {
 	// If we have a pre-generated value, use that
 	epoch := int(block / epochLength)

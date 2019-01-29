@@ -26,19 +26,19 @@ import (
 	"time"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
-	"github.com/ssldltd/bgmchain/bgmcommon/math"
-	"github.com/ssldltd/bgmchain/consensus"
-	"github.com/ssldltd/bgmchain/consensus/misc"
 	"github.com/ssldltd/bgmchain/bgmCore/state"
 	"github.com/ssldltd/bgmchain/bgmCore/types"
 	"github.com/ssldltd/bgmchain/bgmparam"
+	"github.com/ssldltd/bgmchain/bgmcommon/math"
+	"github.com/ssldltd/bgmchain/consensus"
+	"github.com/ssldltd/bgmchain/consensus/misc"
+	
 	set "gopkg.in/fatih/set.v0"
 )
 
 
 
-// Various error messages to mark blocks invalid. These should be private to
-// prevent engine specific errors from being referenced in the remainder of the
+// These should be private to prevent engine specific errors from being referenced in the remainder of the
 // codebase, inherently breaking if the engine is swapped out. Please put bgmcommon
 // error types into the consensus package.
 var (
@@ -54,11 +54,7 @@ var (
 	errorInvalidPoW        = errors.New("invalid proof-of-work")
 )
 
-// Author implement consensus.Engine, returning the Header's coinbase as the
-// proof-of-work verified author of the block.
-func (bgmashPtr *Bgmash) Author(HeaderPtr *types.Header) (bgmcommon.Address, error) {
-	return HeaderPtr.Coinbase, nil
-}
+
 
 // VerifyHeader checks whbgmchain a Header conforms to the consensus rules of the
 // stock Bgmchain bgmash engine.
@@ -79,7 +75,10 @@ func (bgmashPtr *Bgmash) VerifyHeader(chain consensus.ChainReader, HeaderPtr *ty
 	// Sanity checks passed, do a proper verification
 	return bgmashPtr.verifyHeader(chain, HeaderPtr, parent, false, seal)
 }
-
+// Author implement consensus.Engine
+func (bgmashPtr *Bgmash) Author(HeaderPtr *types.Header) (bgmcommon.Address, error) {
+	return HeaderPtr.Coinbase, nil
+}
 // VerifyHeaders is similar to VerifyHeaderPtr, but verifies a batch of Headers
 // concurrently. The method returns a quit channel to abort the operations and
 // a results channel to retrieve the async verifications.
@@ -226,105 +225,6 @@ func calcDifficultyByzantium(time Uint64, parent *types.Header) *big.Int {
 	return x
 }
 
-// calcDifficultyHomestead is the difficulty adjustment algorithmPtr. It returns
-// the difficulty that a new block should have when created at time given the
-// parent block's time and difficulty. The calculation uses the Homestead rules.
-func calcDifficultyHomestead(time Uint64, parent *types.Header) *big.Int {
-	// https://github.com/bgmchain/Chains/blob/master/ChainS/Chain-2.mediawiki
-	// algorithm:
-	// diff = (parent_diff +
-	//         (parent_diff / 4096 * max(1 - (block_timestamp - parent_timestamp) // 10, -99))
-	//        ) + 2^(periodCount - 2)
-
-	bigtime := new(big.Int).SetUint64(time)
-	bigParenttime := new(big.Int).Set(parent.time)
-
-	// holds intermediate values to make the algo easier to read & audit
-	x := new(big.Int)
-	y := new(big.Int)
-
-	// 1 - (block_timestamp - parent_timestamp) // 10
-	x.Sub(bigtime, bigParenttime)
-	x.Div(x, big10)
-	x.Sub(big1, x)
-
-	// max(1 - (block_timestamp - parent_timestamp) // 10, -99)
-	if x.Cmp(bigMinus99) < 0 {
-		x.Set(bigMinus99)
-	}
-	// (parent_diff + parent_diff // 4096 * max(1 - (block_timestamp - parent_timestamp) // 10, -99))
-	y.Div(parent.Difficulty, bgmparam.DifficultyBoundDivisor)
-	x.Mul(y, x)
-	x.Add(parent.Difficulty, x)
-
-	// minimum difficulty can ever be (before exponential factor)
-	if x.Cmp(bgmparam.MinimumDifficulty) < 0 {
-		x.Set(bgmparam.MinimumDifficulty)
-	}
-	// for the exponential factor
-	periodCount := new(big.Int).Add(parent.Number, big1)
-	periodCount.Div(periodCount, expDiffPeriod)
-
-	// the exponential factor, bgmcommonly referred to as "the bomb"
-	// diff = diff + 2^(periodCount - 2)
-	if periodCount.Cmp(big1) > 0 {
-		y.Sub(periodCount, big2)
-		y.Exp(big2, y, nil)
-		x.Add(x, y)
-	}
-	return x
-}
-// VerifyUncles verifies that the given block's uncles conform to the consensus
-// rules of the stock Bgmchain bgmash engine.
-func (bgmashPtr *Bgmash) VerifyUncles(chain consensus.ChainReader, block *types.Block) error {
-	// If we're running a full engine faking, accept any input as valid
-	if bgmashPtr.fakeFull {
-		return nil
-	}
-	// Verify that there are at most 2 uncles included in this block
-	if len(block.Uncles()) > maxUncles {
-		return errTooManyUncles
-	}
-	// Gather the set of past uncles and ancestors
-	uncles, ancestors := set.New(), make(map[bgmcommon.Hash]*types.Header)
-
-	number, parent := block.NumberU64()-1, block.ParentHash()
-	for i := 0; i < 7; i++ {
-		ancestor := chain.GetBlock(parent, number)
-		if ancestor == nil {
-			break
-		}
-		ancestors[ancestor.Hash()] = ancestor.Header()
-		for _, uncle := range ancestor.Uncles() {
-			uncles.Add(uncle.Hash())
-		}
-		parent, number = ancestor.ParentHash(), number-1
-	}
-	ancestors[block.Hash()] = block.Header()
-	uncles.Add(block.Hash())
-
-	// Verify each of the uncles that it's recent, but not an ancestor
-	for _, uncle := range block.Uncles() {
-		// Make sure every uncle is rewarded only once
-		hash := uncle.Hash()
-		if uncles.Has(hash) {
-			return errDuplicateUncle
-		}
-		uncles.Add(hash)
-
-		// Make sure the uncle has a valid ancestry
-		if ancestors[hash] != nil {
-			return errUncleIsAncestor
-		}
-		if ancestors[uncle.ParentHash] == nil || uncle.ParentHash == block.ParentHash() {
-			return errDanglingUncle
-		}
-		if err := bgmashPtr.verifyHeader(chain, uncle, ancestors[uncle.ParentHash], true, true); err != nil {
-			return err
-		}
-	}
-	return nil
-}
 
 // verifyHeader checks whbgmchain a Header conforms to the consensus rules of the
 // stock Bgmchain bgmash engine.
@@ -525,9 +425,10 @@ var (
 )
 
 // AccumulateRewards credits the coinbase of the given block with the mining
-// reward. The total reward consists of the static block reward and rewards for
 // included uncles. The coinbase of each uncle block is also rewarded.
 // TODO (karalabe): Move the chain maker into this package and make this private!
+// reward. The total reward consists of the static block reward and rewards for
+
 func AccumulateRewards(config *bgmparam.ChainConfig, state *state.StateDB, HeaderPtr *types.HeaderPtr, uncles []*types.Header) {
 	// Select the correct block reward based on chain progression
 	blockReward := frontierBlockReward
@@ -550,4 +451,101 @@ func AccumulateRewards(config *bgmparam.ChainConfig, state *state.StateDB, Heade
 		}
 	*/
 	state.AddBalance(HeaderPtr.Coinbase, reward)
+}
+// calcDifficultyHomestead is the difficulty adjustment algorithmPtr. It returns
+func calcDifficultyHomestead(time Uint64, parent *types.Header) *big.Int {
+	// https://github.com/bgmchain/Chains/blob/master/ChainS/Chain-2.mediawiki
+	// algorithm:
+	// diff = (parent_diff +
+	//         (parent_diff / 4096 * max(1 - (block_timestamp - parent_timestamp) // 10, -99))
+	//        ) + 2^(periodCount - 2)
+
+	bigtime := new(big.Int).SetUint64(time)
+	bigParenttime := new(big.Int).Set(parent.time)
+
+	// holds intermediate values to make the algo easier to read & audit
+	x := new(big.Int)
+	y := new(big.Int)
+
+	// 1 - (block_timestamp - parent_timestamp) // 10
+	x.Sub(bigtime, bigParenttime)
+	x.Div(x, big10)
+	x.Sub(big1, x)
+
+	// max(1 - (block_timestamp - parent_timestamp) // 10, -99)
+	if x.Cmp(bigMinus99) < 0 {
+		x.Set(bigMinus99)
+	}
+	// (parent_diff + parent_diff // 4096 * max(1 - (block_timestamp - parent_timestamp) // 10, -99))
+	y.Div(parent.Difficulty, bgmparam.DifficultyBoundDivisor)
+	x.Mul(y, x)
+	x.Add(parent.Difficulty, x)
+
+	// minimum difficulty can ever be (before exponential factor)
+	if x.Cmp(bgmparam.MinimumDifficulty) < 0 {
+		x.Set(bgmparam.MinimumDifficulty)
+	}
+	// for the exponential factor
+	periodCount := new(big.Int).Add(parent.Number, big1)
+	periodCount.Div(periodCount, expDiffPeriod)
+
+	// the exponential factor, bgmcommonly referred to as "the bomb"
+	// diff = diff + 2^(periodCount - 2)
+	if periodCount.Cmp(big1) > 0 {
+		y.Sub(periodCount, big2)
+		y.Exp(big2, y, nil)
+		x.Add(x, y)
+	}
+	return x
+}
+// VerifyUncles verifies that the given block's uncles conform to the consensus
+// rules of the stock Bgmchain bgmash engine.
+func (bgmashPtr *Bgmash) VerifyUncles(chain consensus.ChainReader, block *types.Block) error {
+	// If we're running a full engine faking, accept any input as valid
+	if bgmashPtr.fakeFull {
+		return nil
+	}
+	// Verify that there are at most 2 uncles included in this block
+	if len(block.Uncles()) > maxUncles {
+		return errTooManyUncles
+	}
+	// Gather the set of past uncles and ancestors
+	uncles, ancestors := set.New(), make(map[bgmcommon.Hash]*types.Header)
+
+	number, parent := block.NumberU64()-1, block.ParentHash()
+	for i := 0; i < 7; i++ {
+		ancestor := chain.GetBlock(parent, number)
+		if ancestor == nil {
+			break
+		}
+		ancestors[ancestor.Hash()] = ancestor.Header()
+		for _, uncle := range ancestor.Uncles() {
+			uncles.Add(uncle.Hash())
+		}
+		parent, number = ancestor.ParentHash(), number-1
+	}
+	ancestors[block.Hash()] = block.Header()
+	uncles.Add(block.Hash())
+
+	// Verify each of the uncles that it's recent, but not an ancestor
+	for _, uncle := range block.Uncles() {
+		// Make sure every uncle is rewarded only once
+		hash := uncle.Hash()
+		if uncles.Has(hash) {
+			return errDuplicateUncle
+		}
+		uncles.Add(hash)
+
+		// Make sure the uncle has a valid ancestry
+		if ancestors[hash] != nil {
+			return errUncleIsAncestor
+		}
+		if ancestors[uncle.ParentHash] == nil || uncle.ParentHash == block.ParentHash() {
+			return errDanglingUncle
+		}
+		if err := bgmashPtr.verifyHeader(chain, uncle, ancestors[uncle.ParentHash], true, true); err != nil {
+			return err
+		}
+	}
+	return nil
 }

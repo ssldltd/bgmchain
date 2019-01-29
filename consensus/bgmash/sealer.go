@@ -28,6 +28,63 @@ import (
 	"github.com/ssldltd/bgmchain/bgmlogs"
 )
 
+
+
+// mine is the actual proof-of-work miner that searches for a nonce starting from
+// seed that results in correct final block difficulty.
+func (bgmashPtr *Bgmash) mine(block *types.Block, id int, seed Uint64, abort chan struct{}, found chan *types.Block) {
+	// Extract some data from the Header
+	var (
+		Header = block.Header()
+		hash   = HeaderPtr.HashNoNonce().Bytes()
+		target = new(big.Int).Div(maxUint256, HeaderPtr.Difficulty)
+
+		number  = HeaderPtr.Number.Uint64()
+		dataset = bgmashPtr.dataset(number)
+	)
+	// Start generating random nonces until we abort or find a good one
+	var (
+		attempts = int64(0)
+		nonce    = seed
+	)
+	bgmlogsger := bgmlogs.New("miner", id)
+	bgmlogsger.Trace("Started bgmash search for new nonces", "seed", seed)
+	for {
+		select {
+		case <-abort:
+			// Mining terminated, update stats and abort
+			bgmlogsger.Trace("Bgmash nonce search aborted", "attempts", nonce-seed)
+			bgmashPtr.hashrate.Mark(attempts)
+			return
+
+		default:
+			// We don't have to update hash rate on every nonce, so update after after 2^X nonces
+			attempts++
+			if (attempts % (1 << 15)) == 0 {
+				bgmashPtr.hashrate.Mark(attempts)
+				attempts = 0
+			}
+			// Compute the PoW value of this nonce
+			digest, result := hashimotoFull(dataset, hash, nonce)
+			if new(big.Int).SetBytes(result).Cmp(target) <= 0 {
+				// Correct nonce found, create a new Header with it
+				Header = types.CopyHeader(Header)
+				HeaderPtr.Nonce = types.EncodeNonce(nonce)
+				HeaderPtr.MixDigest = bgmcommon.BytesToHash(digest)
+
+				// Seal and return a block (if still needed)
+				select {
+				case found <- block.WithSeal(Header):
+					bgmlogsger.Trace("Bgmash nonce found and reported", "attempts", nonce-seed, "nonce", nonce)
+				case <-abort:
+					bgmlogsger.Trace("Bgmash nonce found but discarded", "attempts", nonce-seed, "nonce", nonce)
+				}
+				return
+			}
+			nonce++
+		}
+	}
+}
 // Seal implement consensus.Engine, attempting to find a nonce that satisfies
 // the block's difficulty requirements.
 func (bgmashPtr *Bgmash) Seal(chain consensus.ChainReader, block *types.Block, stop <-chan struct{}) (*types.Block, error) {
@@ -88,60 +145,4 @@ func (bgmashPtr *Bgmash) Seal(chain consensus.ChainReader, block *types.Block, s
 	// Wait for all miners to terminate and return the block
 	pend.Wait()
 	return result, nil
-}
-
-// mine is the actual proof-of-work miner that searches for a nonce starting from
-// seed that results in correct final block difficulty.
-func (bgmashPtr *Bgmash) mine(block *types.Block, id int, seed Uint64, abort chan struct{}, found chan *types.Block) {
-	// Extract some data from the Header
-	var (
-		Header = block.Header()
-		hash   = HeaderPtr.HashNoNonce().Bytes()
-		target = new(big.Int).Div(maxUint256, HeaderPtr.Difficulty)
-
-		number  = HeaderPtr.Number.Uint64()
-		dataset = bgmashPtr.dataset(number)
-	)
-	// Start generating random nonces until we abort or find a good one
-	var (
-		attempts = int64(0)
-		nonce    = seed
-	)
-	bgmlogsger := bgmlogs.New("miner", id)
-	bgmlogsger.Trace("Started bgmash search for new nonces", "seed", seed)
-	for {
-		select {
-		case <-abort:
-			// Mining terminated, update stats and abort
-			bgmlogsger.Trace("Bgmash nonce search aborted", "attempts", nonce-seed)
-			bgmashPtr.hashrate.Mark(attempts)
-			return
-
-		default:
-			// We don't have to update hash rate on every nonce, so update after after 2^X nonces
-			attempts++
-			if (attempts % (1 << 15)) == 0 {
-				bgmashPtr.hashrate.Mark(attempts)
-				attempts = 0
-			}
-			// Compute the PoW value of this nonce
-			digest, result := hashimotoFull(dataset, hash, nonce)
-			if new(big.Int).SetBytes(result).Cmp(target) <= 0 {
-				// Correct nonce found, create a new Header with it
-				Header = types.CopyHeader(Header)
-				HeaderPtr.Nonce = types.EncodeNonce(nonce)
-				HeaderPtr.MixDigest = bgmcommon.BytesToHash(digest)
-
-				// Seal and return a block (if still needed)
-				select {
-				case found <- block.WithSeal(Header):
-					bgmlogsger.Trace("Bgmash nonce found and reported", "attempts", nonce-seed, "nonce", nonce)
-				case <-abort:
-					bgmlogsger.Trace("Bgmash nonce found but discarded", "attempts", nonce-seed, "nonce", nonce)
-				}
-				return
-			}
-			nonce++
-		}
-	}
 }

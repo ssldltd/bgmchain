@@ -16,7 +16,6 @@
 // sources:
 // bignumber.js
 // web3.js
-// DO NOT EDIT!
 
 package deps
 

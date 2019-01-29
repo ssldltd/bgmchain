@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
-	"time"
 
 	"github.com/ssldltd/bgmchain/account"
 	"github.com/ssldltd/bgmchain/account/keystore"

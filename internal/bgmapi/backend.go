@@ -27,9 +27,6 @@ import (
 	"github.com/ssldltd/bgmchain/bgmCore/vm"
 	"github.com/ssldltd/bgmchain/bgm/downloader"
 	"github.com/ssldltd/bgmchain/bgmdb"
-	"github.com/ssldltd/bgmchain/event"
-	"github.com/ssldltd/bgmchain/bgmparam"
-	"github.com/ssldltd/bgmchain/rpc"
 )
 
 // Backend interface provides the bgmcommon apiPtr services (that are provided by

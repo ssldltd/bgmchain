@@ -18,7 +18,6 @@ import (
 	"sort"
 	"strings"
 	"io"
-	"github.com/robertkrimen/otto"
 )
 
 // CompleteKeywords returns potential continuations for the given line. Since line is

@@ -215,7 +215,7 @@ func (cs caseList) delete(index int) caseList {
 // deactivate moves the case at index into the non-accessible portion of the cs slice.
 func (cs caseList) deactivate(index int) caseList {
 	last := len(cs) - 1
-	cs[index], cs[last] = cs[last], cs[index]
+	cs[index], cs[last] = cs[last],  cs[index]
 	return cs[:last]
 }
 

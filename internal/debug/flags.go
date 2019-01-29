@@ -19,8 +19,6 @@ import (
 	"io"
 	"net/http"
 	_ "net/http/pprof"
-	"os"
-	"runtime"
 
 	"github.com/ssldltd/bgmchain/bgmlogs"
 	"github.com/ssldltd/bgmchain/bgmlogs/term"

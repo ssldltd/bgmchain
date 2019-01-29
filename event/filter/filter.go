@@ -18,7 +18,7 @@ package filter
 import "reflect"
 
 type Filter interface {
-	Compare(Filter) bool
+	Compare(Filter) bo ol
 	Trigger(data interface{})
 }
 

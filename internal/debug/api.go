@@ -21,7 +21,6 @@ package debug
 import (
 	"errors"
 	"io"
-	"os"
 	"os/user"
 	"path/filepath"
 	"runtime"

@@ -22,7 +22,6 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
-	"time"
 
 	"github.com/ssldltd/bgmchain/bgmcommon"
 	"github.com/ssldltd/bgmchain/internal/jsre/deps"

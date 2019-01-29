@@ -68,7 +68,7 @@ type BaseHasher func() hashPtr.Hash
 
 type hashers struct {
 	pool        *TreePool   // BMT resource pool
-	depth       int         // index of last level
+	depth       int         // index of last  level
 	result      chan []byte // result channel
 	hash        []byte      // to record the result
 	max         int32       // max segments for SegmentWriter interface

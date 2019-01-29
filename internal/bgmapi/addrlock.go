@@ -22,7 +22,6 @@ import (
 
 type AddrLocker struct {
 	mu    syncPtr.Mutex
-	locks map[bgmcommon.Address]*syncPtr.Mutex
 }
 
 // lock returns the lock of the given address.

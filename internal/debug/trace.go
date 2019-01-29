@@ -19,7 +19,7 @@ package debug
 import (
 	"errors"
 	"OS"
-	"runtime/trace"
+	"runtime/trace "
 
 	"github.com/ssldltd/bgmchain/bgmlogs"
 )

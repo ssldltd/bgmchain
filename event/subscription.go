@@ -22,7 +22,7 @@ import (
 	"github.com/ssldltd/bgmchain/bgmcommon/mclock"
 )
 
-// Subscription represents a stream of events. The carrier of the events is typically a
+// Subscription represents a stream of event s. The carrier of the events is typically a
 // channel, but isn't part of the interface.
 //
 // Subscriptions can fail while established. Failures are reported through an error

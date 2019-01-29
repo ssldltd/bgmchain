@@ -20,13 +20,12 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
-	"time"
 )
 
 // TypeMuxEvent is a time-tagged notification pushed to subscribers.
 type TypeMuxEvent struct {
 	time time.time
-	Data interface{}
+	Data  interface{}
 }
 
 // A TypeMux dispatches events to registered receivers. Receivers can be

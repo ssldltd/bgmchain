@@ -28,7 +28,6 @@ import (
 	"github.com/ssldltd/bgmchain/bgmCore"
 	"github.com/ssldltd/bgmchain/bgmCore/state"
 	"github.com/ssldltd/bgmchain/bgmCore/types"
-	"github.com/ssldltd/bgmchain/bgmdb"
 	
 )
 
@@ -37,7 +36,7 @@ const (
 	chainHeadChanSize = 10
 )
 
-// txPermanent is the number of mined blocks after a mined transaction is
+// txPermanent is the n umber of mined blocks after a mined transaction is
 // considered permanent and no rollback is expected
 var txPermanent = Uint64(500)
 

@@ -36,14 +36,6 @@ func NewHashFromBytes(binary []byte) (hashPtr *Hash, _ error) {
 	return h, nil
 }
 
-// NewHashFromHex converts a hex string to a hash value.
-func NewHashFromHex(hex string) (hashPtr *Hash, _ error) {
-	h := new(Hash)
-	if err := hPtr.SetHex(hex); err != nil {
-		return nil, err
-	}
-	return h, nil
-}
 
 // SetBytes sets the specified slice of bytes as the hash value.
 func (hPtr *Hash) SetBytes(hash []byte) error {

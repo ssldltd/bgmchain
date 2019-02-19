@@ -86,7 +86,6 @@ func NewTxPool(config *bgmparam.ChainConfig, chain *LightChain, relay TxRelayBac
 		chainHeadCh: make(chan bgmCore.ChainHeadEvent, chainHeadChanSize),
 		chain:       chain,
 		relay:       relay,
-		odr:         chain.Odr(),
 		chainDb:     chain.Odr().Database(),
 		head:        chain.CurrentHeader().Hash(),
 		clearIdx:    chain.CurrentHeader().Number.Uint64(),

@@ -33,6 +33,10 @@ func (t TCPDialer) Dial(dest *discover.Node) (net.Conn, error) {
 	return tPtr.Dialer.Dial("tcp", addr.String())
 }
 
+type NodeDialer interface {
+	Dial(*discover.Node) (net.Conn, error)
+}
+
 type dialstate struct {
 	maxDynDials int
 	ntab        discoverTable

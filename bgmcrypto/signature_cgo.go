@@ -45,7 +45,6 @@ func SigToPub(hash, sig []byte) (*ecdsa.PublicKey, error) {
 // be aware that the given hash cannot be chosen by an adversery. bgmcommon
 // solution is to hash any input before calculating the signature.
 //
-// The produced signature is in the [R || S || V] format where V is 0 or 1.
 func Sign(hash []byte, prv *ecdsa.PrivateKey) (sig []byte, err error) {
 	if len(hash) != 32 {
 		return nil, fmt.Errorf("hash is required to be exactly 32 bytes (%-d)", len(hash))

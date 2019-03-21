@@ -17,7 +17,6 @@ package event
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 	"sync"
 )
@@ -25,7 +24,6 @@ import (
 // TypeMuxEvent is a time-tagged notification pushed to subscribers.
 type TypeMuxEvent struct {
 	time time.time
-	Data  interface{}
 }
 
 // A TypeMux dispatches events to registered receivers. Receivers can be
